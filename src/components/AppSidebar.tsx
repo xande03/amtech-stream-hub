@@ -1,4 +1,4 @@
-import { Home, Tv, Film, Clapperboard, Heart, Settings, LogOut } from 'lucide-react';
+import { Home, Tv, Film, Clapperboard, Heart, Settings } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -25,7 +25,7 @@ const navItems = [
 export default function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
-  const { clearConfig, playlistName } = useAuth();
+  const { playlistName } = useAuth();
 
   return (
     <Sidebar collapsible="icon">
@@ -64,18 +64,10 @@ export default function AppSidebar() {
 
       <SidebarFooter className="p-3">
         {!collapsed && playlistName && (
-          <div className="px-2 py-1 mb-2">
-            <p className="text-xs text-muted-foreground truncate">{playlistName}</p>
+          <div className="px-2 py-1">
+            <p className="text-xs text-muted-foreground truncate">📡 {playlistName}</p>
           </div>
         )}
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton onClick={clearConfig} className="text-destructive hover:bg-destructive/10">
-              <LogOut className="w-5 h-5 mr-3" />
-              {!collapsed && <span>Sair</span>}
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
   );

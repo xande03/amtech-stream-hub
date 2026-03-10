@@ -17,28 +17,48 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { action, config } = await req.json();
+    const { action, config, id, admin_password } = await req.json();
+
+    // Actions that require admin password
+    const protectedActions = ["save_config", "toggle_config", "delete_config"];
+    if (protectedActions.includes(action)) {
+      const adminPw = Deno.env.get("ADMIN_SECRET") || "abcd123";
+      if (admin_password !== adminPw) {
+        return new Response(JSON.stringify({ error: "Senha de administrador inválida" }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+    }
 
     switch (action) {
-      case "get_config": {
+      // Public: get the active config (for all users)
+      case "get_active_config": {
         const { data, error } = await supabase
           .from("admin_config")
-          .select("id, server_url, username, playlist_name, access_code, is_active, created_at, updated_at")
-          .order("created_at", { ascending: false })
+          .select("id, server_url, username, playlist_name, access_code, is_active")
+          .eq("is_active", true)
+          .order("updated_at", { ascending: false })
           .limit(1)
-          .single();
-        
-        if (error && error.code !== "PGRST116") {
-          return new Response(JSON.stringify({ error: error.message }), {
-            status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" }
-          });
-        }
-        
+          .maybeSingle();
+
         return new Response(JSON.stringify({ config: data || null }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" }
         });
       }
 
+      // Admin: list all playlists
+      case "get_config": {
+        const { data, error } = await supabase
+          .from("admin_config")
+          .select("id, server_url, username, playlist_name, access_code, is_active, created_at, updated_at")
+          .order("created_at", { ascending: false });
+
+        return new Response(JSON.stringify({ configs: data || [] }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      // Admin: save new playlist
       case "save_config": {
         if (!config?.server_url || !config?.username || !config?.password || !config?.access_code) {
           return new Response(JSON.stringify({ error: "Campos obrigatórios faltando" }), {
@@ -46,10 +66,13 @@ Deno.serve(async (req) => {
           });
         }
 
-        await supabase
-          .from("admin_config")
-          .update({ is_active: false })
-          .eq("is_active", true);
+        // If this is set as active, deactivate others
+        if (config.is_active !== false) {
+          await supabase
+            .from("admin_config")
+            .update({ is_active: false })
+            .eq("is_active", true);
+        }
 
         const { data, error } = await supabase
           .from("admin_config")
@@ -59,9 +82,9 @@ Deno.serve(async (req) => {
             password: config.password,
             playlist_name: config.playlist_name || "Principal",
             access_code: config.access_code,
-            is_active: true,
+            is_active: config.is_active !== false,
           })
-          .select("id, server_url, username, playlist_name, access_code, is_active")
+          .select("id, server_url, username, playlist_name, access_code, is_active, created_at")
           .single();
 
         if (error) {
@@ -71,6 +94,73 @@ Deno.serve(async (req) => {
         }
 
         return new Response(JSON.stringify({ config: data }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      // Admin: toggle active/inactive
+      case "toggle_config": {
+        if (!id) {
+          return new Response(JSON.stringify({ error: "ID é obrigatório" }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" }
+          });
+        }
+
+        // Get current state
+        const { data: current } = await supabase
+          .from("admin_config")
+          .select("is_active")
+          .eq("id", id)
+          .single();
+
+        const newState = !current?.is_active;
+
+        // If activating, deactivate all others first
+        if (newState) {
+          await supabase
+            .from("admin_config")
+            .update({ is_active: false })
+            .eq("is_active", true);
+        }
+
+        const { data, error } = await supabase
+          .from("admin_config")
+          .update({ is_active: newState })
+          .eq("id", id)
+          .select("id, is_active")
+          .single();
+
+        if (error) {
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" }
+          });
+        }
+
+        return new Response(JSON.stringify({ config: data }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      // Admin: delete playlist
+      case "delete_config": {
+        if (!id) {
+          return new Response(JSON.stringify({ error: "ID é obrigatório" }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" }
+          });
+        }
+
+        const { error } = await supabase
+          .from("admin_config")
+          .delete()
+          .eq("id", id);
+
+        if (error) {
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" }
+          });
+        }
+
+        return new Response(JSON.stringify({ success: true }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" }
         });
       }

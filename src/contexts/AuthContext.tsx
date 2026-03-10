@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AppContextType {
   accessCode: string | null;
@@ -8,21 +9,42 @@ interface AppContextType {
   isConfigured: boolean;
   setConfig: (code: string, info?: any) => void;
   clearConfig: () => void;
+  refreshConfig: () => void;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
 
-const STORAGE_KEY = 'amtech_access_code';
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [accessCode, setAccessCode] = useState<string | null>(() => localStorage.getItem(STORAGE_KEY));
+  const [accessCode, setAccessCode] = useState<string | null>(null);
   const [serverInfo, setServerInfo] = useState<any>(null);
   const [userInfo, setUserInfo] = useState<any>(null);
   const [playlistName, setPlaylistName] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  const fetchActiveConfig = useCallback(async () => {
+    try {
+      const { data } = await supabase.functions.invoke('admin-config', {
+        body: { action: 'get_active_config' },
+      });
+      if (data?.config) {
+        setAccessCode(data.config.access_code);
+        setPlaylistName(data.config.playlist_name);
+      } else {
+        setAccessCode(null);
+        setPlaylistName(null);
+      }
+    } catch {
+      setAccessCode(null);
+    }
+    setLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    fetchActiveConfig();
+  }, [fetchActiveConfig]);
 
   const setConfig = useCallback((code: string, info?: any) => {
     setAccessCode(code);
-    localStorage.setItem(STORAGE_KEY, code);
     if (info) {
       setServerInfo(info.server_info);
       setUserInfo(info.user_info);
@@ -35,8 +57,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setServerInfo(null);
     setUserInfo(null);
     setPlaylistName(null);
-    localStorage.removeItem(STORAGE_KEY);
   }, []);
+
+  if (!loaded) return null; // Wait until config is fetched
 
   return (
     <AppContext.Provider value={{
@@ -47,6 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isConfigured: !!accessCode,
       setConfig,
       clearConfig,
+      refreshConfig: fetchActiveConfig,
     }}>
       {children}
     </AppContext.Provider>
