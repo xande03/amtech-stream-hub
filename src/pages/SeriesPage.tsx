@@ -1,0 +1,114 @@
+import { useState, useEffect, useMemo } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { getSeriesList, getSeriesCategories, Series as SeriesType, Category } from '@/services/xtreamApi';
+import ContentCard from '@/components/ContentCard';
+import { useFavorites } from '@/hooks/useFavorites';
+import { Input } from '@/components/ui/input';
+import { Search } from 'lucide-react';
+import { motion } from 'framer-motion';
+
+export default function SeriesPage() {
+  const { credentials } = useAuth();
+  const navigate = useNavigate();
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const [series, setSeries] = useState<SeriesType[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!credentials) return;
+    setLoading(true);
+    Promise.all([
+      getSeriesList(credentials).catch(() => []),
+      getSeriesCategories(credentials).catch(() => []),
+    ]).then(([s, c]) => {
+      setSeries(s);
+      setCategories(c);
+    }).finally(() => setLoading(false));
+  }, [credentials]);
+
+  const filtered = useMemo(() => {
+    let result = series;
+    if (selectedCategory !== 'all') {
+      result = result.filter(s => s.category_id === selectedCategory);
+    }
+    if (search) {
+      const q = search.toLowerCase();
+      result = result.filter(s => s.name.toLowerCase().includes(q));
+    }
+    return result;
+  }, [series, selectedCategory, search]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h1 className="text-2xl font-bold text-foreground mb-4">Séries</h1>
+
+      <div className="flex flex-col md:flex-row gap-3 mb-6">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar séries..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="pl-10 bg-secondary border-border text-foreground"
+          />
+        </div>
+        <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
+          <button
+            onClick={() => setSelectedCategory('all')}
+            className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors ${
+              selectedCategory === 'all' ? 'gradient-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Todas
+          </button>
+          {categories.map(cat => (
+            <button
+              key={cat.category_id}
+              onClick={() => setSelectedCategory(cat.category_id)}
+              className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors ${
+                selectedCategory === cat.category_id ? 'gradient-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {cat.category_name}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-3"
+      >
+        {filtered.map((s) => (
+          <ContentCard
+            key={s.series_id}
+            title={s.name}
+            image={s.cover}
+            rating={s.rating}
+            subtitle={s.genre}
+            isFavorite={isFavorite(s.series_id, 'series')}
+            onFavoriteToggle={() => toggleFavorite({ id: s.series_id, type: 'series', name: s.name, icon: s.cover })}
+            onClick={() => navigate(`/series/${s.series_id}`)}
+          />
+        ))}
+      </motion.div>
+
+      {filtered.length === 0 && (
+        <div className="text-center py-12 text-muted-foreground">Nenhuma série encontrada.</div>
+      )}
+    </div>
+  );
+}
