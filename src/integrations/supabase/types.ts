@@ -14,13 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      admin_config: {
+        Row: {
+          access_code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          password: string
+          playlist_name: string
+          server_url: string
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          access_code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          password: string
+          playlist_name?: string
+          server_url: string
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          access_code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          password?: string
+          playlist_name?: string
+          server_url?: string
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      validate_access_code: { Args: { code: string }; Returns: Json }
     }
     Enums: {
       [_ in never]: never
