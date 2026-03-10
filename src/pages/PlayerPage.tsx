@@ -15,16 +15,20 @@ export default function PlayerPage() {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  const isLive = type === 'live';
+
   useEffect(() => {
     if (!accessCode || !type || !id) return;
     setLoading(true);
+    setError(null);
     const streamType = type as 'live' | 'movie' | 'series';
-    const extension = ext || (streamType === 'live' ? 'm3u8' : 'mp4');
+    // For live, try m3u8 first; for VOD use mp4 or provided ext
+    const extension = ext || (isLive ? 'm3u8' : 'mp4');
     getStreamUrl(accessCode, streamType, id, extension)
       .then(url => setStreamUrl(url))
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
-  }, [accessCode, type, id, ext]);
+  }, [accessCode, type, id, ext, isLive]);
 
   if (loading) {
     return (
@@ -44,18 +48,25 @@ export default function PlayerPage() {
   }
 
   const handleProgress = (progress: number) => {
-    if (type && id && type !== 'live') {
+    if (type && id && !isLive) {
       updateProgress(id, type, progress);
     }
+  };
+
+  const titleMap: Record<string, string> = {
+    live: 'Canal ao Vivo',
+    movie: 'Filme',
+    series: 'Episódio',
   };
 
   return (
     <div className="fixed inset-0 z-50 bg-background">
       <VideoPlayer
         url={streamUrl}
-        title={type === 'live' ? 'Canal' : type === 'movie' ? 'Filme' : 'Episódio'}
-        onProgress={type !== 'live' ? handleProgress : undefined}
+        title={titleMap[type || ''] || 'Reproduzindo'}
+        onProgress={!isLive ? handleProgress : undefined}
         autoPlay
+        isLive={isLive}
       />
     </div>
   );
