@@ -135,11 +135,13 @@ export async function getVodInfo(accessCode: string, vodId: number): Promise<any
   return callProxy({ action: 'get_vod_info', access_code: accessCode, vod_id: vodId });
 }
 
-// Get stream URL info - we need the credentials from the proxy to build stream URLs
-export async function getStreamUrlInfo(accessCode: string): Promise<StreamUrlInfo> {
-  // The authenticate action returns the needed info
-  const data = await callProxy({ action: 'authenticate', access_code: accessCode });
-  // We need to get the actual credentials from the server for building stream URLs
-  // This is done through a dedicated endpoint
-  return data;
+export async function getStreamUrl(accessCode: string, streamType: 'live' | 'movie' | 'series', streamId: number | string, extension?: string): Promise<string> {
+  const data = await callProxy({
+    action: 'get_stream_url',
+    access_code: accessCode,
+    stream_type: streamType,
+    stream_id: streamId,
+    extension,
+  });
+  return data.url;
 }
