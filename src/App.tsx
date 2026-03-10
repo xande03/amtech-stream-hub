@@ -15,6 +15,7 @@ import SeriesDetail from "@/pages/SeriesDetail";
 import PlayerPage from "@/pages/PlayerPage";
 import Favorites from "@/pages/Favorites";
 import SettingsPage from "@/pages/SettingsPage";
+import AdminPage from "@/pages/AdminPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -89,6 +90,7 @@ function AppRoutes() {
           <AppLayout><SettingsPage /></AppLayout>
         </ProtectedRoute>
       } />
+      <Route path="/admin" element={<AdminPage />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

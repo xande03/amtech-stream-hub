@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
+// @ts-ignore
 import Hls from 'hls.js';
 import { ArrowLeft, Maximize, Minimize } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
