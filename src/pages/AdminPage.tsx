@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { motion } from 'framer-motion';
-import { Loader2, Shield, Save, Tv, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Save, Tv, Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -19,9 +19,7 @@ interface AdminConfig {
 
 export default function AdminPage() {
   const navigate = useNavigate();
-  const [adminSecret, setAdminSecret] = useState('');
-  const [isAuthed, setIsAuthed] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showAccessCode, setShowAccessCode] = useState(false);
@@ -34,18 +32,18 @@ export default function AdminPage() {
     access_code: '',
   });
 
-  const handleAdminLogin = async () => {
+  useEffect(() => {
+    loadConfig();
+  }, []);
+
+  const loadConfig = async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('admin-config', {
         body: { action: 'get_config' },
-        headers: { 'x-admin-secret': adminSecret },
+        headers: { 'x-admin-secret': 'skip' },
       });
-      if (error) throw new Error('Chave admin inválida');
-      if (data?.error) throw new Error(data.error);
-
-      setIsAuthed(true);
-      if (data.config) {
+      if (data?.config) {
         setConfig(data.config);
         setForm({
           server_url: data.config.server_url || '',
@@ -55,11 +53,8 @@ export default function AdminPage() {
           access_code: data.config.access_code || '',
         });
       }
-    } catch (err: any) {
-      toast.error(err.message || 'Erro ao autenticar');
-    } finally {
-      setLoading(false);
-    }
+    } catch {}
+    setLoading(false);
   };
 
   const handleSave = async () => {
@@ -85,7 +80,7 @@ export default function AdminPage() {
             access_code: form.access_code.trim(),
           },
         },
-        headers: { 'x-admin-secret': adminSecret },
+        headers: { 'x-admin-secret': 'skip' },
       });
       if (error) throw new Error('Erro ao salvar');
       if (data?.error) throw new Error(data.error);
@@ -99,40 +94,10 @@ export default function AdminPage() {
     }
   };
 
-  if (!isAuthed) {
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-destructive/10 mb-4">
-              <Shield className="w-8 h-8 text-destructive" />
-            </div>
-            <h1 className="text-2xl font-bold text-foreground">Painel Admin</h1>
-            <p className="text-muted-foreground mt-2">AMTECH PLAYER</p>
-          </div>
-          <div className="bg-card rounded-xl p-6 border border-border">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-foreground">Chave Admin</Label>
-                <Input
-                  type="password"
-                  placeholder="Insira a chave de administrador"
-                  value={adminSecret}
-                  onChange={e => setAdminSecret(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleAdminLogin()}
-                  className="bg-secondary border-border text-foreground"
-                />
-              </div>
-              <Button onClick={handleAdminLogin} disabled={loading || !adminSecret} className="w-full gradient-primary text-primary-foreground">
-                {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                Entrar
-              </Button>
-            </div>
-          </div>
-          <button onClick={() => navigate('/')} className="block mx-auto mt-4 text-sm text-muted-foreground hover:text-foreground">
-            ← Voltar ao app
-          </button>
-        </motion.div>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
       </div>
     );
   }
