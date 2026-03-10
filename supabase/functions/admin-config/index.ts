@@ -6,23 +6,12 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const ADMIN_SECRET = Deno.env.get("ADMIN_SECRET");
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Validate admin secret
-    const authHeader = req.headers.get("x-admin-secret");
-    if (!ADMIN_SECRET || authHeader !== ADMIN_SECRET) {
-      return new Response(
-        JSON.stringify({ error: "Não autorizado" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -57,13 +46,11 @@ Deno.serve(async (req) => {
           });
         }
 
-        // Deactivate existing configs
         await supabase
           .from("admin_config")
           .update({ is_active: false })
           .eq("is_active", true);
 
-        // Insert new config
         const { data, error } = await supabase
           .from("admin_config")
           .insert({
