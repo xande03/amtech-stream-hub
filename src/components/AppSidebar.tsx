@@ -25,7 +25,7 @@ const navItems = [
 export default function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
-  const { logout, playlistName } = useAuth();
+  const { clearConfig, playlistName } = useAuth();
 
   return (
     <Sidebar collapsible="icon">
@@ -70,7 +70,7 @@ export default function AppSidebar() {
         )}
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={logout} className="text-destructive hover:bg-destructive/10">
+            <SidebarMenuButton onClick={clearConfig} className="text-destructive hover:bg-destructive/10">
               <LogOut className="w-5 h-5 mr-3" />
               {!collapsed && <span>Sair</span>}
             </SidebarMenuButton>
