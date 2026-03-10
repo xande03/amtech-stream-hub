@@ -1,31 +1,4 @@
-export interface XtreamCredentials {
-  server: string;
-  username: string;
-  password: string;
-  playlistName: string;
-}
-
-export interface UserInfo {
-  username: string;
-  password: string;
-  status: string;
-  exp_date: string;
-  max_connections: string;
-  active_cons: string;
-  created_at: string;
-}
-
-export interface ServerInfo {
-  url: string;
-  port: string;
-  server_protocol: string;
-  timezone: string;
-}
-
-export interface AuthResponse {
-  user_info: UserInfo;
-  server_info: ServerInfo;
-}
+import { supabase } from '@/integrations/supabase/client';
 
 export interface LiveStream {
   num: number;
@@ -111,79 +84,62 @@ export interface Category {
   parent_id: number;
 }
 
-function buildBaseUrl(creds: XtreamCredentials): string {
-  const server = creds.server.replace(/\/+$/, '');
-  return `${server}/player_api.php?username=${encodeURIComponent(creds.username)}&password=${encodeURIComponent(creds.password)}`;
+export interface StreamUrlInfo {
+  server_url: string;
+  username: string;
+  password: string;
 }
 
-export function buildStreamUrl(creds: XtreamCredentials, type: 'live' | 'movie' | 'series', streamId: number | string, extension?: string): string {
-  const server = creds.server.replace(/\/+$/, '');
-  const ext = extension || (type === 'live' ? 'm3u8' : 'mp4');
-  const pathType = type === 'movie' ? 'movie' : type === 'series' ? 'series' : 'live';
-  return `${server}/${pathType}/${encodeURIComponent(creds.username)}/${encodeURIComponent(creds.password)}/${streamId}.${ext}`;
-}
-
-export async function authenticate(creds: XtreamCredentials): Promise<AuthResponse> {
-  const url = buildBaseUrl(creds);
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('Falha na autenticação');
-  const data = await res.json();
-  if (!data.user_info || data.user_info.auth === 0) {
-    throw new Error('Credenciais inválidas');
-  }
+async function callProxy(body: Record<string, any>) {
+  const { data, error } = await supabase.functions.invoke('xtream-proxy', {
+    body,
+  });
+  if (error) throw new Error(error.message || 'Erro na requisição');
+  if (data?.error) throw new Error(data.error);
   return data;
 }
 
-export async function getLiveCategories(creds: XtreamCredentials): Promise<Category[]> {
-  const res = await fetch(`${buildBaseUrl(creds)}&action=get_live_categories`);
-  if (!res.ok) throw new Error('Erro ao carregar categorias');
-  return res.json();
+export async function authenticateWithCode(accessCode: string) {
+  return callProxy({ action: 'authenticate', access_code: accessCode });
 }
 
-export async function getLiveStreams(creds: XtreamCredentials, categoryId?: string): Promise<LiveStream[]> {
-  let url = `${buildBaseUrl(creds)}&action=get_live_streams`;
-  if (categoryId) url += `&category_id=${categoryId}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('Erro ao carregar canais');
-  return res.json();
+export async function getLiveCategories(accessCode: string): Promise<Category[]> {
+  return callProxy({ action: 'get_live_categories', access_code: accessCode });
 }
 
-export async function getVodCategories(creds: XtreamCredentials): Promise<Category[]> {
-  const res = await fetch(`${buildBaseUrl(creds)}&action=get_vod_categories`);
-  if (!res.ok) throw new Error('Erro ao carregar categorias');
-  return res.json();
+export async function getLiveStreams(accessCode: string, categoryId?: string): Promise<LiveStream[]> {
+  return callProxy({ action: 'get_live_streams', access_code: accessCode, category_id: categoryId });
 }
 
-export async function getVodStreams(creds: XtreamCredentials, categoryId?: string): Promise<VodStream[]> {
-  let url = `${buildBaseUrl(creds)}&action=get_vod_streams`;
-  if (categoryId) url += `&category_id=${categoryId}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('Erro ao carregar filmes');
-  return res.json();
+export async function getVodCategories(accessCode: string): Promise<Category[]> {
+  return callProxy({ action: 'get_vod_categories', access_code: accessCode });
 }
 
-export async function getSeriesCategories(creds: XtreamCredentials): Promise<Category[]> {
-  const res = await fetch(`${buildBaseUrl(creds)}&action=get_series_categories`);
-  if (!res.ok) throw new Error('Erro ao carregar categorias');
-  return res.json();
+export async function getVodStreams(accessCode: string, categoryId?: string): Promise<VodStream[]> {
+  return callProxy({ action: 'get_vod_streams', access_code: accessCode, category_id: categoryId });
 }
 
-export async function getSeriesList(creds: XtreamCredentials, categoryId?: string): Promise<Series[]> {
-  let url = `${buildBaseUrl(creds)}&action=get_series`;
-  if (categoryId) url += `&category_id=${categoryId}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('Erro ao carregar séries');
-  return res.json();
+export async function getSeriesCategories(accessCode: string): Promise<Category[]> {
+  return callProxy({ action: 'get_series_categories', access_code: accessCode });
 }
 
-export async function getSeriesInfo(creds: XtreamCredentials, seriesId: number): Promise<SeriesInfo> {
-  const res = await fetch(`${buildBaseUrl(creds)}&action=get_series_info&series_id=${seriesId}`);
-  if (!res.ok) throw new Error('Erro ao carregar informações da série');
-  return res.json();
+export async function getSeriesList(accessCode: string, categoryId?: string): Promise<Series[]> {
+  return callProxy({ action: 'get_series', access_code: accessCode, category_id: categoryId });
 }
 
-export async function getVodInfo(creds: XtreamCredentials, vodId: number): Promise<any> {
-  const res = await fetch(`${buildBaseUrl(creds)}&action=get_vod_info&vod_id=${vodId}`);
-  if (!res.ok) throw new Error('Erro ao carregar informações do filme');
-  return res.json();
+export async function getSeriesInfo(accessCode: string, seriesId: number): Promise<SeriesInfo> {
+  return callProxy({ action: 'get_series_info', access_code: accessCode, series_id: seriesId });
+}
+
+export async function getVodInfo(accessCode: string, vodId: number): Promise<any> {
+  return callProxy({ action: 'get_vod_info', access_code: accessCode, vod_id: vodId });
+}
+
+// Get stream URL info - we need the credentials from the proxy to build stream URLs
+export async function getStreamUrlInfo(accessCode: string): Promise<StreamUrlInfo> {
+  // The authenticate action returns the needed info
+  const data = await callProxy({ action: 'authenticate', access_code: accessCode });
+  // We need to get the actual credentials from the server for building stream URLs
+  // This is done through a dedicated endpoint
+  return data;
 }

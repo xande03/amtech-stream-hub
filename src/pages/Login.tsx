@@ -1,31 +1,20 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { XtreamCredentials } from '@/services/xtreamApi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { motion } from 'framer-motion';
-import { Loader2, Tv, Wifi } from 'lucide-react';
+import { Loader2, Tv, KeyRound } from 'lucide-react';
 
 export default function Login() {
   const { login, isLoading, error } = useAuth();
-  const [form, setForm] = useState({
-    server: '',
-    username: '',
-    password: '',
-    playlistName: '',
-  });
+  const [code, setCode] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const creds: XtreamCredentials = {
-      server: form.server.trim(),
-      username: form.username.trim(),
-      password: form.password.trim(),
-      playlistName: form.playlistName.trim() || 'Minha Lista',
-    };
+    if (!code.trim()) return;
     try {
-      await login(creds);
+      await login(code);
     } catch {}
   };
 
@@ -35,7 +24,7 @@ export default function Login() {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="w-full max-w-md"
+        className="w-full max-w-sm"
       >
         <div className="text-center mb-8">
           <motion.div
@@ -47,60 +36,26 @@ export default function Login() {
             <Tv className="w-10 h-10 text-primary-foreground" />
           </motion.div>
           <h1 className="text-3xl font-bold text-foreground">AMTECH PLAYER</h1>
-          <p className="text-muted-foreground mt-2">Conecte-se ao seu servidor IPTV</p>
+          <p className="text-muted-foreground mt-2">Insira seu código de acesso</p>
         </div>
 
         <div className="bg-card rounded-xl p-6 border border-border shadow-glow">
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="server" className="text-foreground">URL do Servidor</Label>
+              <Label htmlFor="code" className="text-foreground">Código de Acesso</Label>
               <div className="relative">
-                <Wifi className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  id="server"
-                  placeholder="http://servidor.com:8080"
-                  value={form.server}
-                  onChange={e => setForm(f => ({ ...f, server: e.target.value }))}
-                  className="pl-10 bg-secondary border-border text-foreground placeholder:text-muted-foreground"
+                  id="code"
+                  type="password"
+                  placeholder="Digite o código fornecido"
+                  value={code}
+                  onChange={e => setCode(e.target.value)}
+                  className="pl-10 bg-secondary border-border text-foreground placeholder:text-muted-foreground h-12 text-base"
                   required
+                  autoFocus
                 />
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="username" className="text-foreground">Usuário</Label>
-              <Input
-                id="username"
-                placeholder="Seu usuário"
-                value={form.username}
-                onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
-                className="bg-secondary border-border text-foreground placeholder:text-muted-foreground"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-foreground">Senha</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Sua senha"
-                value={form.password}
-                onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                className="bg-secondary border-border text-foreground placeholder:text-muted-foreground"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="playlist" className="text-foreground">Nome da Playlist</Label>
-              <Input
-                id="playlist"
-                placeholder="Minha Lista"
-                value={form.playlistName}
-                onChange={e => setForm(f => ({ ...f, playlistName: e.target.value }))}
-                className="bg-secondary border-border text-foreground placeholder:text-muted-foreground"
-              />
             </div>
 
             {error && (
@@ -115,16 +70,16 @@ export default function Login() {
 
             <Button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || !code.trim()}
               className="w-full gradient-primary text-primary-foreground font-semibold h-12 text-base hover:opacity-90 transition-opacity"
             >
               {isLoading ? (
                 <>
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Conectando...
+                  Verificando...
                 </>
               ) : (
-                'Conectar'
+                'Acessar'
               )}
             </Button>
           </form>
