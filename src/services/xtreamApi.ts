@@ -135,6 +135,26 @@ export async function getVodInfo(accessCode: string, vodId: number): Promise<any
   return callProxy({ action: 'get_vod_info', access_code: accessCode, vod_id: vodId });
 }
 
+export interface EpgEntry {
+  id: string;
+  epg_id: string;
+  title: string;
+  lang: string;
+  start: string;
+  end: string;
+  description: string;
+  channel_id: string;
+  start_timestamp: number;
+  stop_timestamp: number;
+  now_playing?: boolean;
+  has_archive?: number;
+}
+
+export async function getShortEpg(accessCode: string, streamId: number, limit?: number): Promise<EpgEntry[]> {
+  const data = await callProxy({ action: 'get_short_epg', access_code: accessCode, stream_id: streamId, limit: limit || 4 });
+  return data?.epg_listings || [];
+}
+
 export async function getStreamUrl(accessCode: string, streamType: 'live' | 'movie' | 'series', streamId: number | string, extension?: string): Promise<string> {
   const data = await callProxy({
     action: 'get_stream_url',
