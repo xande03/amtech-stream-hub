@@ -1,59 +1,61 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { XtreamCredentials, AuthResponse, authenticate } from '@/services/xtreamApi';
+import { authenticateWithCode } from '@/services/xtreamApi';
 
 interface AuthContextType {
-  credentials: XtreamCredentials | null;
-  authData: AuthResponse | null;
+  accessCode: string | null;
+  serverInfo: any | null;
+  userInfo: any | null;
+  playlistName: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  login: (creds: XtreamCredentials) => Promise<void>;
+  login: (code: string) => Promise<void>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const STORAGE_KEY = 'amtech_credentials';
+const STORAGE_KEY = 'amtech_access_code';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [credentials, setCredentials] = useState<XtreamCredentials | null>(null);
-  const [authData, setAuthData] = useState<AuthResponse | null>(null);
+  const [accessCode, setAccessCode] = useState<string | null>(null);
+  const [serverInfo, setServerInfo] = useState<any>(null);
+  const [userInfo, setUserInfo] = useState<any>(null);
+  const [playlistName, setPlaylistName] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
-      try {
-        const creds = JSON.parse(saved) as XtreamCredentials;
-        authenticate(creds)
-          .then((data) => {
-            setCredentials(creds);
-            setAuthData(data);
-          })
-          .catch(() => {
-            localStorage.removeItem(STORAGE_KEY);
-          })
-          .finally(() => setIsLoading(false));
-      } catch {
-        localStorage.removeItem(STORAGE_KEY);
-        setIsLoading(false);
-      }
+      authenticateWithCode(saved)
+        .then((data) => {
+          setAccessCode(saved);
+          setServerInfo(data.server_info);
+          setUserInfo(data.user_info);
+          setPlaylistName(data.playlist_name);
+        })
+        .catch(() => {
+          localStorage.removeItem(STORAGE_KEY);
+        })
+        .finally(() => setIsLoading(false));
     } else {
       setIsLoading(false);
     }
   }, []);
 
-  const login = useCallback(async (creds: XtreamCredentials) => {
+  const login = useCallback(async (code: string) => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await authenticate(creds);
-      setCredentials(creds);
-      setAuthData(data);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(creds));
+      const data = await authenticateWithCode(code.trim());
+      setAccessCode(code.trim());
+      setServerInfo(data.server_info);
+      setUserInfo(data.user_info);
+      setPlaylistName(data.playlist_name);
+      localStorage.setItem(STORAGE_KEY, code.trim());
     } catch (err: any) {
-      setError(err.message || 'Erro ao conectar');
+      setError(err.message || 'Código inválido');
       throw err;
     } finally {
       setIsLoading(false);
@@ -61,16 +63,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
-    setCredentials(null);
-    setAuthData(null);
+    setAccessCode(null);
+    setServerInfo(null);
+    setUserInfo(null);
+    setPlaylistName(null);
     localStorage.removeItem(STORAGE_KEY);
   }, []);
 
   return (
     <AuthContext.Provider value={{
-      credentials,
-      authData,
-      isAuthenticated: !!credentials && !!authData,
+      accessCode,
+      serverInfo,
+      userInfo,
+      playlistName,
+      isAuthenticated: !!accessCode,
       isLoading,
       error,
       login,

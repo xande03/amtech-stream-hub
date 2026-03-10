@@ -10,7 +10,7 @@ import { motion } from 'framer-motion';
 import { Play, Tv } from 'lucide-react';
 
 export default function Home() {
-  const { credentials } = useAuth();
+  const { accessCode } = useAuth();
   const navigate = useNavigate();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { history } = useWatchHistory();
@@ -20,18 +20,18 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!credentials) return;
+    if (!accessCode) return;
     setLoading(true);
     Promise.all([
-      getLiveStreams(credentials).catch(() => []),
-      getVodStreams(credentials).catch(() => []),
-      getSeriesList(credentials).catch(() => []),
+      getLiveStreams(accessCode).catch(() => []),
+      getVodStreams(accessCode).catch(() => []),
+      getSeriesList(accessCode).catch(() => []),
     ]).then(([live, vod, ser]) => {
       setLiveStreams(live.slice(0, 20));
       setMovies(vod.slice(0, 20));
       setSeries(ser.slice(0, 20));
     }).finally(() => setLoading(false));
-  }, [credentials]);
+  }, [accessCode]);
 
   if (loading) {
     return (
@@ -45,7 +45,6 @@ export default function Home() {
 
   return (
     <div className="space-y-2">
-      {/* Hero Banner */}
       {featuredMovie && (
         <motion.div
           initial={{ opacity: 0 }}
@@ -74,7 +73,6 @@ export default function Home() {
         </motion.div>
       )}
 
-      {/* Continue Watching */}
       {history.length > 0 && (
         <ContentRow title="Continuar Assistindo">
           {history.slice(0, 10).map((item) => (
@@ -99,7 +97,6 @@ export default function Home() {
         </ContentRow>
       )}
 
-      {/* Live TV */}
       {liveStreams.length > 0 && (
         <ContentRow title="TV ao Vivo" onViewAll={() => navigate('/live')}>
           {liveStreams.map((ch) => (
@@ -117,7 +114,6 @@ export default function Home() {
         </ContentRow>
       )}
 
-      {/* Movies */}
       {movies.length > 0 && (
         <ContentRow title="Filmes Recentes" onViewAll={() => navigate('/movies')}>
           {movies.map((m) => (
@@ -135,7 +131,6 @@ export default function Home() {
         </ContentRow>
       )}
 
-      {/* Series */}
       {series.length > 0 && (
         <ContentRow title="Séries Recentes" onViewAll={() => navigate('/series')}>
           {series.map((s) => (

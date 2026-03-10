@@ -25,7 +25,7 @@ const navItems = [
 export default function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
-  const { logout, authData } = useAuth();
+  const { logout, playlistName } = useAuth();
 
   return (
     <Sidebar collapsible="icon">
@@ -50,12 +50,7 @@ export default function AppSidebar() {
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      end={item.url === '/'}
-                      className="hover:bg-sidebar-accent/50 transition-colors"
-                      activeClassName="bg-sidebar-accent text-primary font-medium"
-                    >
+                    <NavLink to={item.url} end={item.url === '/'} className="hover:bg-sidebar-accent/50 transition-colors" activeClassName="bg-sidebar-accent text-primary font-medium">
                       <item.icon className="w-5 h-5 mr-3 flex-shrink-0" />
                       {!collapsed && <span>{item.title}</span>}
                     </NavLink>
@@ -68,11 +63,9 @@ export default function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="p-3">
-        {!collapsed && authData?.user_info && (
+        {!collapsed && playlistName && (
           <div className="px-2 py-1 mb-2">
-            <p className="text-xs text-muted-foreground truncate">
-              {authData.user_info.username}
-            </p>
+            <p className="text-xs text-muted-foreground truncate">{playlistName}</p>
           </div>
         )}
         <SidebarMenu>
