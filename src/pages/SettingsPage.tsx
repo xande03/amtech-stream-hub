@@ -2,11 +2,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { Trash2, Server, Clock } from 'lucide-react';
+import { Trash2, Server, Clock, Settings as SettingsIcon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export default function SettingsPage() {
-  const { userInfo, playlistName, logout } = useAuth();
+  const { playlistName, clearConfig } = useAuth();
   const { history, clearHistory } = useWatchHistory();
+  const navigate = useNavigate();
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-2xl">
@@ -14,26 +16,17 @@ export default function SettingsPage() {
 
       <div className="bg-card rounded-xl p-5 border border-border mb-4">
         <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-4">
-          <Server className="w-5 h-5 text-primary" /> Informações
+          <Server className="w-5 h-5 text-primary" /> Playlist
         </h2>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Playlist</span>
-            <span className="text-foreground">{playlistName || '-'}</span>
+            <span className="text-muted-foreground">Nome</span>
+            <span className="text-foreground">{playlistName || 'Principal'}</span>
           </div>
-          {userInfo?.status && (
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Status</span>
-              <span className={userInfo.status === 'Active' ? 'text-accent' : 'text-destructive'}>{userInfo.status}</span>
-            </div>
-          )}
-          {userInfo?.exp_date && (
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Expiração</span>
-              <span className="text-foreground">{new Date(Number(userInfo.exp_date) * 1000).toLocaleDateString('pt-BR')}</span>
-            </div>
-          )}
         </div>
+        <Button variant="outline" size="sm" onClick={() => navigate('/admin')} className="mt-3 border-border text-foreground hover:bg-secondary">
+          <SettingsIcon className="w-4 h-4 mr-1" /> Gerenciar Playlist
+        </Button>
       </div>
 
       <div className="bg-card rounded-xl p-5 border border-border mb-4">
@@ -50,8 +43,8 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <Button onClick={logout} variant="outline" className="w-full border-destructive text-destructive hover:bg-destructive/10 mt-4">
-        Desconectar
+      <Button onClick={clearConfig} variant="outline" className="w-full border-destructive text-destructive hover:bg-destructive/10 mt-4">
+        Desconectar Playlist
       </Button>
 
       <p className="text-center text-muted-foreground text-xs mt-8">AMTECH PLAYER v1.0</p>

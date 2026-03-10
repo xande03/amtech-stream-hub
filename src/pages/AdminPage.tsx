@@ -1,29 +1,22 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { motion } from 'framer-motion';
-import { Loader2, Save, Tv, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Save, Tv, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
-interface AdminConfig {
-  id: string;
-  server_url: string;
-  username: string;
-  playlist_name: string;
-  access_code: string;
-  is_active: boolean;
-}
-
 export default function AdminPage() {
   const navigate = useNavigate();
+  const { setConfig, isConfigured } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showAccessCode, setShowAccessCode] = useState(false);
-  const [config, setConfig] = useState<AdminConfig | null>(null);
+  const [hasExisting, setHasExisting] = useState(false);
   const [form, setForm] = useState({
     server_url: '',
     username: '',
@@ -39,12 +32,11 @@ export default function AdminPage() {
   const loadConfig = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('admin-config', {
+      const { data } = await supabase.functions.invoke('admin-config', {
         body: { action: 'get_config' },
-        headers: { 'x-admin-secret': 'skip' },
       });
       if (data?.config) {
-        setConfig(data.config);
+        setHasExisting(true);
         setForm({
           server_url: data.config.server_url || '',
           username: data.config.username || '',
@@ -62,7 +54,7 @@ export default function AdminPage() {
       toast.error('Preencha todos os campos obrigatórios');
       return;
     }
-    if (!form.password && !config) {
+    if (!form.password && !hasExisting) {
       toast.error('Insira a senha do servidor');
       return;
     }
@@ -80,13 +72,15 @@ export default function AdminPage() {
             access_code: form.access_code.trim(),
           },
         },
-        headers: { 'x-admin-secret': 'skip' },
       });
       if (error) throw new Error('Erro ao salvar');
       if (data?.error) throw new Error(data.error);
 
-      setConfig(data.config);
-      toast.success('Configuração salva com sucesso!');
+      setHasExisting(true);
+      // Save access code locally and navigate to home
+      setConfig(form.access_code.trim());
+      toast.success('Playlist configurada com sucesso!');
+      navigate('/');
     } catch (err: any) {
       toast.error(err.message || 'Erro ao salvar configuração');
     } finally {
@@ -105,63 +99,68 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-2xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg gradient-primary flex items-center justify-center">
-              <Tv className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-foreground">Painel Admin</h1>
-              <p className="text-xs text-muted-foreground">Configuração da Playlist IPTV</p>
-            </div>
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center">
+            <Tv className="w-6 h-6 text-primary-foreground" />
           </div>
-          <button onClick={() => navigate('/')} className="text-sm text-muted-foreground hover:text-foreground">
-            ← Voltar
-          </button>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">AMTECH PLAYER</h1>
+            <p className="text-sm text-muted-foreground">Configure sua playlist IPTV</p>
+          </div>
         </div>
 
-        {config && (
-          <div className="bg-accent/10 border border-accent/30 rounded-lg p-3 mb-6 text-sm text-accent">
-            ✅ Playlist ativa: <strong>{config.playlist_name}</strong>
+        {isConfigured && (
+          <div className="flex items-center gap-2 bg-accent/10 border border-accent/30 rounded-lg p-3 mb-6 text-sm text-accent">
+            <CheckCircle className="w-4 h-4" />
+            <span>Playlist ativa — <button onClick={() => navigate('/')} className="underline font-medium">ir para o conteúdo</button></span>
           </div>
         )}
 
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card rounded-xl p-6 border border-border">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Credenciais Xtream Codes</h2>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-card rounded-xl p-6 border border-border">
+          <h2 className="text-lg font-semibold text-foreground mb-1">Credenciais Xtream Codes</h2>
+          <p className="text-sm text-muted-foreground mb-5">Insira os dados do servidor para carregar os conteúdos</p>
+
           <div className="space-y-4">
             <div className="space-y-2">
               <Label className="text-foreground">URL do Servidor *</Label>
               <Input placeholder="http://servidor.com:8080" value={form.server_url} onChange={e => setForm(f => ({ ...f, server_url: e.target.value }))} className="bg-secondary border-border text-foreground" />
             </div>
-            <div className="space-y-2">
-              <Label className="text-foreground">Usuário *</Label>
-              <Input placeholder="Usuário Xtream" value={form.username} onChange={e => setForm(f => ({ ...f, username: e.target.value }))} className="bg-secondary border-border text-foreground" />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-foreground">Senha *</Label>
-              <div className="relative">
-                <Input type={showPassword ? 'text' : 'password'} placeholder={config ? 'Deixe em branco para manter' : 'Senha Xtream'} value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} className="bg-secondary border-border text-foreground pr-10" />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-foreground">Usuário *</Label>
+                <Input placeholder="Usuário" value={form.username} onChange={e => setForm(f => ({ ...f, username: e.target.value }))} className="bg-secondary border-border text-foreground" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-foreground">Senha *</Label>
+                <div className="relative">
+                  <Input type={showPassword ? 'text' : 'password'} placeholder={hasExisting ? 'Manter atual' : 'Senha'} value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} className="bg-secondary border-border text-foreground pr-10" />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
             </div>
-            <div className="space-y-2">
-              <Label className="text-foreground">Nome da Playlist</Label>
-              <Input placeholder="Principal" value={form.playlist_name} onChange={e => setForm(f => ({ ...f, playlist_name: e.target.value }))} className="bg-secondary border-border text-foreground" />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-foreground">Código de Acesso (para usuários) *</Label>
-              <div className="relative">
-                <Input type={showAccessCode ? 'text' : 'password'} placeholder="Código que os usuários usarão" value={form.access_code} onChange={e => setForm(f => ({ ...f, access_code: e.target.value }))} className="bg-secondary border-border text-foreground pr-10" />
-                <button type="button" onClick={() => setShowAccessCode(!showAccessCode)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  {showAccessCode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-foreground">Nome da Playlist</Label>
+                <Input placeholder="Principal" value={form.playlist_name} onChange={e => setForm(f => ({ ...f, playlist_name: e.target.value }))} className="bg-secondary border-border text-foreground" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-foreground">Código de Acesso *</Label>
+                <div className="relative">
+                  <Input type={showAccessCode ? 'text' : 'password'} placeholder="Ex: 123" value={form.access_code} onChange={e => setForm(f => ({ ...f, access_code: e.target.value }))} className="bg-secondary border-border text-foreground pr-10" />
+                  <button type="button" onClick={() => setShowAccessCode(!showAccessCode)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    {showAccessCode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
             </div>
-            <Button onClick={handleSave} disabled={saving} className="w-full gradient-primary text-primary-foreground font-medium h-11">
-              {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-              Salvar Configuração
+
+            <Button onClick={handleSave} disabled={saving} className="w-full gradient-primary text-primary-foreground font-medium h-12 text-base mt-2">
+              {saving ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Save className="w-5 h-5 mr-2" />}
+              Salvar e Acessar
             </Button>
           </div>
         </motion.div>

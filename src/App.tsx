@@ -5,7 +5,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
-import Login from "@/pages/Login";
 import Home from "@/pages/Home";
 import LiveTV from "@/pages/LiveTV";
 import Movies from "@/pages/Movies";
@@ -20,77 +19,31 @@ import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
-  return <>{children}</>;
-}
-
 function AppRoutes() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isConfigured } = useAuth();
 
-  if (isLoading) {
+  // If no access code configured, go to admin to set up playlist
+  if (!isConfigured) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
+      <Routes>
+        <Route path="/admin" element={<AdminPage />} />
+        <Route path="*" element={<Navigate to="/admin" replace />} />
+      </Routes>
     );
   }
 
   return (
     <Routes>
-      <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <Login />} />
-      <Route path="/player/:type/:id/:ext?" element={
-        <ProtectedRoute><PlayerPage /></ProtectedRoute>
-      } />
-      <Route path="/" element={
-        <ProtectedRoute>
-          <AppLayout><Home /></AppLayout>
-        </ProtectedRoute>
-      } />
-      <Route path="/live" element={
-        <ProtectedRoute>
-          <AppLayout><LiveTV /></AppLayout>
-        </ProtectedRoute>
-      } />
-      <Route path="/movies" element={
-        <ProtectedRoute>
-          <AppLayout><Movies /></AppLayout>
-        </ProtectedRoute>
-      } />
-      <Route path="/movies/:id" element={
-        <ProtectedRoute>
-          <AppLayout><MovieDetail /></AppLayout>
-        </ProtectedRoute>
-      } />
-      <Route path="/series" element={
-        <ProtectedRoute>
-          <AppLayout><SeriesPage /></AppLayout>
-        </ProtectedRoute>
-      } />
-      <Route path="/series/:id" element={
-        <ProtectedRoute>
-          <AppLayout><SeriesDetail /></AppLayout>
-        </ProtectedRoute>
-      } />
-      <Route path="/favorites" element={
-        <ProtectedRoute>
-          <AppLayout><Favorites /></AppLayout>
-        </ProtectedRoute>
-      } />
-      <Route path="/settings" element={
-        <ProtectedRoute>
-          <AppLayout><SettingsPage /></AppLayout>
-        </ProtectedRoute>
-      } />
       <Route path="/admin" element={<AdminPage />} />
+      <Route path="/player/:type/:id/:ext?" element={<PlayerPage />} />
+      <Route path="/" element={<AppLayout><Home /></AppLayout>} />
+      <Route path="/live" element={<AppLayout><LiveTV /></AppLayout>} />
+      <Route path="/movies" element={<AppLayout><Movies /></AppLayout>} />
+      <Route path="/movies/:id" element={<AppLayout><MovieDetail /></AppLayout>} />
+      <Route path="/series" element={<AppLayout><SeriesPage /></AppLayout>} />
+      <Route path="/series/:id" element={<AppLayout><SeriesDetail /></AppLayout>} />
+      <Route path="/favorites" element={<AppLayout><Favorites /></AppLayout>} />
+      <Route path="/settings" element={<AppLayout><SettingsPage /></AppLayout>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
