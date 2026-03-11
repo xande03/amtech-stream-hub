@@ -101,10 +101,13 @@ Deno.serve(async (req) => {
         );
     }
 
+    console.log(`Fetching: ${apiUrl.replace(/password=[^&]+/, 'password=***')}`);
     const apiRes = await fetch(apiUrl);
     if (!apiRes.ok) {
+      const errText = await apiRes.text().catch(() => '');
+      console.error(`API error ${apiRes.status}: ${errText.substring(0, 200)}`);
       return new Response(
-        JSON.stringify({ error: "Erro ao consultar servidor IPTV" }),
+        JSON.stringify({ error: `Erro ao consultar servidor IPTV (${apiRes.status}). Verifique a URL do servidor.` }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
