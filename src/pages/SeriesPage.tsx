@@ -1,4 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
+
+const SEVEN_DAYS_AGO = Math.floor(Date.now() / 1000) - 7 * 24 * 60 * 60;
+function isRecentlyAdded(added?: string | number): boolean {
+  if (!added) return false;
+  const ts = Number(added);
+  if (!isNaN(ts) && ts > SEVEN_DAYS_AGO) return true;
+  const d = new Date(added).getTime() / 1000;
+  return !isNaN(d) && d > SEVEN_DAYS_AGO;
+}
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { getSeriesList, getSeriesCategories, Series as SeriesType, Category } from '@/services/xtreamApi';
