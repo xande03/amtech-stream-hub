@@ -7,6 +7,7 @@ import { useWatchHistory } from '@/hooks/useWatchHistory';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { Play, Heart, ArrowLeft, Star } from 'lucide-react';
+import { SeriesDetailSkeleton } from '@/components/LoadingSkeleton';
 
 export default function SeriesDetail() {
   const { id } = useParams<{ id: string }>();
@@ -37,7 +38,7 @@ export default function SeriesDetail() {
     navigate(`/player/series/${episode.id}/${episode.container_extension || 'mp4'}`);
   };
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+  if (loading) return <SeriesDetailSkeleton />;
   if (!seriesInfo) return <div className="text-center py-12 text-muted-foreground">Série não encontrada.<br /><button onClick={() => navigate('/series')} className="text-primary mt-4 underline">Voltar</button></div>;
 
   const { info, episodes } = seriesInfo;

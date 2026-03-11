@@ -7,6 +7,7 @@ import { useWatchHistory } from '@/hooks/useWatchHistory';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { Play, Heart, ArrowLeft, Star, Clock, Calendar } from 'lucide-react';
+import { DetailSkeleton } from '@/components/LoadingSkeleton';
 
 export default function MovieDetail() {
   const { id } = useParams<{ id: string }>();
@@ -33,7 +34,7 @@ export default function MovieDetail() {
     navigate(`/player/movie/${movie.stream_id}/${movie.container_extension || 'mp4'}`);
   };
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+  if (loading) return <DetailSkeleton />;
   if (!movie) return <div className="text-center py-12 text-muted-foreground">Filme não encontrado.<br /><button onClick={() => navigate('/movies')} className="text-primary mt-4 underline">Voltar</button></div>;
 
   const movieInfo = info?.info || movie;
