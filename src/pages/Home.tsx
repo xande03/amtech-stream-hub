@@ -15,6 +15,14 @@ function parseRating(r?: string | number): number {
   return isNaN(n) ? 0 : n;
 }
 
+const SEVEN_DAYS_AGO = Math.floor(Date.now() / 1000) - 7 * 24 * 60 * 60;
+
+function isRecentlyAdded(added?: string | number): boolean {
+  if (!added) return false;
+  const ts = Number(added);
+  return !isNaN(ts) && ts > SEVEN_DAYS_AGO;
+}
+
 export default function Home() {
   const { accessCode } = useAuth();
   const navigate = useNavigate();
