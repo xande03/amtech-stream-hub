@@ -1,6 +1,6 @@
 import { useRef, useCallback, ReactNode } from 'react';
 
-interface DraggableScrollProps {
+interface DraggableScrollProps extends React.HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
   className?: string;
 }
