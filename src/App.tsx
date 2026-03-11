@@ -45,6 +45,7 @@ function AppRoutes() {
       <Route path="/series" element={<AppLayout><SeriesPage /></AppLayout>} />
       <Route path="/series/:id" element={<AppLayout><SeriesDetail /></AppLayout>} />
       <Route path="/favorites" element={<AppLayout><Favorites /></AppLayout>} />
+      <Route path="/history" element={<AppLayout><History /></AppLayout>} />
       <Route path="/settings" element={<AppLayout><SettingsPage /></AppLayout>} />
       <Route path="*" element={<NotFound />} />
     </Routes>

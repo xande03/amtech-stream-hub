@@ -1,4 +1,4 @@
-import { Home, Tv, Film, Clapperboard, Heart } from 'lucide-react';
+import { Home, Tv, Film, Clapperboard, Heart, Clock } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
@@ -8,6 +8,7 @@ const items = [
   { path: '/movies', icon: Film, label: 'Filmes' },
   { path: '/series', icon: Clapperboard, label: 'Séries' },
   { path: '/favorites', icon: Heart, label: 'Favoritos' },
+  { path: '/history', icon: Clock, label: 'Histórico' },
 ];
 
 export default function MobileNav() {

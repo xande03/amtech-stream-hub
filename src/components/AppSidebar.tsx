@@ -51,9 +51,9 @@ export default function AppSidebar() {
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink to={item.url} end={item.url === '/'} className="hover:bg-sidebar-accent/50 transition-colors" activeClassName="bg-sidebar-accent text-primary font-medium">
-                      <item.icon className="w-5 h-5 mr-3 flex-shrink-0" />
-                      {!collapsed && <span>{item.title}</span>}
+                    <NavLink to={item.url} end={item.url === '/'} className="hover:bg-sidebar-accent/50 transition-colors py-2.5" activeClassName="bg-sidebar-accent text-primary font-medium">
+                      <item.icon className="w-6 h-6 mr-3 flex-shrink-0" />
+                      {!collapsed && <span className="text-sm font-medium">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
