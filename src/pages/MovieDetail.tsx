@@ -14,10 +14,17 @@ export default function MovieDetail() {
   const { accessCode } = useAuth();
   const navigate = useNavigate();
   const { isFavorite, toggleFavorite } = useFavorites();
-  // useWatchHistory destructured below after movie state
+  const { addToHistory, history, getResumeTime } = useWatchHistory();
   const [movie, setMovie] = useState<VodStream | null>(null);
   const [info, setInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  const formatTime = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${m}:${String(s).padStart(2, '0')}`;
+  };
 
   useEffect(() => {
     if (!accessCode || !id) return;
@@ -27,15 +34,6 @@ export default function MovieDetail() {
       getVodInfo(accessCode, Number(id)).catch(() => null),
     ]).then(([m, i]) => { setMovie(m); setInfo(i); }).finally(() => setLoading(false));
   }, [accessCode, id]);
-
-  const { addToHistory, history, getResumeTime } = useWatchHistory();
-
-  const formatTime = (seconds: number) => {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = Math.floor(seconds % 60);
-    return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${m}:${String(s).padStart(2, '0')}`;
-  };
 
   const resumeTime = movie ? getResumeTime(movie.stream_id, 'movie') : 0;
 
