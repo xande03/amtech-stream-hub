@@ -456,7 +456,42 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
             {connectionStatus === 'stable' && 'Estável'}
           </span>
         )}
-        <div className="flex gap-1">
+        <div className="flex gap-1 items-center">
+          {/* Quality selector */}
+          {qualityLevels.length > 1 && (
+            <div className="relative">
+              <button
+                onClick={() => setShowQualityMenu(v => !v)}
+                className="flex items-center gap-1 px-2 py-1.5 rounded-full bg-secondary/60 backdrop-blur-sm hover:bg-secondary transition-colors"
+                title="Qualidade"
+              >
+                <Settings className="w-4 h-4 text-foreground" />
+                <span className="text-xs font-medium text-foreground hidden sm:inline">{currentQualityLabel}</span>
+              </button>
+              {showQualityMenu && (
+                <div className="absolute top-full right-0 mt-1 bg-card/95 backdrop-blur-md border border-border rounded-lg shadow-lg overflow-hidden min-w-[140px] z-30 animate-fade-in">
+                  <button
+                    onClick={() => setQuality(-1)}
+                    className={`w-full px-4 py-2.5 text-left text-sm flex items-center justify-between hover:bg-secondary/60 transition-colors ${currentQuality === -1 ? 'text-primary font-semibold' : 'text-foreground'}`}
+                  >
+                    Auto
+                    {currentQuality === -1 && <span className="w-1.5 h-1.5 rounded-full bg-primary" />}
+                  </button>
+                  {qualityLevels.map(level => (
+                    <button
+                      key={level.index}
+                      onClick={() => setQuality(level.index)}
+                      className={`w-full px-4 py-2.5 text-left text-sm flex items-center justify-between hover:bg-secondary/60 transition-colors ${currentQuality === level.index ? 'text-primary font-semibold' : 'text-foreground'}`}
+                    >
+                      <span>{level.label}</span>
+                      <span className="text-xs text-muted-foreground">{level.height}p</span>
+                      {currentQuality === level.index && <span className="w-1.5 h-1.5 rounded-full bg-primary ml-2" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           {onNextEpisode && (
             <button onClick={onNextEpisode} className="p-2 rounded-full bg-secondary/60 backdrop-blur-sm hover:bg-secondary transition-colors" title="Próximo episódio">
               <SkipForward className="w-5 h-5 text-foreground" />
