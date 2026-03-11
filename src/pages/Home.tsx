@@ -7,7 +7,7 @@ import ContentRow from '@/components/ContentRow';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Tv, Info, ChevronLeft, ChevronRight, X, Film, Clapperboard } from 'lucide-react';
+import { Play, Tv, Info, ChevronLeft, ChevronRight, X, Film, Clapperboard, Star, ExternalLink } from 'lucide-react';
 import { PageLoadingSkeleton } from '@/components/LoadingSkeleton';
 
 function parseRating(r?: string | number): number {
@@ -96,6 +96,33 @@ export default function Home() {
     }, 6000);
     return () => clearInterval(timer);
   }, [heroItems.length]);
+
+  // Featured highlights - top rated with images and trailers
+  const featuredItems = useMemo(() => {
+    const items: Array<{
+      id: number; name: string; image: string; backdrop?: string; rating: number;
+      type: 'movie' | 'series'; genre?: string; plot?: string; trailer?: string;
+    }> = [];
+    movies
+      .filter(m => m.stream_icon && parseRating(m.rating) >= 5)
+      .sort((a, b) => parseRating(b.rating) - parseRating(a.rating))
+      .slice(0, 8)
+      .forEach(m => items.push({
+        id: m.stream_id, name: m.name, image: m.stream_icon, rating: parseRating(m.rating),
+        type: 'movie', genre: m.genre, plot: m.plot,
+      }));
+    series
+      .filter(s => s.cover && parseRating(s.rating) >= 5)
+      .sort((a, b) => parseRating(b.rating) - parseRating(a.rating))
+      .slice(0, 8)
+      .forEach(s => items.push({
+        id: s.series_id, name: s.name, image: s.cover,
+        backdrop: s.backdrop_path?.[0], rating: parseRating(s.rating),
+        type: 'series', genre: s.genre, plot: s.plot,
+        trailer: s.youtube_trailer || undefined,
+      }));
+    return items.sort((a, b) => b.rating - a.rating).slice(0, 10);
+  }, [movies, series]);
 
   // Recent movies/series (non-top-rated, for variety)
   const recentMovies = useMemo(() => movies.slice(0, 20), [movies]);
@@ -227,6 +254,64 @@ export default function Home() {
           </ContentRow>
         );
       })()}
+
+      {/* Featured Highlights */}
+      {featuredItems.length > 0 && (
+        <div className="mb-2">
+          <h3 className="text-lg font-semibold text-foreground mb-3">⭐ Destaques</h3>
+          <ContentRow title=" ">
+            {featuredItems.map((item) => (
+              <motion.div
+                key={`feat-${item.type}-${item.id}`}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-64 md:w-80 flex-shrink-0 rounded-xl overflow-hidden bg-card border border-border hover:border-primary/30 transition-colors cursor-pointer group"
+                onClick={() => navigate(item.type === 'movie' ? `/movies/${item.id}` : `/series/${item.id}`)}
+              >
+                <div className="relative aspect-video overflow-hidden bg-secondary">
+                  <img
+                    src={item.backdrop || item.image}
+                    alt={item.name}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    loading="lazy"
+                    onError={(e) => { (e.target as HTMLImageElement).src = item.image; }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent" />
+                  <div className="absolute bottom-3 left-3 right-3">
+                    <h4 className="text-sm font-bold text-foreground truncate">{item.name}</h4>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-[10px] font-bold uppercase text-primary px-1.5 py-0.5 rounded bg-primary/15">
+                        {item.type === 'movie' ? 'Filme' : 'Série'}
+                      </span>
+                      <span className="flex items-center gap-0.5 text-xs text-primary font-medium">
+                        <Star className="w-3 h-3" /> {item.rating.toFixed(1)}
+                      </span>
+                    </div>
+                  </div>
+                  {/* Play overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="w-12 h-12 rounded-full bg-primary/90 flex items-center justify-center shadow-lg">
+                      <Play className="w-5 h-5 text-primary-foreground ml-0.5" />
+                    </div>
+                  </div>
+                </div>
+                <div className="p-3">
+                  {item.genre && <p className="text-xs text-muted-foreground truncate mb-1">{item.genre}</p>}
+                  {item.plot && <p className="text-xs text-muted-foreground line-clamp-2">{item.plot}</p>}
+                  {item.trailer && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); window.open(`https://www.youtube.com/watch?v=${item.trailer}`, '_blank'); }}
+                      className="flex items-center gap-1 text-xs text-primary font-medium mt-2 hover:underline"
+                    >
+                      <ExternalLink className="w-3 h-3" /> Assistir Trailer
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </ContentRow>
+        </div>
+      )}
 
       {/* Top Movies */}
       {topMovies.length > 0 && (
