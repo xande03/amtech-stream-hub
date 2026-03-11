@@ -123,7 +123,7 @@ export default function Home() {
                 {currentHero.type === 'movie' ? 'Filme' : 'Série'}
               </span>
               {currentHero.rating && (
-                <span className="text-sm text-yellow-400 font-medium">★ {currentHero.rating}</span>
+                <span className="text-sm text-primary font-medium">★ {currentHero.rating}</span>
               )}
             </div>
             <h2 className="text-xl md:text-3xl lg:text-4xl font-bold text-foreground mb-1 line-clamp-2">{currentHero.name}</h2>
