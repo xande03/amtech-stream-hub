@@ -3,6 +3,7 @@ import { Home, Tv, Film, Clapperboard, Heart, Clock, MoreHorizontal, Settings, X
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import amtechIcon from '@/assets/amtech-icon.png';
+import GlobalSearch from '@/components/GlobalSearch';
 
 const items = [
   { path: '/', icon: Home, label: 'Início' },
