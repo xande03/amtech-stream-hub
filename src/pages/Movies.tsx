@@ -7,7 +7,7 @@ function isRecentlyAdded(added?: string | number): boolean {
   return !isNaN(ts) && ts > SEVEN_DAYS_AGO;
 }
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getVodStreams, getVodCategories, VodStream, Category } from '@/services/xtreamApi';
 import ContentCard from '@/components/ContentCard';
 import ContentRow from '@/components/ContentRow';
@@ -25,11 +25,12 @@ const PAGE_SIZE = 60;
 export default function Movies() {
   const { accessCode } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { history } = useWatchHistory();
   const [movies, setMovies] = useState<VodStream[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'all');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);

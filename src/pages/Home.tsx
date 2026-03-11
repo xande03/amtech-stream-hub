@@ -376,7 +376,7 @@ export default function Home() {
                     key={`${cat.type}-${cat.category_id}`}
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
-                    onClick={() => navigate(cat.type === 'movie' ? '/movies' : '/series')}
+                    onClick={() => navigate(cat.type === 'movie' ? `/movies?category=${cat.category_id}` : `/series?category=${cat.category_id}`)}
                     className={`relative overflow-hidden rounded-xl p-4 text-left bg-gradient-to-br ${colors[i % colors.length]} border border-border/50 hover:border-primary/30 transition-colors`}
                   >
                     <Icon className="w-5 h-5 text-primary mb-2" />
