@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { getLiveStreams, getLiveCategories, LiveStream, Category } from '@/services/xtreamApi';
 import { useFavorites } from '@/hooks/useFavorites';
+import { useWatchHistory } from '@/hooks/useWatchHistory';
 import { Input } from '@/components/ui/input';
 import { Search, Tv, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
