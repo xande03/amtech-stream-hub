@@ -40,33 +40,37 @@ export default function Home() {
     }).finally(() => setLoading(false));
   }, [accessCode]);
 
-  // Top-rated movies & series for hero and highlights
+  // Most recently added movies & series (by 'added' timestamp desc)
   const topMovies = useMemo(() =>
     [...movies]
-      .filter(m => m.stream_icon && parseRating(m.rating) > 0)
-      .sort((a, b) => parseRating(b.rating) - parseRating(a.rating))
+      .filter(m => m.stream_icon)
+      .sort((a, b) => Number(b.added || 0) - Number(a.added || 0))
       .slice(0, 30),
     [movies]
   );
 
   const topSeries = useMemo(() =>
     [...series]
-      .filter(s => s.cover && parseRating(s.rating) > 0)
-      .sort((a, b) => parseRating(b.rating) - parseRating(a.rating))
+      .filter(s => s.cover)
+      .sort((a, b) => {
+        const aTime = new Date(b.last_modified || 0).getTime();
+        const bTime = new Date(a.last_modified || 0).getTime();
+        return aTime - bTime;
+      })
       .slice(0, 30),
     [series]
   );
 
-  // Combine top movies and series for hero carousel (top 8)
+  // Combine newest movies and series for hero carousel
   const heroItems = useMemo(() => {
-    const combined: Array<{ id: number; name: string; image: string; rating: string; type: 'movie' | 'series'; genre?: string; plot?: string }> = [];
+    const combined: Array<{ id: number; name: string; image: string; rating: string; type: 'movie' | 'series'; genre?: string; plot?: string; added: number }> = [];
     topMovies.slice(0, 5).forEach(m => combined.push({
-      id: m.stream_id, name: m.name, image: m.stream_icon, rating: m.rating, type: 'movie', genre: m.genre, plot: m.plot,
+      id: m.stream_id, name: m.name, image: m.stream_icon, rating: m.rating, type: 'movie', genre: m.genre, plot: m.plot, added: Number(m.added || 0),
     }));
     topSeries.slice(0, 5).forEach(s => combined.push({
-      id: s.series_id, name: s.name, image: s.cover, rating: s.rating, type: 'series', genre: s.genre, plot: s.plot,
+      id: s.series_id, name: s.name, image: s.cover, rating: s.rating, type: 'series', genre: s.genre, plot: s.plot, added: new Date(s.last_modified || 0).getTime() / 1000,
     }));
-    return combined.sort((a, b) => parseRating(b.rating) - parseRating(a.rating)).slice(0, 8);
+    return combined.sort((a, b) => b.added - a.added).slice(0, 8);
   }, [topMovies, topSeries]);
 
   // Auto-rotate hero
