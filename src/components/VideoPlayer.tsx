@@ -6,7 +6,8 @@ import { useNavigate } from 'react-router-dom';
 interface VideoPlayerProps {
   url: string;
   title?: string;
-  onProgress?: (progress: number) => void;
+  startTime?: number;
+  onProgress?: (progress: number, currentTime?: number, duration?: number) => void;
   onStreamError?: () => void;
   onNextEpisode?: () => void;
   nextEpisodeLabel?: string;
@@ -14,7 +15,7 @@ interface VideoPlayerProps {
   isLive?: boolean;
 }
 
-export default function VideoPlayer({ url, title, onProgress, onStreamError, onNextEpisode, nextEpisodeLabel, autoPlay = true, isLive = false }: VideoPlayerProps) {
+export default function VideoPlayer({ url, title, startTime = 0, onProgress, onStreamError, onNextEpisode, nextEpisodeLabel, autoPlay = true, isLive = false }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
