@@ -254,6 +254,43 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
 
   const retry = () => { retryCountRef.current = 0; loadSource(); };
 
+  // Remote Playback API (Cast/Airplay)
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !('remote' in video)) return;
+
+    const remote = (video as any).remote;
+    remote.watchAvailability((available: boolean) => {
+      setCastAvailable(available);
+    }).catch(() => {
+      // watchAvailability not supported, show button anyway as fallback
+      setCastAvailable(true);
+    });
+
+    const onConnect = () => setIsCasting(true);
+    const onDisconnect = () => setIsCasting(false);
+    remote.addEventListener('connect', onConnect);
+    remote.addEventListener('disconnect', onDisconnect);
+
+    return () => {
+      remote.removeEventListener('connect', onConnect);
+      remote.removeEventListener('disconnect', onDisconnect);
+      remote.cancelWatchAvailability().catch(() => {});
+    };
+  }, []);
+
+  const toggleCast = async () => {
+    const video = videoRef.current;
+    if (!video) return;
+    try {
+      if ('remote' in video) {
+        await (video as any).remote.prompt();
+      }
+    } catch (e) {
+      console.warn('Remote playback not supported', e);
+    }
+  };
+
   return (
     <div ref={containerRef} className="relative bg-background w-full h-full">
       {/* Top bar */}
