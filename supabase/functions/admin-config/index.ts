@@ -19,8 +19,7 @@ Deno.serve(async (req) => {
 
     const { action, config, id, admin_password } = await req.json();
 
-    // Actions that require admin password
-    const protectedActions = ["save_config", "toggle_config", "delete_config"];
+    const protectedActions = ["save_config", "toggle_config", "delete_config", "update_config"];
     if (protectedActions.includes(action)) {
       const adminPw = Deno.env.get("ADMIN_SECRET") || "abcd123";
       if (admin_password !== adminPw) {
@@ -31,9 +30,8 @@ Deno.serve(async (req) => {
     }
 
     switch (action) {
-      // Public: get the active config (for all users)
       case "get_active_config": {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from("admin_config")
           .select("id, server_url, username, playlist_name, access_code, is_active")
           .eq("is_active", true)
@@ -46,9 +44,8 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Admin: list all playlists
       case "get_config": {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from("admin_config")
           .select("id, server_url, username, playlist_name, access_code, is_active, created_at, updated_at")
           .order("created_at", { ascending: false });
@@ -58,7 +55,6 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Admin: save new playlist
       case "save_config": {
         if (!config?.server_url || !config?.username || !config?.password || !config?.access_code) {
           return new Response(JSON.stringify({ error: "Campos obrigatórios faltando" }), {
@@ -66,12 +62,8 @@ Deno.serve(async (req) => {
           });
         }
 
-        // If this is set as active, deactivate others
         if (config.is_active !== false) {
-          await supabase
-            .from("admin_config")
-            .update({ is_active: false })
-            .eq("is_active", true);
+          await supabase.from("admin_config").update({ is_active: false }).eq("is_active", true);
         }
 
         const { data, error } = await supabase
@@ -98,7 +90,45 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Admin: toggle active/inactive
+      // NEW: update existing playlist
+      case "update_config": {
+        if (!id) {
+          return new Response(JSON.stringify({ error: "ID é obrigatório" }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" }
+          });
+        }
+
+        const updateData: Record<string, any> = {};
+        if (config?.server_url) updateData.server_url = config.server_url;
+        if (config?.username) updateData.username = config.username;
+        if (config?.password) updateData.password = config.password;
+        if (config?.playlist_name) updateData.playlist_name = config.playlist_name;
+        if (config?.access_code) updateData.access_code = config.access_code;
+
+        if (Object.keys(updateData).length === 0) {
+          return new Response(JSON.stringify({ error: "Nenhum campo para atualizar" }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" }
+          });
+        }
+
+        const { data, error } = await supabase
+          .from("admin_config")
+          .update(updateData)
+          .eq("id", id)
+          .select("id, server_url, username, playlist_name, access_code, is_active, created_at")
+          .single();
+
+        if (error) {
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" }
+          });
+        }
+
+        return new Response(JSON.stringify({ config: data }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
       case "toggle_config": {
         if (!id) {
           return new Response(JSON.stringify({ error: "ID é obrigatório" }), {
@@ -106,7 +136,6 @@ Deno.serve(async (req) => {
           });
         }
 
-        // Get current state
         const { data: current } = await supabase
           .from("admin_config")
           .select("is_active")
@@ -115,12 +144,8 @@ Deno.serve(async (req) => {
 
         const newState = !current?.is_active;
 
-        // If activating, deactivate all others first
         if (newState) {
-          await supabase
-            .from("admin_config")
-            .update({ is_active: false })
-            .eq("is_active", true);
+          await supabase.from("admin_config").update({ is_active: false }).eq("is_active", true);
         }
 
         const { data, error } = await supabase
@@ -141,7 +166,6 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Admin: delete playlist
       case "delete_config": {
         if (!id) {
           return new Response(JSON.stringify({ error: "ID é obrigatório" }), {
@@ -149,10 +173,7 @@ Deno.serve(async (req) => {
           });
         }
 
-        const { error } = await supabase
-          .from("admin_config")
-          .delete()
-          .eq("id", id);
+        const { error } = await supabase.from("admin_config").delete().eq("id", id);
 
         if (error) {
           return new Response(JSON.stringify({ error: error.message }), {
