@@ -225,6 +225,7 @@ export default function Home() {
                 title={m.name}
                 image={m.stream_icon}
                 rating={m.rating}
+                isNew={isRecentlyAdded(m.added)}
                 isFavorite={isFavorite(m.stream_id, 'movie')}
                 onFavoriteToggle={() => toggleFavorite({ id: m.stream_id, type: 'movie', name: m.name, icon: m.stream_icon })}
                 onClick={() => navigate(`/movies/${m.stream_id}`)}
