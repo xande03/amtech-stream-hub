@@ -22,8 +22,17 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const body = await req.json();
-    const { action, access_code, category_id, vod_id, series_id, stream_type, stream_id, extension } = body;
+    let params: Record<string, any>;
+    
+    if (req.method === "GET") {
+      // Support GET for stream proxy (used as video src)
+      const url = new URL(req.url);
+      params = Object.fromEntries(url.searchParams.entries());
+    } else {
+      params = await req.json();
+    }
+    
+    const { action, access_code, category_id, vod_id, series_id, stream_type, stream_id, extension } = params;
 
     const validation = await getCredentials(access_code);
     if (!validation) {
