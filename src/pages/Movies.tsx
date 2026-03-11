@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+const PAGE_SIZE = 60;
+
 export default function Movies() {
   const { accessCode } = useAuth();
   const navigate = useNavigate();
@@ -17,6 +19,7 @@ export default function Movies() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   useEffect(() => {
     if (!accessCode) return;
@@ -27,12 +30,16 @@ export default function Movies() {
     ]).then(([m, c]) => { setMovies(m); setCategories(c); }).finally(() => setLoading(false));
   }, [accessCode]);
 
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [selectedCategory, search]);
+
   const filtered = useMemo(() => {
     let result = movies;
     if (selectedCategory !== 'all') result = result.filter(m => m.category_id === selectedCategory);
     if (search) { const q = search.toLowerCase(); result = result.filter(m => m.name.toLowerCase().includes(q)); }
     return result;
   }, [movies, selectedCategory, search]);
+
+  const visible = filtered.slice(0, visibleCount);
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
 
@@ -52,13 +59,20 @@ export default function Movies() {
         </div>
       </div>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-3">
-        {filtered.map((m) => (
+        {visible.map((m) => (
           <ContentCard key={m.stream_id} title={m.name} image={m.stream_icon} rating={m.rating} subtitle={m.genre}
             isFavorite={isFavorite(m.stream_id, 'movie')}
             onFavoriteToggle={() => toggleFavorite({ id: m.stream_id, type: 'movie', name: m.name, icon: m.stream_icon })}
             onClick={() => navigate(`/movies/${m.stream_id}`)} />
         ))}
       </motion.div>
+      {visibleCount < filtered.length && (
+        <div className="flex justify-center mt-6">
+          <button onClick={() => setVisibleCount(c => c + PAGE_SIZE)} className="px-6 py-2 rounded-lg bg-primary text-primary-foreground font-medium text-sm">
+            Carregar mais ({filtered.length - visibleCount} restantes)
+          </button>
+        </div>
+      )}
       {filtered.length === 0 && <div className="text-center py-12 text-muted-foreground">Nenhum filme encontrado.</div>}
     </div>
   );

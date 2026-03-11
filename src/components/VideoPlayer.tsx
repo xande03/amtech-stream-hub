@@ -7,11 +7,12 @@ interface VideoPlayerProps {
   url: string;
   title?: string;
   onProgress?: (progress: number) => void;
+  onStreamError?: () => void;
   autoPlay?: boolean;
   isLive?: boolean;
 }
 
-export default function VideoPlayer({ url, title, onProgress, autoPlay = true, isLive = false }: VideoPlayerProps) {
+export default function VideoPlayer({ url, title, onProgress, onStreamError, autoPlay = true, isLive = false }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
