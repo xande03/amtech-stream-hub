@@ -16,6 +16,7 @@ export default function SeriesPage() {
   const { accessCode } = useAuth();
   const navigate = useNavigate();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { history } = useWatchHistory();
   const [series, setSeries] = useState<SeriesType[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
