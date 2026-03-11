@@ -6,7 +6,7 @@ import { useFavorites } from '@/hooks/useFavorites';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { Play, Heart, ArrowLeft, Star, CheckCircle2 } from 'lucide-react';
+import { Play, Heart, ArrowLeft, Star, CheckCircle2, RotateCcw } from 'lucide-react';
 import { SeriesDetailSkeleton } from '@/components/LoadingSkeleton';
 
 export default function SeriesDetail() {
