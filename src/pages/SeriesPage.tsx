@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import DraggableScroll from '@/components/DraggableScroll';
+import { GridSkeleton } from '@/components/LoadingSkeleton';
 
 const PAGE_SIZE = 60;
 
