@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { getStreamUrl } from '@/services/xtreamApi';
+import { getStreamUrl, getProxyStreamUrl } from '@/services/xtreamApi';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
 import VideoPlayer from '@/components/VideoPlayer';
 import { Loader2 } from 'lucide-react';
