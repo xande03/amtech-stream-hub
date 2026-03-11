@@ -61,17 +61,18 @@ export default function LiveTV() {
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-3 mb-6">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Buscar canais..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10 bg-secondary border-border text-foreground" />
+      <div className="flex flex-col gap-4 mb-6">
+        <div className="relative max-w-lg w-full">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+          <Input placeholder="Buscar canais..." value={search} onChange={e => setSearch(e.target.value)} className="pl-12 h-12 text-base bg-secondary border-border text-foreground rounded-xl" />
         </div>
-        <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
+
+        <DraggableScroll>
           <button onClick={() => setSelectedCategory('all')} className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors ${selectedCategory === 'all' ? 'gradient-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'}`}>Todos</button>
           {categories.map(cat => (
             <button key={cat.category_id} onClick={() => setSelectedCategory(cat.category_id)} className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors ${selectedCategory === cat.category_id ? 'gradient-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'}`}>{cat.category_name}</button>
           ))}
-        </div>
+        </DraggableScroll>
       </div>
 
       {viewMode === 'grid' ? (
