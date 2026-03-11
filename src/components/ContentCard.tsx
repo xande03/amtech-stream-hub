@@ -47,6 +47,14 @@ export default function ContentCard({
             referrerPolicy="no-referrer"
             onError={(e) => {
               const img = e.target as HTMLImageElement;
+              const src = image.trim();
+              // Retry via proxy to bypass CORS/hotlink issues
+              if (!img.dataset.retried) {
+                img.dataset.retried = '1';
+                img.src = `https://images.weserv.nl/?url=${encodeURIComponent(src)}&default=1`;
+                return;
+              }
+              // Final fallback: show title text
               img.style.display = 'none';
               const fallback = img.parentElement?.querySelector('[data-fallback]') as HTMLElement;
               if (fallback) fallback.style.display = 'flex';
