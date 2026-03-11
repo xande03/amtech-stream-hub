@@ -48,7 +48,7 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, aut
       hlsRef.current = null;
     }
 
-    const isHls = url.includes('.m3u8');
+    const isHls = url.includes('.m3u8') || isLive;
 
     if (isHls) {
       if (Hls.isSupported()) {
