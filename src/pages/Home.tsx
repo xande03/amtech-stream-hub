@@ -97,31 +97,50 @@ export default function Home() {
     return () => clearInterval(timer);
   }, [heroItems.length]);
 
-  // Featured highlights - top rated with images
+  // Featured highlights - deduplicated, recent + high-rated
   const featuredItems = useMemo(() => {
+    const seen = new Set<string>();
     const items: Array<{
       id: number; name: string; image: string; backdrop?: string; rating: number;
       type: 'movie' | 'series'; genre?: string; plot?: string; trailer?: string;
+      added: number;
     }> = [];
+
+    // Normalize name for dedup
+    const normalize = (n: string) => n.replace(/\s*\[.*?\]\s*/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+
     movies
       .filter(m => m.stream_icon)
-      .sort((a, b) => parseRating(b.rating) - parseRating(a.rating))
-      .slice(0, 8)
-      .forEach(m => items.push({
-        id: m.stream_id, name: m.name, image: m.stream_icon, rating: parseRating(m.rating),
-        type: 'movie', genre: m.genre, plot: m.plot,
-      }));
+      .forEach(m => {
+        const key = normalize(m.name);
+        if (seen.has(key)) return;
+        seen.add(key);
+        items.push({
+          id: m.stream_id, name: m.name, image: m.stream_icon, rating: parseRating(m.rating),
+          type: 'movie', genre: m.genre, plot: m.plot, added: Number(m.added || 0),
+        });
+      });
+
     series
       .filter(s => s.cover)
-      .sort((a, b) => parseRating(b.rating) - parseRating(a.rating))
-      .slice(0, 8)
-      .forEach(s => items.push({
-        id: s.series_id, name: s.name, image: s.cover,
-        backdrop: s.backdrop_path?.[0], rating: parseRating(s.rating),
-        type: 'series', genre: s.genre, plot: s.plot,
-        trailer: s.youtube_trailer || undefined,
-      }));
-    return items.sort((a, b) => b.rating - a.rating).slice(0, 10);
+      .forEach(s => {
+        const key = normalize(s.name);
+        if (seen.has(key)) return;
+        seen.add(key);
+        items.push({
+          id: s.series_id, name: s.name, image: s.cover,
+          backdrop: s.backdrop_path?.[0], rating: parseRating(s.rating),
+          type: 'series', genre: s.genre, plot: s.plot,
+          trailer: s.youtube_trailer || undefined,
+          added: new Date(s.last_modified || 0).getTime() / 1000,
+        });
+      });
+
+    // Score = rating weight + recency weight
+    return items
+      .map(item => ({ ...item, score: item.rating * 2 + (item.added > SEVEN_DAYS_AGO ? 5 : 0) }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 10);
   }, [movies, series]);
 
   // Recent movies/series (non-top-rated, for variety)
