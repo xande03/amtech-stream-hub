@@ -19,6 +19,7 @@ export default function ContentCard({
   subtitle,
   rating,
   isFavorite,
+  isNew,
   onFavoriteToggle,
   onClick,
   aspectRatio = 'portrait',
