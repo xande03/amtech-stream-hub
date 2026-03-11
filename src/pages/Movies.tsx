@@ -17,6 +17,7 @@ export default function Movies() {
   const { accessCode } = useAuth();
   const navigate = useNavigate();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { history } = useWatchHistory();
   const [movies, setMovies] = useState<VodStream[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
