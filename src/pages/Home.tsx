@@ -97,14 +97,14 @@ export default function Home() {
     return () => clearInterval(timer);
   }, [heroItems.length]);
 
-  // Featured highlights - top rated with images and trailers
+  // Featured highlights - top rated with images
   const featuredItems = useMemo(() => {
     const items: Array<{
       id: number; name: string; image: string; backdrop?: string; rating: number;
       type: 'movie' | 'series'; genre?: string; plot?: string; trailer?: string;
     }> = [];
     movies
-      .filter(m => m.stream_icon && parseRating(m.rating) >= 5)
+      .filter(m => m.stream_icon)
       .sort((a, b) => parseRating(b.rating) - parseRating(a.rating))
       .slice(0, 8)
       .forEach(m => items.push({
@@ -112,7 +112,7 @@ export default function Home() {
         type: 'movie', genre: m.genre, plot: m.plot,
       }));
     series
-      .filter(s => s.cover && parseRating(s.rating) >= 5)
+      .filter(s => s.cover)
       .sort((a, b) => parseRating(b.rating) - parseRating(a.rating))
       .slice(0, 8)
       .forEach(s => items.push({
