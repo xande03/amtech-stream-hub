@@ -70,6 +70,12 @@ export default function ContentCard({
           </button>
         )}
 
+        {isNew && (
+          <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-accent text-accent-foreground text-[10px] font-bold uppercase tracking-wider">
+            Novo
+          </div>
+        )}
+
         {rating && (
           <div className="absolute bottom-2 left-2 px-1.5 py-0.5 rounded bg-primary/80 text-primary-foreground text-xs font-medium">
             ★ {rating}
