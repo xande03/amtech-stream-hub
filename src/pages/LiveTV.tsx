@@ -7,6 +7,7 @@ import { useWatchHistory } from '@/hooks/useWatchHistory';
 import { Input } from '@/components/ui/input';
 import { Search, Tv, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { LiveTVSkeleton } from '@/components/LoadingSkeleton';
 
 const PAGE_SIZE = 60;
 
@@ -47,9 +48,7 @@ export default function LiveTV() {
 
   const visible = filtered.slice(0, visibleCount);
 
-  if (loading) {
-    return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
-  }
+  if (loading) return <LiveTVSkeleton />;
 
   return (
     <div>
