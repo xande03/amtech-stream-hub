@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, ReactNode } from 'react';
+import { useRef, useCallback, ReactNode } from 'react';
 
 interface DraggableScrollProps {
   children: ReactNode;
@@ -9,39 +9,57 @@ const DRAG_THRESHOLD = 5;
 
 export default function DraggableScroll({ children, className = '' }: DraggableScrollProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
   const startX = useRef(0);
-  const scrollLeft = useRef(0);
+  const scrollLeftStart = useRef(0);
+  const isDown = useRef(false);
   const hasDragged = useRef(false);
-  const pointerId = useRef<number | null>(null);
 
-  const onPointerDown = useCallback((e: React.PointerEvent) => {
+  const onMouseDown = useCallback((e: React.MouseEvent) => {
     const el = ref.current;
     if (!el) return;
-    pointerId.current = e.pointerId;
-    el.setPointerCapture(e.pointerId);
-    startX.current = e.clientX;
-    scrollLeft.current = el.scrollLeft;
+    isDown.current = true;
     hasDragged.current = false;
-    setIsDragging(true);
+    startX.current = e.pageX;
+    scrollLeftStart.current = el.scrollLeft;
   }, []);
 
-  const onPointerMove = useCallback((e: React.PointerEvent) => {
-    if (!isDragging || !ref.current) return;
-    const dx = e.clientX - startX.current;
+  const onMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDown.current || !ref.current) return;
+    e.preventDefault();
+    const dx = e.pageX - startX.current;
     if (Math.abs(dx) > DRAG_THRESHOLD) {
       hasDragged.current = true;
     }
-    ref.current.scrollLeft = scrollLeft.current - dx;
-  }, [isDragging]);
-
-  const onPointerUp = useCallback((e: React.PointerEvent) => {
-    setIsDragging(false);
-    ref.current?.releasePointerCapture(e.pointerId);
-    pointerId.current = null;
+    ref.current.scrollLeft = scrollLeftStart.current - dx;
   }, []);
 
-  // Block click events on children when a drag occurred
+  const onMouseUpOrLeave = useCallback(() => {
+    isDown.current = false;
+  }, []);
+
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    const el = ref.current;
+    if (!el) return;
+    isDown.current = true;
+    hasDragged.current = false;
+    startX.current = e.touches[0].pageX;
+    scrollLeftStart.current = el.scrollLeft;
+  }, []);
+
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isDown.current || !ref.current) return;
+    const dx = e.touches[0].pageX - startX.current;
+    if (Math.abs(dx) > DRAG_THRESHOLD) {
+      hasDragged.current = true;
+    }
+    ref.current.scrollLeft = scrollLeftStart.current - dx;
+  }, []);
+
+  const onTouchEnd = useCallback(() => {
+    isDown.current = false;
+  }, []);
+
+  // Only block click if user actually dragged
   const onClickCapture = useCallback((e: React.MouseEvent) => {
     if (hasDragged.current) {
       e.stopPropagation();
@@ -52,13 +70,15 @@ export default function DraggableScroll({ children, className = '' }: DraggableS
   return (
     <div
       ref={ref}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onPointerUp}
+      onMouseDown={onMouseDown}
+      onMouseMove={onMouseMove}
+      onMouseUp={onMouseUpOrLeave}
+      onMouseLeave={onMouseUpOrLeave}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
       onClickCapture={onClickCapture}
-      className={`flex gap-2 overflow-x-auto hide-scrollbar pb-1 select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'} ${className}`}
-      style={{ touchAction: 'pan-y' }}
+      className={`flex gap-2 overflow-x-auto hide-scrollbar pb-1 select-none cursor-grab active:cursor-grabbing ${className}`}
     >
       {children}
     </div>
