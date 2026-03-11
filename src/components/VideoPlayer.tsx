@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import Hls from 'hls.js';
-import { ArrowLeft, Maximize, Minimize, Volume2, VolumeX, RotateCcw, PictureInPicture2, SkipForward } from 'lucide-react';
+import { ArrowLeft, Maximize, Minimize, Volume2, VolumeX, RotateCcw, PictureInPicture2, SkipForward, Cast } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface VideoPlayerProps {
@@ -27,6 +27,8 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
   const [showNextOverlay, setShowNextOverlay] = useState(false);
   const [showSkipIntro, setShowSkipIntro] = useState(false);
   const [skipIntroDismissed, setSkipIntroDismissed] = useState(false);
+  const [isCasting, setIsCasting] = useState(false);
+  const [castAvailable, setCastAvailable] = useState(false);
   const retryCountRef = useRef(0);
   const hasResumedRef = useRef(false);
   const maxRetries = 5;
@@ -252,6 +254,43 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
 
   const retry = () => { retryCountRef.current = 0; loadSource(); };
 
+  // Remote Playback API (Cast/Airplay)
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !('remote' in video)) return;
+
+    const remote = (video as any).remote;
+    remote.watchAvailability((available: boolean) => {
+      setCastAvailable(available);
+    }).catch(() => {
+      // watchAvailability not supported, show button anyway as fallback
+      setCastAvailable(true);
+    });
+
+    const onConnect = () => setIsCasting(true);
+    const onDisconnect = () => setIsCasting(false);
+    remote.addEventListener('connect', onConnect);
+    remote.addEventListener('disconnect', onDisconnect);
+
+    return () => {
+      remote.removeEventListener('connect', onConnect);
+      remote.removeEventListener('disconnect', onDisconnect);
+      remote.cancelWatchAvailability().catch(() => {});
+    };
+  }, []);
+
+  const toggleCast = async () => {
+    const video = videoRef.current;
+    if (!video) return;
+    try {
+      if ('remote' in video) {
+        await (video as any).remote.prompt();
+      }
+    } catch (e) {
+      console.warn('Remote playback not supported', e);
+    }
+  };
+
   return (
     <div ref={containerRef} className="relative bg-background w-full h-full">
       {/* Top bar */}
@@ -274,6 +313,11 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
           <button onClick={toggleMute} className="p-2 rounded-full bg-secondary/60 backdrop-blur-sm hover:bg-secondary transition-colors">
             {muted ? <VolumeX className="w-5 h-5 text-foreground" /> : <Volume2 className="w-5 h-5 text-foreground" />}
           </button>
+          {castAvailable && (
+            <button onClick={toggleCast} className={`p-2 rounded-full backdrop-blur-sm hover:bg-secondary transition-colors ${isCasting ? 'bg-primary/60' : 'bg-secondary/60'}`} title="Espelhar para TV">
+              <Cast className="w-5 h-5 text-foreground" />
+            </button>
+          )}
           {document.pictureInPictureEnabled && (
             <button onClick={togglePip} className={`p-2 rounded-full backdrop-blur-sm hover:bg-secondary transition-colors ${isPip ? 'bg-primary/60' : 'bg-secondary/60'}`}>
               <PictureInPicture2 className="w-5 h-5 text-foreground" />
