@@ -1,12 +1,23 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { getStreamUrl } from '@/services/xtreamApi';
+import { getStreamUrl, getProxyStreamUrl } from '@/services/xtreamApi';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
 import VideoPlayer from '@/components/VideoPlayer';
 import { Loader2 } from 'lucide-react';
 
-const LIVE_EXTENSIONS = ['m3u8', 'ts'];
+// Live: try direct m3u8, then direct ts, then proxied m3u8, then proxied ts
+interface StreamAttempt {
+  ext: string;
+  proxy: boolean;
+}
+
+const LIVE_ATTEMPTS: StreamAttempt[] = [
+  { ext: 'm3u8', proxy: false },
+  { ext: 'ts', proxy: false },
+  { ext: 'm3u8', proxy: true },
+  { ext: 'ts', proxy: true },
+];
 
 export default function PlayerPage() {
   const { type, id, ext } = useParams<{ type: string; id: string; ext?: string }>();
@@ -16,7 +27,7 @@ export default function PlayerPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const triedExts = useRef<string[]>([]);
+  const attemptIndex = useRef(0);
 
   const isLive = type === 'live';
 
@@ -24,7 +35,7 @@ export default function PlayerPage() {
     if (!accessCode || !type || !id) return;
     setLoading(true);
     setError(null);
-    triedExts.current = [];
+    attemptIndex.current = 0;
 
     const streamType = type as 'live' | 'movie' | 'series';
 
@@ -44,35 +55,42 @@ export default function PlayerPage() {
       return;
     }
 
-    // For live: try m3u8 first (HLS), then ts
-    const tryExt = (index: number) => {
-      if (index >= LIVE_EXTENSIONS.length) {
-        setError('Não foi possível carregar o canal.');
-        setLoading(false);
-        return;
-      }
-      const extension = LIVE_EXTENSIONS[index];
-      triedExts.current.push(extension);
-      getStreamUrl(accessCode, streamType, id, extension)
+    // For live: try multiple approaches
+    tryNextAttempt(accessCode, streamType, id, 0);
+  }, [accessCode, type, id, ext, isLive]);
+
+  const tryNextAttempt = (code: string, streamType: 'live' | 'movie' | 'series', streamId: string, index: number) => {
+    if (index >= LIVE_ATTEMPTS.length) {
+      setError('Não foi possível carregar o canal. Tente outro canal.');
+      setLoading(false);
+      return;
+    }
+
+    const attempt = LIVE_ATTEMPTS[index];
+    attemptIndex.current = index;
+
+    if (attempt.proxy) {
+      // Use proxy URL directly (no async needed)
+      const url = getProxyStreamUrl(code, streamType, streamId, attempt.ext);
+      setStreamUrl(url);
+      setLoading(false);
+    } else {
+      getStreamUrl(code, streamType, streamId, attempt.ext)
         .then(url => {
           setStreamUrl(url);
           setLoading(false);
         })
-        .catch(() => tryExt(index + 1));
-    };
-
-    tryExt(0);
-  }, [accessCode, type, id, ext, isLive]);
+        .catch(() => tryNextAttempt(code, streamType, streamId, index + 1));
+    }
+  };
 
   const handleStreamError = () => {
     if (!isLive || !accessCode || !id) return;
-    const nextIndex = triedExts.current.length;
-    if (nextIndex < LIVE_EXTENSIONS.length) {
-      const extension = LIVE_EXTENSIONS[nextIndex];
-      triedExts.current.push(extension);
-      getStreamUrl(accessCode, type as 'live', id, extension)
-        .then(url => setStreamUrl(url))
-        .catch(() => setError('Não foi possível carregar o canal.'));
+    const nextIndex = attemptIndex.current + 1;
+    if (nextIndex < LIVE_ATTEMPTS.length) {
+      setError(null);
+      setLoading(true);
+      tryNextAttempt(accessCode, type as 'live', id, nextIndex);
     }
   };
 
