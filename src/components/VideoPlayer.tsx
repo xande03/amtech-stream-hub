@@ -313,6 +313,11 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
           <button onClick={toggleMute} className="p-2 rounded-full bg-secondary/60 backdrop-blur-sm hover:bg-secondary transition-colors">
             {muted ? <VolumeX className="w-5 h-5 text-foreground" /> : <Volume2 className="w-5 h-5 text-foreground" />}
           </button>
+          {castAvailable && (
+            <button onClick={toggleCast} className={`p-2 rounded-full backdrop-blur-sm hover:bg-secondary transition-colors ${isCasting ? 'bg-primary/60' : 'bg-secondary/60'}`} title="Espelhar para TV">
+              <Cast className="w-5 h-5 text-foreground" />
+            </button>
+          )}
           {document.pictureInPictureEnabled && (
             <button onClick={togglePip} className={`p-2 rounded-full backdrop-blur-sm hover:bg-secondary transition-colors ${isPip ? 'bg-primary/60' : 'bg-secondary/60'}`}>
               <PictureInPicture2 className="w-5 h-5 text-foreground" />
