@@ -14,6 +14,7 @@ export default function LiveTV() {
   const { accessCode } = useAuth();
   const navigate = useNavigate();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { addToHistory } = useWatchHistory();
   const [streams, setStreams] = useState<LiveStream[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
