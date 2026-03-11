@@ -28,7 +28,7 @@ export default function Home() {
   const { accessCode } = useAuth();
   const navigate = useNavigate();
   const { isFavorite, toggleFavorite } = useFavorites();
-  const { history } = useWatchHistory();
+  const { history, removeFromHistory } = useWatchHistory();
   const [liveStreams, setLiveStreams] = useState<LiveStream[]>([]);
   const [movies, setMovies] = useState<VodStream[]>([]);
   const [series, setSeries] = useState<Series[]>([]);
