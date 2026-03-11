@@ -183,6 +183,17 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
         }
       });
 
+      // When a fragment loads successfully after reconnecting, mark stable
+      if (isLive) {
+        hls.on(Hls.Events.FRAG_LOADED, () => {
+          if (connectionStatus === 'reconnecting' || connectionStatus === 'connecting') {
+            setConnectionStatus('stable');
+            if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
+            statusTimerRef.current = setTimeout(() => setConnectionStatus('idle'), 4000);
+          }
+        });
+      }
+
       // For live streams, periodically check if playback stalled and recover
       if (isLive) {
         const stallCheck = setInterval(() => {
