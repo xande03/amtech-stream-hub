@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Search, Tv, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { LiveTVSkeleton } from '@/components/LoadingSkeleton';
+import DraggableScroll from '@/components/DraggableScroll';
 
 const PAGE_SIZE = 60;
 
