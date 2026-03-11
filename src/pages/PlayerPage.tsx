@@ -166,9 +166,9 @@ export default function PlayerPage() {
     );
   }
 
-  const handleProgress = (progress: number) => {
+  const handleProgress = (progress: number, currentTime?: number, duration?: number) => {
     if (type && id && !isLive) {
-      updateProgress(id, type, progress);
+      updateProgress(id, type, progress, currentTime, duration);
     }
   };
 
