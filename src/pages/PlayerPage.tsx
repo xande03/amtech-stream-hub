@@ -11,11 +11,12 @@ interface StreamAttempt {
   proxy: boolean;
 }
 
+// Live channels: HLS first (standard IPTV delivery), then TS fallback, then proxy variants
 const LIVE_ATTEMPTS: StreamAttempt[] = [
-  { ext: 'm3u8', proxy: false },
-  { ext: 'ts', proxy: false },
-  { ext: 'm3u8', proxy: true },
-  { ext: 'ts', proxy: true },
+  { ext: 'm3u8', proxy: false },   // Direct HLS from CDN (most common)
+  { ext: 'ts', proxy: false },     // Direct MPEG-TS raw stream
+  { ext: 'm3u8', proxy: true },    // Proxied HLS (avoids CORS/mixed content)
+  { ext: 'ts', proxy: true },      // Proxied TS
 ];
 
 export default function PlayerPage() {
