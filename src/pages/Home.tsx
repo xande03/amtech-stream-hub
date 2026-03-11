@@ -8,6 +8,7 @@ import { useFavorites } from '@/hooks/useFavorites';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Tv, Info, ChevronLeft, ChevronRight } from 'lucide-react';
+import { PageLoadingSkeleton } from '@/components/LoadingSkeleton';
 
 function parseRating(r?: string | number): number {
   if (!r) return 0;
@@ -94,13 +95,7 @@ export default function Home() {
   const recentMovies = useMemo(() => movies.slice(0, 20), [movies]);
   const recentSeries = useMemo(() => series.slice(0, 20), [series]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (loading) return <PageLoadingSkeleton />;
 
   const currentHero = heroItems[heroIndex];
 

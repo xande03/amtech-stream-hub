@@ -3,6 +3,7 @@ import { Home, Tv, Film, Clapperboard, Heart, Clock, MoreHorizontal, Settings, X
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import amtechIcon from '@/assets/amtech-icon.png';
+import GlobalSearch from '@/components/GlobalSearch';
 
 const items = [
   { path: '/', icon: Home, label: 'Início' },
@@ -26,13 +27,16 @@ export default function MobileNav() {
 
   return (
     <>
-      {/* Floating menu button - top right on mobile */}
-      <button
-        onClick={() => setOpen(true)}
-        className="fixed top-3 right-3 z-40 md:hidden p-2.5 rounded-full bg-secondary/80 backdrop-blur-md border border-border/50 shadow-lg hover:bg-secondary transition-colors"
-      >
-        <MoreHorizontal className="w-5 h-5 text-foreground" />
-      </button>
+      {/* Floating buttons - top right on mobile */}
+      <div className="fixed top-3 right-3 z-40 md:hidden flex items-center gap-2">
+        <GlobalSearch />
+        <button
+          onClick={() => setOpen(true)}
+          className="p-2.5 rounded-full bg-secondary/80 backdrop-blur-md border border-border/50 shadow-lg hover:bg-secondary transition-colors"
+        >
+          <MoreHorizontal className="w-5 h-5 text-foreground" />
+        </button>
+      </div>
 
       {/* Overlay + Drawer */}
       <AnimatePresence>

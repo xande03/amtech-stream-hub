@@ -242,8 +242,9 @@ export default function SettingsPage() {
                           <Input placeholder="Minha Playlist" value={form.playlist_name} onChange={e => setForm(f => ({ ...f, playlist_name: e.target.value }))} className="bg-secondary border-border text-foreground" />
                         </div>
                         <div className="space-y-2">
-                          <Label className="text-foreground text-sm">URL do Servidor *</Label>
-                          <Input placeholder="http://servidor.com:8080" value={form.server_url} onChange={e => setForm(f => ({ ...f, server_url: e.target.value }))} className="bg-secondary border-border text-foreground" />
+                          <Label className="text-foreground text-sm">URL do Servidor ou Provedor *</Label>
+                          <Input placeholder="http://servidor.com:8080 ou nome do provedor" value={form.server_url} onChange={e => setForm(f => ({ ...f, server_url: e.target.value }))} className="bg-secondary border-border text-foreground" />
+                          <p className="text-[11px] text-muted-foreground">Insira a URL completa do servidor ou o nome do provedor</p>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-2">
