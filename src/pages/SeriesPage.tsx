@@ -9,6 +9,7 @@ import { useWatchHistory } from '@/hooks/useWatchHistory';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import { motion } from 'framer-motion';
+import DraggableScroll from '@/components/DraggableScroll';
 
 const PAGE_SIZE = 60;
 
