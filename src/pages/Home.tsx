@@ -244,6 +244,7 @@ export default function Home() {
                 title={s.name}
                 image={s.cover}
                 rating={s.rating}
+                isNew={isRecentlyAdded(s.last_modified)}
                 isFavorite={isFavorite(s.series_id, 'series')}
                 onFavoriteToggle={() => toggleFavorite({ id: s.series_id, type: 'series', name: s.name, icon: s.cover })}
                 onClick={() => navigate(`/series/${s.series_id}`)}
