@@ -110,7 +110,7 @@ export function MoviesLoadingSkeleton() {
   );
 }
 
-
+export function PageLoadingSkeleton() {
   return (
     <motion.div
       initial={{ opacity: 0 }}
