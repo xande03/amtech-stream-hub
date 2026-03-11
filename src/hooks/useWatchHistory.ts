@@ -56,5 +56,5 @@ export function useWatchHistory() {
 
   const clearHistory = useCallback(() => setHistory([]), []);
 
-  return { history, addToHistory, updateProgress, removeFromHistory, clearHistory };
+  return { history, addToHistory, updateProgress, removeFromHistory, clearHistory, getResumeTime };
 }
