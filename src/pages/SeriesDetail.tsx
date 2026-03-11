@@ -135,7 +135,6 @@ export default function SeriesDetail() {
                     {ep.info?.plot && <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{ep.info.plot}</p>}
                     {ep.info?.duration && <p className="text-xs text-muted-foreground mt-0.5">{ep.info.duration}</p>}
                   </div>
-                  </div>
                   <Play className="w-5 h-5 text-muted-foreground group-hover:text-primary flex-shrink-0 transition-colors" />
                 </div>
                 {/* Progress bar */}
