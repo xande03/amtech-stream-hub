@@ -376,7 +376,16 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
     <div ref={containerRef} className="relative bg-background w-full h-full">
       {/* Top bar */}
       <div className="absolute top-0 left-0 right-0 z-10 flex items-center gap-3 p-3 md:p-4 bg-gradient-to-b from-background/80 to-transparent">
-        <button onClick={() => navigate(-1)} className="p-2 rounded-full bg-secondary/60 backdrop-blur-sm hover:bg-secondary transition-colors">
+        <button onClick={() => {
+          // If opened in a new tab (no history), close the tab or navigate to /live
+          if (window.history.length <= 1) {
+            try { window.close(); } catch {}
+            // If window.close() didn't work (not opened via script), navigate
+            navigate('/live');
+          } else {
+            navigate(-1);
+          }
+        }} className="p-2 rounded-full bg-secondary/60 backdrop-blur-sm hover:bg-secondary transition-colors">
           <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
         {title && <h2 className="text-foreground font-medium truncate text-sm md:text-base flex-1">{title}</h2>}
