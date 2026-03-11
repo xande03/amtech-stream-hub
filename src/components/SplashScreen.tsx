@@ -111,7 +111,7 @@ export default function SplashScreen({ onFinish, minDuration = 2800 }: SplashScr
               className="text-center"
             >
               <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tight">
-                AMTECH
+                XERIFE
               </h1>
               <motion.p
                 initial={{ letterSpacing: '0em', opacity: 0 }}

@@ -65,7 +65,7 @@ export default function MobileNav() {
               {/* Header */}
               <div className="flex items-center justify-between px-5 pb-3 pt-1">
                 <div className="flex items-center gap-3">
-                  <img src={amtechIcon} alt="AMTECH" className="w-8 h-8 rounded-lg" />
+                  <img src={amtechIcon} alt="Xerife Player" className="w-8 h-8 rounded-lg" />
                   <span className="text-foreground font-bold text-base">Menu</span>
                 </div>
                 <button

@@ -44,10 +44,10 @@ export default function AppSidebar() {
       <SidebarContent>
         {/* Logo */}
         <div className={`flex items-center ${collapsed ? 'justify-center py-4 px-1' : 'gap-3 p-5'}`}>
-          <img src={amtechIcon} alt="AMTECH" className={`rounded-xl flex-shrink-0 shadow-lg shadow-primary/20 ${collapsed ? 'w-8 h-8' : 'w-11 h-11'}`} />
+          <img src={amtechIcon} alt="Xerife Player" className={`rounded-xl flex-shrink-0 shadow-lg shadow-primary/20 ${collapsed ? 'w-8 h-8' : 'w-11 h-11'}`} />
           {!collapsed && (
             <div>
-              <h1 className="text-lg font-bold tracking-tight text-foreground">AMTECH</h1>
+              <h1 className="text-lg font-bold tracking-tight text-foreground">XERIFE</h1>
               <p className="text-[11px] text-muted-foreground font-medium tracking-widest uppercase">Player</p>
             </div>
           )}
