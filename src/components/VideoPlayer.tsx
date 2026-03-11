@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import Hls from 'hls.js';
-import { ArrowLeft, Maximize, Minimize, Volume2, VolumeX, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Maximize, Minimize, Volume2, VolumeX, RotateCcw, PictureInPicture2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface VideoPlayerProps {
@@ -20,6 +20,7 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, aut
   const [error, setError] = useState<string | null>(null);
   const [muted, setMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isPip, setIsPip] = useState(false);
   const retryCountRef = useRef(0);
   const maxRetries = 5;
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -43,7 +44,6 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, aut
     setError(null);
     if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
 
-    // Cleanup previous HLS instance
     if (hlsRef.current) {
       hlsRef.current.destroy();
       hlsRef.current = null;
@@ -83,26 +83,18 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, aut
               retryCountRef.current++;
               setTimeout(() => hls.startLoad(), 2000);
             } else {
-              // Try next format via onStreamError
-              if (onStreamError) {
-                onStreamError();
-              } else {
-                setError('Erro de rede. Verifique sua conexão.');
-              }
+              if (onStreamError) onStreamError();
+              else setError('Erro de rede. Verifique sua conexão.');
             }
           } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
             hls.recoverMediaError();
           } else {
-            if (onStreamError) {
-              onStreamError();
-            } else {
-              setError('Erro ao reproduzir este conteúdo.');
-            }
+            if (onStreamError) onStreamError();
+            else setError('Erro ao reproduzir este conteúdo.');
           }
         }
       });
 
-      // Timeout: if nothing plays within 12s, try next
       errorTimerRef.current = setTimeout(() => {
         if (video.readyState < 2 && onStreamError) {
           hls.destroy();
@@ -112,7 +104,6 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, aut
       }, 12000);
 
     } else if (isHls && video.canPlayType('application/vnd.apple.mpegurl')) {
-      // Native HLS (Safari/iOS)
       video.src = url;
       video.addEventListener('loadedmetadata', () => tryPlay(video), { once: true });
       video.addEventListener('error', () => {
@@ -120,7 +111,6 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, aut
         else setError('Erro ao carregar stream.');
       }, { once: true });
     } else {
-      // Direct TS / MP4 / other formats
       video.src = url;
       video.addEventListener('loadedmetadata', () => tryPlay(video), { once: true });
       video.addEventListener('canplay', () => tryPlay(video), { once: true });
@@ -129,7 +119,6 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, aut
         else setError('Erro ao carregar o vídeo.');
       }, { once: true });
 
-      // Timeout for direct streams
       errorTimerRef.current = setTimeout(() => {
         if (video.readyState < 2 && onStreamError) {
           onStreamError();
@@ -153,6 +142,20 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, aut
     const onChange = () => setIsFullscreen(!!document.fullscreenElement);
     document.addEventListener('fullscreenchange', onChange);
     return () => document.removeEventListener('fullscreenchange', onChange);
+  }, []);
+
+  // PiP events
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const onEnter = () => setIsPip(true);
+    const onLeave = () => setIsPip(false);
+    video.addEventListener('enterpictureinpicture', onEnter);
+    video.addEventListener('leavepictureinpicture', onLeave);
+    return () => {
+      video.removeEventListener('enterpictureinpicture', onEnter);
+      video.removeEventListener('leavepictureinpicture', onLeave);
+    };
   }, []);
 
   const handleTimeUpdate = useCallback(() => {
@@ -180,6 +183,20 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, aut
     }
   };
 
+  const togglePip = async () => {
+    const video = videoRef.current;
+    if (!video) return;
+    try {
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+      } else if (document.pictureInPictureEnabled) {
+        await video.requestPictureInPicture();
+      }
+    } catch (e) {
+      console.warn('PiP not supported', e);
+    }
+  };
+
   const retry = () => {
     retryCountRef.current = 0;
     loadSource();
@@ -201,6 +218,11 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, aut
           <button onClick={toggleMute} className="p-2 rounded-full bg-secondary/60 backdrop-blur-sm hover:bg-secondary transition-colors">
             {muted ? <VolumeX className="w-5 h-5 text-foreground" /> : <Volume2 className="w-5 h-5 text-foreground" />}
           </button>
+          {document.pictureInPictureEnabled && (
+            <button onClick={togglePip} className={`p-2 rounded-full backdrop-blur-sm hover:bg-secondary transition-colors ${isPip ? 'bg-primary/60' : 'bg-secondary/60'}`}>
+              <PictureInPicture2 className="w-5 h-5 text-foreground" />
+            </button>
+          )}
           <button onClick={toggleFullscreen} className="p-2 rounded-full bg-secondary/60 backdrop-blur-sm hover:bg-secondary transition-colors">
             {isFullscreen ? <Minimize className="w-5 h-5 text-foreground" /> : <Maximize className="w-5 h-5 text-foreground" />}
           </button>
