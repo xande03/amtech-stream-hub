@@ -70,6 +70,13 @@ export default function PlayerPage() {
   }, [type, seriesId, season, episodeNum, id, accessCode, seriesName]);
 
   useEffect(() => {
+    if (id && type && !isLive) {
+      const time = getResumeTime(id, type);
+      setResumeTime(time);
+    }
+  }, [id, type, isLive, getResumeTime]);
+
+  useEffect(() => {
     if (!accessCode || !type || !id) return;
     setLoading(true);
     setError(null);
