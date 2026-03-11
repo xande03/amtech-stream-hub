@@ -92,7 +92,9 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
 
     setError(null);
     setShowNextOverlay(false);
+    if (isLive) setConnectionStatus('connecting');
     if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
+    if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
 
     if (hlsRef.current) {
       hlsRef.current.destroy();
