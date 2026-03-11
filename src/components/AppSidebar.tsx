@@ -1,6 +1,7 @@
 import { Home, Tv, Film, Clapperboard, Heart, Clock, Settings } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
+import amtechIcon from '@/assets/amtech-icon.png';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
 import {
