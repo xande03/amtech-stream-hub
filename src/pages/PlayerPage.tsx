@@ -69,12 +69,26 @@ export default function PlayerPage() {
     }).catch(() => {});
   }, [type, seriesId, season, episodeNum, id, accessCode, seriesName]);
 
+  // Ensure movie/series is added to history when player opens (covers all entry points)
   useEffect(() => {
     if (id && type && !isLive) {
       const time = getResumeTime(id, type);
       setResumeTime(time);
+
+      // Add to history if not already there (e.g. direct URL access)
+      const title = searchParams.get('name') || searchParams.get('title') || '';
+      const icon = searchParams.get('icon') || searchParams.get('cover') || '';
+      if (type === 'movie' || type === 'series') {
+        addToHistory({
+          id: Number(id) || id,
+          type: type as 'movie' | 'series',
+          name: title || (type === 'movie' ? 'Filme' : 'Série'),
+          icon,
+          ...(type === 'series' && episodeNum && season ? { episodeInfo: `S${season}E${episodeNum}` } : {}),
+        });
+      }
     }
-  }, [id, type, isLive, getResumeTime]);
+  }, [id, type, isLive, getResumeTime, searchParams, addToHistory, episodeNum, season]);
 
   useEffect(() => {
     if (!accessCode || !type || !id) return;
