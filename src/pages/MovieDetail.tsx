@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getVodInfo, getVodStreams, VodStream } from '@/services/xtreamApi';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
+import ContentCard from '@/components/ContentCard';
+import ContentRow from '@/components/ContentRow';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { Play, Heart, ArrowLeft, Star, Clock, Calendar, RotateCcw } from 'lucide-react';
@@ -16,6 +18,7 @@ export default function MovieDetail() {
   const { isFavorite, toggleFavorite } = useFavorites();
   const { addToHistory, history, getResumeTime } = useWatchHistory();
   const [movie, setMovie] = useState<VodStream | null>(null);
+  const [allMovies, setAllMovies] = useState<VodStream[]>([]);
   const [info, setInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -30,7 +33,10 @@ export default function MovieDetail() {
     if (!accessCode || !id) return;
     setLoading(true);
     Promise.all([
-      getVodStreams(accessCode).then(movies => movies.find(m => m.stream_id === Number(id)) || null),
+      getVodStreams(accessCode).then(movies => {
+        setAllMovies(movies);
+        return movies.find(m => m.stream_id === Number(id)) || null;
+      }),
       getVodInfo(accessCode, Number(id)).catch(() => null),
     ]).then(([m, i]) => { setMovie(m); setInfo(i); }).finally(() => setLoading(false));
   }, [accessCode, id]);
@@ -43,6 +49,30 @@ export default function MovieDetail() {
     const params = new URLSearchParams({ name: movie.name, icon: movie.stream_icon || '' });
     navigate(`/player/movie/${movie.stream_id}/${movie.container_extension || 'mp4'}?${params.toString()}`);
   };
+
+  // Similar movies: same category or overlapping genres
+  const similarMovies = useMemo(() => {
+    if (!movie || allMovies.length === 0) return [];
+    const movieInfo = info?.info || movie;
+    const genreStr = (movieInfo?.genre || movie?.genre || '').toLowerCase();
+    const genres = genreStr.split(',').map((g: string) => g.trim()).filter(Boolean);
+
+    return allMovies
+      .filter(m => m.stream_id !== movie.stream_id)
+      .map(m => {
+        let score = 0;
+        // Same category
+        if (m.category_id === movie.category_id) score += 3;
+        // Overlapping genres
+        const mGenre = (m.genre || '').toLowerCase();
+        genres.forEach(g => { if (mGenre.includes(g)) score += 2; });
+        return { movie: m, score };
+      })
+      .filter(s => s.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 20)
+      .map(s => s.movie);
+  }, [movie, allMovies, info]);
 
   if (loading) return <DetailSkeleton />;
   if (!movie) return <div className="text-center py-12 text-muted-foreground">Filme não encontrado.<br /><button onClick={() => navigate('/movies')} className="text-primary mt-4 underline">Voltar</button></div>;
@@ -62,7 +92,6 @@ export default function MovieDetail() {
         <div className="w-full md:w-64 flex-shrink-0">
           <div className="aspect-[2/3] rounded-xl overflow-hidden bg-secondary relative">
             {movie.stream_icon ? <img src={movie.stream_icon} alt={movie.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-muted-foreground">Sem capa</div>}
-            {/* Progress bar at bottom of poster */}
             {(() => {
               const movieProgress = history.find(h => String(h.id) === String(movie.stream_id) && h.type === 'movie');
               if (!movieProgress?.progress || movieProgress.progress <= 0) return null;
@@ -107,6 +136,24 @@ export default function MovieDetail() {
           </div>
         </div>
       </motion.div>
+
+      {/* Similar movies section */}
+      {similarMovies.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mt-10">
+          <ContentRow title="Títulos Semelhantes">
+            {similarMovies.map(m => (
+              <div key={m.stream_id} className="w-32 md:w-40 flex-shrink-0">
+                <ContentCard
+                  title={m.name}
+                  image={m.stream_icon}
+                  rating={m.rating}
+                  onClick={() => navigate(`/movies/${m.stream_id}`)}
+                />
+              </div>
+            ))}
+          </ContentRow>
+        </motion.div>
+      )}
     </div>
   );
 }
