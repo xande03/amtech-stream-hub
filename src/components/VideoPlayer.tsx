@@ -47,6 +47,9 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
   const [isCasting, setIsCasting] = useState(false);
   const [castAvailable, setCastAvailable] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'stable' | 'reconnecting' | 'idle'>('idle');
+  const [qualityLevels, setQualityLevels] = useState<QualityLevel[]>([]);
+  const [currentQuality, setCurrentQuality] = useState(-1); // -1 = Auto
+  const [showQualityMenu, setShowQualityMenu] = useState(false);
   const retryCountRef = useRef(0);
   const hasResumedRef = useRef(false);
   const maxRetries = 5;
