@@ -29,10 +29,12 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
   const [skipIntroDismissed, setSkipIntroDismissed] = useState(false);
   const [isCasting, setIsCasting] = useState(false);
   const [castAvailable, setCastAvailable] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'stable' | 'reconnecting' | 'idle'>('idle');
   const retryCountRef = useRef(0);
   const hasResumedRef = useRef(false);
   const maxRetries = 5;
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const statusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const onStreamErrorRef = useRef(onStreamError);
   onStreamErrorRef.current = onStreamError;
