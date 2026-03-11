@@ -44,9 +44,7 @@ export default function AppSidebar() {
       <SidebarContent>
         {/* Logo */}
         <div className={`flex items-center ${collapsed ? 'justify-center py-4 px-1' : 'gap-3 p-5'}`}>
-          <div className={`rounded-xl bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center flex-shrink-0 shadow-lg shadow-primary/20 ${collapsed ? 'w-8 h-8' : 'w-11 h-11'}`}>
-            <Tv className={`text-white ${collapsed ? 'w-4 h-4' : 'w-6 h-6'}`} />
-          </div>
+          <img src={amtechIcon} alt="AMTECH" className={`rounded-xl flex-shrink-0 shadow-lg shadow-primary/20 ${collapsed ? 'w-8 h-8' : 'w-11 h-11'}`} />
           {!collapsed && (
             <div>
               <h1 className="text-lg font-bold tracking-tight text-foreground">AMTECH</h1>
