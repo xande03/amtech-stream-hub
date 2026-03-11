@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import Hls from 'hls.js';
-import { ArrowLeft, Maximize, Minimize, Volume2, VolumeX, RotateCcw, PictureInPicture2, SkipForward, Cast } from 'lucide-react';
+import { ArrowLeft, Maximize, Minimize, Volume2, VolumeX, RotateCcw, PictureInPicture2, SkipForward, Cast, Wifi, WifiOff, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface VideoPlayerProps {
@@ -29,10 +29,12 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
   const [skipIntroDismissed, setSkipIntroDismissed] = useState(false);
   const [isCasting, setIsCasting] = useState(false);
   const [castAvailable, setCastAvailable] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'stable' | 'reconnecting' | 'idle'>('idle');
   const retryCountRef = useRef(0);
   const hasResumedRef = useRef(false);
   const maxRetries = 5;
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const statusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const onStreamErrorRef = useRef(onStreamError);
   onStreamErrorRef.current = onStreamError;
@@ -90,7 +92,9 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
 
     setError(null);
     setShowNextOverlay(false);
+    if (isLive) setConnectionStatus('connecting');
     if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
+    if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
 
     if (hlsRef.current) {
       hlsRef.current.destroy();
@@ -141,6 +145,11 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         retryCountRef.current = 0;
+        if (isLive) {
+          setConnectionStatus('stable');
+          // Auto-hide after 4s
+          statusTimerRef.current = setTimeout(() => setConnectionStatus('idle'), 4000);
+        }
         tryPlay(video);
       });
 
@@ -149,10 +158,13 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
           if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
             if (retryCountRef.current < maxRetries) {
               retryCountRef.current++;
+              if (isLive) setConnectionStatus('reconnecting');
               // Exponential backoff: 1s, 2s, 4s... for CDN reconnection
               const delay = Math.min(1000 * Math.pow(2, retryCountRef.current - 1), 8000);
               console.log(`[HLS] Network error, retry ${retryCountRef.current}/${maxRetries} in ${delay}ms`);
-              setTimeout(() => { if (hlsRef.current === hls) hls.startLoad(); }, delay);
+              setTimeout(() => {
+                if (hlsRef.current === hls) hls.startLoad();
+              }, delay);
             } else {
               if (onStreamErrorRef.current) onStreamErrorRef.current();
               else setError('Erro de rede. Verifique sua conexão.');
@@ -170,6 +182,20 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
           console.log('[HLS] Non-fatal network error, continuing...');
         }
       });
+
+      // When a fragment loads successfully after reconnecting, mark stable
+      if (isLive) {
+        hls.on(Hls.Events.FRAG_LOADED, () => {
+          setConnectionStatus(prev => {
+            if (prev === 'reconnecting' || prev === 'connecting') {
+              if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
+              statusTimerRef.current = setTimeout(() => setConnectionStatus('idle'), 4000);
+              return 'stable';
+            }
+            return prev;
+          });
+        });
+      }
 
       // For live streams, periodically check if playback stalled and recover
       if (isLive) {
@@ -235,6 +261,7 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
     return () => {
       if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
       if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
+      if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
     };
   }, [loadSource]);
 
@@ -356,6 +383,20 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
         {isLive && (
           <span className="px-2 py-0.5 rounded bg-destructive text-destructive-foreground text-xs font-bold uppercase tracking-wider">
             AO VIVO
+          </span>
+        )}
+        {isLive && connectionStatus !== 'idle' && (
+          <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium backdrop-blur-sm transition-all animate-fade-in ${
+            connectionStatus === 'connecting' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+            connectionStatus === 'reconnecting' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' :
+            'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+          }`}>
+            {connectionStatus === 'connecting' && <Loader2 className="w-3 h-3 animate-spin" />}
+            {connectionStatus === 'reconnecting' && <WifiOff className="w-3 h-3" />}
+            {connectionStatus === 'stable' && <Wifi className="w-3 h-3" />}
+            {connectionStatus === 'connecting' && 'Conectando...'}
+            {connectionStatus === 'reconnecting' && 'Reconectando...'}
+            {connectionStatus === 'stable' && 'Estável'}
           </span>
         )}
         <div className="flex gap-1">
