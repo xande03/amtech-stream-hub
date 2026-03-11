@@ -278,6 +278,24 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, onN
         </div>
       </div>
 
+      {/* Skip Intro button */}
+      {showSkipIntro && !skipIntroDismissed && (
+        <div className="absolute bottom-20 left-4 z-20 animate-fade-in">
+          <button
+            onClick={() => {
+              const video = videoRef.current;
+              if (video) video.currentTime = 120;
+              setShowSkipIntro(false);
+              setSkipIntroDismissed(true);
+            }}
+            className="flex items-center gap-2 px-5 py-3 rounded-xl bg-secondary/90 backdrop-blur-sm text-foreground font-medium text-sm shadow-lg border border-border hover:bg-secondary transition-colors"
+          >
+            <SkipForward className="w-4 h-4" />
+            Pular Intro
+          </button>
+        </div>
+      )}
+
       {/* Next episode overlay */}
       {showNextOverlay && onNextEpisode && (
         <div className="absolute bottom-20 right-4 z-20 animate-fade-in">
