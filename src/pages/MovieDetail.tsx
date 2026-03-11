@@ -14,7 +14,7 @@ export default function MovieDetail() {
   const { accessCode } = useAuth();
   const navigate = useNavigate();
   const { isFavorite, toggleFavorite } = useFavorites();
-  const { addToHistory } = useWatchHistory();
+  const { addToHistory, history } = useWatchHistory();
   const [movie, setMovie] = useState<VodStream | null>(null);
   const [info, setInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
