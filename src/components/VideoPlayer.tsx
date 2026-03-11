@@ -1,7 +1,24 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import Hls from 'hls.js';
-import { ArrowLeft, Maximize, Minimize, Volume2, VolumeX, RotateCcw, PictureInPicture2, SkipForward, Cast, Wifi, WifiOff, Loader2 } from 'lucide-react';
+import { ArrowLeft, Maximize, Minimize, Volume2, VolumeX, RotateCcw, PictureInPicture2, SkipForward, Cast, Wifi, WifiOff, Loader2, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+
+interface QualityLevel {
+  index: number;
+  height: number;
+  width: number;
+  bitrate: number;
+  label: string;
+}
+
+function getQualityLabel(height: number): string {
+  if (height >= 2160) return '4K';
+  if (height >= 1080) return 'FHD';
+  if (height >= 720) return 'HD';
+  if (height >= 480) return 'SD';
+  if (height >= 360) return '360p';
+  return `${height}p`;
+}
 
 interface VideoPlayerProps {
   url: string;
@@ -30,6 +47,9 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
   const [isCasting, setIsCasting] = useState(false);
   const [castAvailable, setCastAvailable] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'stable' | 'reconnecting' | 'idle'>('idle');
+  const [qualityLevels, setQualityLevels] = useState<QualityLevel[]>([]);
+  const [currentQuality, setCurrentQuality] = useState(-1); // -1 = Auto
+  const [showQualityMenu, setShowQualityMenu] = useState(false);
   const retryCountRef = useRef(0);
   const hasResumedRef = useRef(false);
   const maxRetries = 5;
@@ -145,9 +165,25 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         retryCountRef.current = 0;
+        // Extract quality levels
+        const levels: QualityLevel[] = hls.levels
+          .map((l, i) => ({
+            index: i,
+            height: l.height || 0,
+            width: l.width || 0,
+            bitrate: l.bitrate || 0,
+            label: l.height ? getQualityLabel(l.height) : `${Math.round((l.bitrate || 0) / 1000)}k`,
+          }))
+          .filter(l => l.height > 0 || l.bitrate > 0)
+          .sort((a, b) => b.height - a.height || b.bitrate - a.bitrate);
+        // Deduplicate by label
+        const seen = new Set<string>();
+        const unique = levels.filter(l => { if (seen.has(l.label)) return false; seen.add(l.label); return true; });
+        setQualityLevels(unique);
+        setCurrentQuality(-1); // Auto
+
         if (isLive) {
           setConnectionStatus('stable');
-          // Auto-hide after 4s
           statusTimerRef.current = setTimeout(() => setConnectionStatus('idle'), 4000);
         }
         tryPlay(video);
@@ -372,6 +408,18 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
     }
   };
 
+  const setQuality = (levelIndex: number) => {
+    const hls = hlsRef.current;
+    if (!hls) return;
+    hls.currentLevel = levelIndex; // -1 = auto
+    setCurrentQuality(levelIndex);
+    setShowQualityMenu(false);
+  };
+
+  const currentQualityLabel = currentQuality === -1
+    ? 'Auto'
+    : qualityLevels.find(l => l.index === currentQuality)?.label || 'Auto';
+
   return (
     <div ref={containerRef} className="relative bg-background w-full h-full">
       {/* Top bar */}
@@ -408,7 +456,42 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
             {connectionStatus === 'stable' && 'Estável'}
           </span>
         )}
-        <div className="flex gap-1">
+        <div className="flex gap-1 items-center">
+          {/* Quality selector */}
+          {qualityLevels.length > 1 && (
+            <div className="relative">
+              <button
+                onClick={() => setShowQualityMenu(v => !v)}
+                className="flex items-center gap-1 px-2 py-1.5 rounded-full bg-secondary/60 backdrop-blur-sm hover:bg-secondary transition-colors"
+                title="Qualidade"
+              >
+                <Settings className="w-4 h-4 text-foreground" />
+                <span className="text-xs font-medium text-foreground hidden sm:inline">{currentQualityLabel}</span>
+              </button>
+              {showQualityMenu && (
+                <div className="absolute top-full right-0 mt-1 bg-card/95 backdrop-blur-md border border-border rounded-lg shadow-lg overflow-hidden min-w-[140px] z-30 animate-fade-in">
+                  <button
+                    onClick={() => setQuality(-1)}
+                    className={`w-full px-4 py-2.5 text-left text-sm flex items-center justify-between hover:bg-secondary/60 transition-colors ${currentQuality === -1 ? 'text-primary font-semibold' : 'text-foreground'}`}
+                  >
+                    Auto
+                    {currentQuality === -1 && <span className="w-1.5 h-1.5 rounded-full bg-primary" />}
+                  </button>
+                  {qualityLevels.map(level => (
+                    <button
+                      key={level.index}
+                      onClick={() => setQuality(level.index)}
+                      className={`w-full px-4 py-2.5 text-left text-sm flex items-center justify-between hover:bg-secondary/60 transition-colors ${currentQuality === level.index ? 'text-primary font-semibold' : 'text-foreground'}`}
+                    >
+                      <span>{level.label}</span>
+                      <span className="text-xs text-muted-foreground">{level.height}p</span>
+                      {currentQuality === level.index && <span className="w-1.5 h-1.5 rounded-full bg-primary ml-2" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           {onNextEpisode && (
             <button onClick={onNextEpisode} className="p-2 rounded-full bg-secondary/60 backdrop-blur-sm hover:bg-secondary transition-colors" title="Próximo episódio">
               <SkipForward className="w-5 h-5 text-foreground" />
@@ -472,6 +555,11 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
             <RotateCcw className="w-4 h-4" /> Tentar novamente
           </button>
         </div>
+      )}
+
+      {/* Click overlay to close quality menu */}
+      {showQualityMenu && (
+        <div className="absolute inset-0 z-15" onClick={() => setShowQualityMenu(false)} />
       )}
 
       <video
