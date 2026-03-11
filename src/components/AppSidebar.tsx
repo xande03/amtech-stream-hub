@@ -1,4 +1,4 @@
-import { Home, Tv, Film, Clapperboard, Heart, Clock, Settings } from 'lucide-react';
+import { Home, Tv, Film, Clapperboard, Heart, Clock, Settings, Sparkles } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
 import amtechIcon from '@/assets/amtech-icon.png';
@@ -24,6 +24,7 @@ const navItems = [
   { title: 'Séries', subtitle: 'Episódios', url: '/series', icon: Clapperboard, color: 'from-violet-500 to-purple-500' },
   { title: 'Favoritos', subtitle: 'Seus favoritos', url: '/favorites', icon: Heart, color: 'from-red-500 to-rose-400', badgeKey: 'favorites' as const },
   { title: 'Histórico', subtitle: 'Assistidos', url: '/history', icon: Clock, color: 'from-emerald-500 to-green-400', badgeKey: 'history' as const },
+  { title: 'Encontrar Filme', subtitle: 'IA Assistente', url: '/finder', icon: Sparkles, color: 'from-amber-500 to-orange-500' },
   { title: 'Configurações', subtitle: 'Ajustes', url: '/settings', icon: Settings, color: 'from-slate-500 to-gray-400' },
 ];
 
@@ -44,10 +45,10 @@ export default function AppSidebar() {
       <SidebarContent>
         {/* Logo */}
         <div className={`flex items-center ${collapsed ? 'justify-center py-4 px-1' : 'gap-3 p-5'}`}>
-          <img src={amtechIcon} alt="AMTECH" className={`rounded-xl flex-shrink-0 shadow-lg shadow-primary/20 ${collapsed ? 'w-8 h-8' : 'w-11 h-11'}`} />
+          <img src={amtechIcon} alt="Xerife Player" className={`rounded-xl flex-shrink-0 shadow-lg shadow-primary/20 ${collapsed ? 'w-8 h-8' : 'w-11 h-11'}`} />
           {!collapsed && (
             <div>
-              <h1 className="text-lg font-bold tracking-tight text-foreground">AMTECH</h1>
+              <h1 className="text-lg font-bold tracking-tight text-foreground">XERIFE</h1>
               <p className="text-[11px] text-muted-foreground font-medium tracking-widest uppercase">Player</p>
             </div>
           )}

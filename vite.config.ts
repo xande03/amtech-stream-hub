@@ -42,8 +42,8 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       manifest: {
-        name: "AMTECH PLAYER",
-        short_name: "AMTECH",
+        name: "Xerife Player",
+        short_name: "Xerife",
         description: "Player IPTV profissional com suporte a canais ao vivo, filmes e séries",
         theme_color: "#0F172A",
         background_color: "#0F172A",

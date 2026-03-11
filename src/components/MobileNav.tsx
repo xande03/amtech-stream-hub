@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Home, Tv, Film, Clapperboard, Heart, Clock, MoreHorizontal, Settings, X } from 'lucide-react';
+import { Home, Tv, Film, Clapperboard, Heart, Clock, MoreHorizontal, Settings, X, Sparkles } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import amtechIcon from '@/assets/amtech-icon.png';
@@ -12,6 +12,7 @@ const items = [
   { path: '/series', icon: Clapperboard, label: 'Séries' },
   { path: '/favorites', icon: Heart, label: 'Favoritos' },
   { path: '/history', icon: Clock, label: 'Histórico' },
+  { path: '/finder', icon: Sparkles, label: 'Encontrar' },
   { path: '/settings', icon: Settings, label: 'Configurações' },
 ];
 
@@ -65,7 +66,7 @@ export default function MobileNav() {
               {/* Header */}
               <div className="flex items-center justify-between px-5 pb-3 pt-1">
                 <div className="flex items-center gap-3">
-                  <img src={amtechIcon} alt="AMTECH" className="w-8 h-8 rounded-lg" />
+                  <img src={amtechIcon} alt="Xerife Player" className="w-8 h-8 rounded-lg" />
                   <span className="text-foreground font-bold text-base">Menu</span>
                 </div>
                 <button

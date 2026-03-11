@@ -97,7 +97,7 @@ export default function SplashScreen({ onFinish, minDuration = 2800 }: SplashScr
               />
               <img
                 src={amtechIcon}
-                alt="AMTECH Player"
+                alt="Xerife Player"
                 className="relative w-24 h-24 md:w-28 md:h-28 rounded-2xl shadow-2xl"
                 style={{ boxShadow: '0 0 40px hsl(239 84% 67% / 0.3), 0 8px 32px rgba(0,0,0,0.5)' }}
               />
@@ -111,7 +111,7 @@ export default function SplashScreen({ onFinish, minDuration = 2800 }: SplashScr
               className="text-center"
             >
               <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tight">
-                AMTECH
+                XERIFE
               </h1>
               <motion.p
                 initial={{ letterSpacing: '0em', opacity: 0 }}
