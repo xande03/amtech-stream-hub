@@ -28,15 +28,6 @@ export default function PlayerPage() {
 
     const streamType = type as 'live' | 'movie' | 'series';
 
-    if (isLive) {
-      // For live: use proxy to avoid mixed content (HTTP streams on HTTPS page)
-      const ext = 'ts';
-      const proxyUrl = getProxyStreamUrl(accessCode, streamType, id, ext);
-      setStreamUrl(proxyUrl);
-      setLoading(false);
-      return;
-    }
-
     if (ext) {
       getStreamUrl(accessCode, streamType, id, ext)
         .then(url => setStreamUrl(url))
@@ -45,10 +36,32 @@ export default function PlayerPage() {
       return;
     }
 
-    getStreamUrl(accessCode, streamType, id, 'mp4')
-      .then(url => setStreamUrl(url))
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false));
+    if (!isLive) {
+      getStreamUrl(accessCode, streamType, id, 'mp4')
+        .then(url => setStreamUrl(url))
+        .catch(err => setError(err.message))
+        .finally(() => setLoading(false));
+      return;
+    }
+
+    // For live: try extensions in order
+    const tryExt = (index: number) => {
+      if (index >= LIVE_EXTENSIONS.length) {
+        setError('Não foi possível carregar o canal.');
+        setLoading(false);
+        return;
+      }
+      const extension = LIVE_EXTENSIONS[index];
+      triedExts.current.push(extension);
+      getStreamUrl(accessCode, streamType, id, extension)
+        .then(url => {
+          setStreamUrl(url);
+          setLoading(false);
+        })
+        .catch(() => tryExt(index + 1));
+    };
+
+    tryExt(0);
   }, [accessCode, type, id, ext, isLive]);
 
   // For live streams proxied through edge function, retry with m3u8 on error
