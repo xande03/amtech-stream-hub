@@ -110,7 +110,40 @@ export function MoviesLoadingSkeleton() {
   );
 }
 
-export function DetailSkeleton() {
+export function LiveTVSkeleton() {
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+      <div className="flex items-center justify-between">
+        <ShimmerBar className="h-8 w-36" />
+        <ShimmerBar className="h-8 w-24 rounded-lg" delay={0.05} />
+      </div>
+      <div className="flex flex-col md:flex-row gap-3">
+        <ShimmerBar className="h-10 w-full max-w-sm rounded-lg" delay={0.1} />
+        <div className="flex gap-2 overflow-hidden">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <ShimmerBar key={i} className="h-8 w-20 rounded-full flex-shrink-0" delay={0.12 + i * 0.04} />
+          ))}
+        </div>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+        {Array.from({ length: 15 }).map((_, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.03, duration: 0.3 }}
+            className="rounded-lg p-3 space-y-2"
+          >
+            <ShimmerBar className="aspect-square w-full rounded-md" delay={i * 0.04} />
+            <ShimmerBar className="h-3 w-3/4" delay={i * 0.04 + 0.1} />
+          </motion.div>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
       <ShimmerBar className="h-5 w-20 rounded" />
