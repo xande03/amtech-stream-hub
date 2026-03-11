@@ -15,6 +15,7 @@ import MovieDetail from "@/pages/MovieDetail";
 import SeriesDetail from "@/pages/SeriesDetail";
 import PlayerPage from "@/pages/PlayerPage";
 import Favorites from "@/pages/Favorites";
+import History from "@/pages/History";
 import SettingsPage from "@/pages/SettingsPage";
 import AdminPage from "@/pages/AdminPage";
 import NotFound from "@/pages/NotFound";
