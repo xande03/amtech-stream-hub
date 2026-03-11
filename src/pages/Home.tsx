@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { getLiveStreams, getVodStreams, getSeriesList, LiveStream, VodStream, Series } from '@/services/xtreamApi';
+import { getLiveStreams, getVodStreams, getSeriesList, getVodCategories, getSeriesCategories, LiveStream, VodStream, Series, Category } from '@/services/xtreamApi';
 import ContentCard from '@/components/ContentCard';
 import ContentRow from '@/components/ContentRow';
 import { useFavorites } from '@/hooks/useFavorites';
