@@ -198,13 +198,20 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, onN
     const video = videoRef.current;
     if (video && video.duration && !isLive) {
       const progress = (video.currentTime / video.duration) * 100;
+      const currentTime = video.currentTime;
       if (onProgressRef.current) onProgressRef.current(progress);
+      // Show skip intro in first 2 minutes (10s-120s)
+      if (!skipIntroDismissed && currentTime >= 10 && currentTime <= 120) {
+        if (!showSkipIntro) setShowSkipIntro(true);
+      } else if (showSkipIntro) {
+        setShowSkipIntro(false);
+      }
       // Show next episode overlay when near end (>90%)
       if (onNextEpisode && progress > 90 && !showNextOverlay) {
         setShowNextOverlay(true);
       }
     }
-  }, [isLive, onNextEpisode, showNextOverlay]);
+  }, [isLive, onNextEpisode, showNextOverlay, showSkipIntro, skipIntroDismissed]);
 
   // Auto-trigger next episode on video end
   useEffect(() => {
