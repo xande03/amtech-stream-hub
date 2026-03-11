@@ -27,8 +27,8 @@ function AppRoutes() {
   if (!isConfigured) {
     return (
       <Routes>
-        <Route path="/admin" element={<AdminPage />} />
-        <Route path="*" element={<Navigate to="/admin" replace />} />
+        <Route path="/settings" element={<AppLayout><SettingsPage /></AppLayout>} />
+        <Route path="*" element={<Navigate to="/settings" replace />} />
       </Routes>
     );
   }
