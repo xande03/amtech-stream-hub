@@ -6,7 +6,7 @@ import { useFavorites } from '@/hooks/useFavorites';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { Play, Heart, ArrowLeft, Star } from 'lucide-react';
+import { Play, Heart, ArrowLeft, Star, CheckCircle2 } from 'lucide-react';
 import { SeriesDetailSkeleton } from '@/components/LoadingSkeleton';
 
 export default function SeriesDetail() {
@@ -14,7 +14,7 @@ export default function SeriesDetail() {
   const { accessCode } = useAuth();
   const navigate = useNavigate();
   const { isFavorite, toggleFavorite } = useFavorites();
-  const { addToHistory } = useWatchHistory();
+  const { addToHistory, history } = useWatchHistory();
   const [seriesInfo, setSeriesInfo] = useState<SeriesInfo | null>(null);
   const [selectedSeason, setSelectedSeason] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -32,10 +32,22 @@ export default function SeriesDetail() {
       .finally(() => setLoading(false));
   }, [accessCode, id]);
 
+  const getEpisodeProgress = (episodeId: string) => {
+    const item = history.find(h => String(h.id) === String(episodeId) && h.type === 'series');
+    return item?.progress || 0;
+  };
+
   const handlePlayEpisode = (episode: Episode) => {
     if (!seriesInfo) return;
     addToHistory({ id: episode.id, type: 'series', name: seriesInfo.info.name, icon: seriesInfo.info.cover, episodeInfo: `S${episode.season}E${episode.episode_num}` });
-    navigate(`/player/series/${episode.id}/${episode.container_extension || 'mp4'}`);
+    const ext = episode.container_extension || 'mp4';
+    const params = new URLSearchParams({
+      seriesId: String(seriesInfo.info.series_id),
+      season: String(episode.season),
+      ep: String(episode.episode_num),
+      name: seriesInfo.info.name,
+    });
+    navigate(`/player/series/${episode.id}/${ext}?${params.toString()}`);
   };
 
   if (loading) return <SeriesDetailSkeleton />;
@@ -83,21 +95,39 @@ export default function SeriesDetail() {
         </div>
 
         <div className="space-y-2">
-          {currentEpisodes.map((ep) => (
-            <motion.div key={ep.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-4 p-3 rounded-lg bg-card border border-border hover:border-primary/30 transition-colors cursor-pointer group"
-              onClick={() => handlePlayEpisode(ep)}>
-              <div className="w-24 h-14 rounded-md overflow-hidden bg-secondary flex-shrink-0 flex items-center justify-center">
-                {ep.info?.movie_image ? <img src={ep.info.movie_image} alt={ep.title} className="w-full h-full object-cover" /> : <Play className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">E{ep.episode_num} — {ep.title}</p>
-                {ep.info?.plot && <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{ep.info.plot}</p>}
-                {ep.info?.duration && <p className="text-xs text-muted-foreground mt-0.5">{ep.info.duration}</p>}
-              </div>
-              <Play className="w-5 h-5 text-muted-foreground group-hover:text-primary flex-shrink-0 transition-colors" />
-            </motion.div>
-          ))}
+          {currentEpisodes.map((ep) => {
+            const progress = getEpisodeProgress(ep.id);
+            const isWatched = progress > 90;
+
+            return (
+              <motion.div key={ep.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+                className="rounded-lg bg-card border border-border hover:border-primary/30 transition-colors cursor-pointer group overflow-hidden"
+                onClick={() => handlePlayEpisode(ep)}>
+                <div className="flex items-center gap-4 p-3">
+                  <div className="w-24 h-14 rounded-md overflow-hidden bg-secondary flex-shrink-0 flex items-center justify-center relative">
+                    {ep.info?.movie_image ? <img src={ep.info.movie_image} alt={ep.title} className="w-full h-full object-cover" /> : <Play className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />}
+                    {isWatched && (
+                      <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
+                        <CheckCircle2 className="w-6 h-6 text-primary" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium truncate ${isWatched ? 'text-muted-foreground' : 'text-foreground'}`}>E{ep.episode_num} — {ep.title}</p>
+                    {ep.info?.plot && <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{ep.info.plot}</p>}
+                    {ep.info?.duration && <p className="text-xs text-muted-foreground mt-0.5">{ep.info.duration}</p>}
+                  </div>
+                  <Play className="w-5 h-5 text-muted-foreground group-hover:text-primary flex-shrink-0 transition-colors" />
+                </div>
+                {/* Progress bar */}
+                {progress > 0 && progress <= 90 && (
+                  <div className="w-full h-1 bg-secondary">
+                    <div className="h-full bg-primary rounded-r-full transition-all" style={{ width: `${progress}%` }} />
+                  </div>
+                )}
+              </motion.div>
+            );
+          })}
         </div>
         {currentEpisodes.length === 0 && <div className="text-center py-8 text-muted-foreground">Nenhum episódio encontrado nesta temporada.</div>}
       </motion.div>
