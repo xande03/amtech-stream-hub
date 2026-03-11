@@ -381,6 +381,20 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
             AO VIVO
           </span>
         )}
+        {isLive && connectionStatus !== 'idle' && (
+          <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium backdrop-blur-sm transition-all animate-fade-in ${
+            connectionStatus === 'connecting' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+            connectionStatus === 'reconnecting' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' :
+            'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+          }`}>
+            {connectionStatus === 'connecting' && <Loader2 className="w-3 h-3 animate-spin" />}
+            {connectionStatus === 'reconnecting' && <WifiOff className="w-3 h-3" />}
+            {connectionStatus === 'stable' && <Wifi className="w-3 h-3" />}
+            {connectionStatus === 'connecting' && 'Conectando...'}
+            {connectionStatus === 'reconnecting' && 'Reconectando...'}
+            {connectionStatus === 'stable' && 'Estável'}
+          </span>
+        )}
         <div className="flex gap-1">
           {onNextEpisode && (
             <button onClick={onNextEpisode} className="p-2 rounded-full bg-secondary/60 backdrop-blur-sm hover:bg-secondary transition-colors" title="Próximo episódio">
