@@ -123,10 +123,18 @@ export default function SeriesDetail() {
                       </div>
                     )}
                   </div>
-                  <div className="flex-1 min-w-0">
+                   <div className="flex-1 min-w-0">
                     <p className={`text-sm font-medium truncate ${isWatched ? 'text-muted-foreground' : 'text-foreground'}`}>E{ep.episode_num} — {ep.title}</p>
+                    {(() => {
+                      const epResume = getEpisodeResumeTime(ep.id);
+                      if (epResume > 0 && !isWatched) {
+                        return <p className="text-xs text-primary flex items-center gap-1 mt-0.5"><RotateCcw className="w-3 h-3" /> Retomar de {formatTime(epResume)}</p>;
+                      }
+                      return null;
+                    })()}
                     {ep.info?.plot && <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{ep.info.plot}</p>}
                     {ep.info?.duration && <p className="text-xs text-muted-foreground mt-0.5">{ep.info.duration}</p>}
+                  </div>
                   </div>
                   <Play className="w-5 h-5 text-muted-foreground group-hover:text-primary flex-shrink-0 transition-colors" />
                 </div>
