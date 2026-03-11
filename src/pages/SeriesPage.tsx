@@ -26,11 +26,12 @@ const PAGE_SIZE = 60;
 export default function SeriesPage() {
   const { accessCode } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { history } = useWatchHistory();
   const [series, setSeries] = useState<SeriesType[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'all');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
