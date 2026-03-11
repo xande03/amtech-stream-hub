@@ -55,7 +55,7 @@ export default function SeriesPage() {
 
   const visible = filtered.slice(0, visibleCount);
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+  if (loading) return <div><h1 className="text-2xl font-bold text-foreground mb-4">Séries</h1><GridSkeleton /></div>;
 
   const recentlyWatched = history.filter(h => h.type === 'series').slice(0, 15);
 
