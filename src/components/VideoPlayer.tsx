@@ -6,7 +6,8 @@ import { useNavigate } from 'react-router-dom';
 interface VideoPlayerProps {
   url: string;
   title?: string;
-  onProgress?: (progress: number) => void;
+  startTime?: number;
+  onProgress?: (progress: number, currentTime?: number, duration?: number) => void;
   onStreamError?: () => void;
   onNextEpisode?: () => void;
   nextEpisodeLabel?: string;
@@ -14,7 +15,7 @@ interface VideoPlayerProps {
   isLive?: boolean;
 }
 
-export default function VideoPlayer({ url, title, onProgress, onStreamError, onNextEpisode, nextEpisodeLabel, autoPlay = true, isLive = false }: VideoPlayerProps) {
+export default function VideoPlayer({ url, title, startTime = 0, onProgress, onStreamError, onNextEpisode, nextEpisodeLabel, autoPlay = true, isLive = false }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -27,6 +28,7 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, onN
   const [showSkipIntro, setShowSkipIntro] = useState(false);
   const [skipIntroDismissed, setSkipIntroDismissed] = useState(false);
   const retryCountRef = useRef(0);
+  const hasResumedRef = useRef(false);
   const maxRetries = 5;
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -64,6 +66,11 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, onN
   }, []);
 
   const tryPlay = useCallback((video: HTMLVideoElement) => {
+    // Resume from saved position
+    if (!hasResumedRef.current && startTime > 0) {
+      video.currentTime = startTime;
+      hasResumedRef.current = true;
+    }
     if (!autoPlay) return;
     const playPromise = video.play();
     if (playPromise) {
@@ -73,7 +80,7 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, onN
         video.play().catch(() => {});
       });
     }
-  }, [autoPlay]);
+  }, [autoPlay, startTime]);
 
   const loadSource = useCallback(() => {
     const video = videoRef.current;
@@ -199,7 +206,7 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, onN
     if (video && video.duration && !isLive) {
       const progress = (video.currentTime / video.duration) * 100;
       const currentTime = video.currentTime;
-      if (onProgressRef.current) onProgressRef.current(progress);
+      if (onProgressRef.current) onProgressRef.current(progress, currentTime, video.duration);
       // Show skip intro in first 2 minutes (10s-120s)
       if (!skipIntroDismissed && currentTime >= 10 && currentTime <= 120) {
         if (!showSkipIntro) setShowSkipIntro(true);

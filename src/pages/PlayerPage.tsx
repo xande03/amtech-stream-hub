@@ -22,8 +22,9 @@ export default function PlayerPage() {
   const { type, id, ext } = useParams<{ type: string; id: string; ext?: string }>();
   const [searchParams] = useSearchParams();
   const { accessCode } = useAuth();
-  const { updateProgress, addToHistory } = useWatchHistory();
+  const { updateProgress, addToHistory, getResumeTime } = useWatchHistory();
   const [streamUrl, setStreamUrl] = useState<string | null>(null);
+  const [resumeTime, setResumeTime] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -67,6 +68,13 @@ export default function PlayerPage() {
       }
     }).catch(() => {});
   }, [type, seriesId, season, episodeNum, id, accessCode, seriesName]);
+
+  useEffect(() => {
+    if (id && type && !isLive) {
+      const time = getResumeTime(id, type);
+      setResumeTime(time);
+    }
+  }, [id, type, isLive, getResumeTime]);
 
   useEffect(() => {
     if (!accessCode || !type || !id) return;
@@ -165,9 +173,9 @@ export default function PlayerPage() {
     );
   }
 
-  const handleProgress = (progress: number) => {
+  const handleProgress = (progress: number, currentTime?: number, duration?: number) => {
     if (type && id && !isLive) {
-      updateProgress(id, type, progress);
+      updateProgress(id, type, progress, currentTime, duration);
     }
   };
 
@@ -184,6 +192,7 @@ export default function PlayerPage() {
       <VideoPlayer
         url={streamUrl}
         title={displayTitle}
+        startTime={resumeTime}
         onProgress={!isLive ? handleProgress : undefined}
         onStreamError={handleStreamError}
         onNextEpisode={nextEpisode ? handleNextEpisode : undefined}
