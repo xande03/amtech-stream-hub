@@ -1,7 +1,24 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import Hls from 'hls.js';
-import { ArrowLeft, Maximize, Minimize, Volume2, VolumeX, RotateCcw, PictureInPicture2, SkipForward, Cast, Wifi, WifiOff, Loader2 } from 'lucide-react';
+import { ArrowLeft, Maximize, Minimize, Volume2, VolumeX, RotateCcw, PictureInPicture2, SkipForward, Cast, Wifi, WifiOff, Loader2, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+
+interface QualityLevel {
+  index: number;
+  height: number;
+  width: number;
+  bitrate: number;
+  label: string;
+}
+
+function getQualityLabel(height: number): string {
+  if (height >= 2160) return '4K';
+  if (height >= 1080) return 'FHD';
+  if (height >= 720) return 'HD';
+  if (height >= 480) return 'SD';
+  if (height >= 360) return '360p';
+  return `${height}p`;
+}
 
 interface VideoPlayerProps {
   url: string;
