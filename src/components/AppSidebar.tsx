@@ -14,14 +14,15 @@ import {
   SidebarFooter,
   useSidebar,
 } from '@/components/ui/sidebar';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const navItems = [
   { title: 'Home', subtitle: 'Início', url: '/', icon: Home, color: 'from-orange-500 to-amber-400' },
   { title: 'TV ao Vivo', subtitle: 'Canais', url: '/live', icon: Tv, color: 'from-indigo-500 to-blue-500' },
   { title: 'Filmes', subtitle: 'Catálogo', url: '/movies', icon: Film, color: 'from-rose-500 to-pink-500' },
   { title: 'Séries', subtitle: 'Episódios', url: '/series', icon: Clapperboard, color: 'from-violet-500 to-purple-500' },
-  { title: 'Favoritos', subtitle: 'Seus favoritos', url: '/favorites', icon: Heart, color: 'from-red-500 to-rose-400' },
-  { title: 'Histórico', subtitle: 'Assistidos', url: '/history', icon: Clock, color: 'from-emerald-500 to-green-400' },
+  { title: 'Favoritos', subtitle: 'Seus favoritos', url: '/favorites', icon: Heart, color: 'from-red-500 to-rose-400', badgeKey: 'favorites' as const },
+  { title: 'Histórico', subtitle: 'Assistidos', url: '/history', icon: Clock, color: 'from-emerald-500 to-green-400', badgeKey: 'history' as const },
   { title: 'Configurações', subtitle: 'Ajustes', url: '/settings', icon: Settings, color: 'from-slate-500 to-gray-400' },
 ];
 
@@ -32,58 +33,75 @@ export default function AppSidebar() {
   const { favorites } = useFavorites();
   const { history } = useWatchHistory();
 
+  const badgeCounts = {
+    favorites: favorites.length,
+    history: history.length,
+  };
+
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
         {/* Logo */}
-        <div className={`p-5 ${collapsed ? 'px-2 py-4' : ''}`}>
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center flex-shrink-0 shadow-lg shadow-primary/20">
-              <Tv className="w-6 h-6 text-white" />
-            </div>
-            {!collapsed && (
-              <div>
-                <h1 className="text-lg font-bold tracking-tight text-foreground">AMTECH</h1>
-                <p className="text-[11px] text-muted-foreground font-medium tracking-widest uppercase">Player</p>
-              </div>
-            )}
+        <div className={`flex items-center ${collapsed ? 'justify-center py-4 px-1' : 'gap-3 p-5'}`}>
+          <div className={`rounded-xl bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center flex-shrink-0 shadow-lg shadow-primary/20 ${collapsed ? 'w-8 h-8' : 'w-11 h-11'}`}>
+            <Tv className={`text-white ${collapsed ? 'w-4 h-4' : 'w-6 h-6'}`} />
           </div>
+          {!collapsed && (
+            <div>
+              <h1 className="text-lg font-bold tracking-tight text-foreground">AMTECH</h1>
+              <p className="text-[11px] text-muted-foreground font-medium tracking-widest uppercase">Player</p>
+            </div>
+          )}
         </div>
 
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu className="space-y-1 px-2">
+            <SidebarMenu className={`space-y-1 ${collapsed ? 'px-1' : 'px-2'}`}>
               {navItems.map((item) => {
-                const badge = item.url === '/favorites' ? favorites.length
-                  : item.url === '/history' ? history.length
-                  : 0;
+                const badge = item.badgeKey ? badgeCounts[item.badgeKey] : 0;
+
+                const linkContent = (
+                  <NavLink
+                    to={item.url}
+                    end={item.url === '/'}
+                    className={`flex items-center rounded-xl transition-all duration-200 hover:bg-sidebar-accent/60 group ${collapsed ? 'justify-center p-2' : 'gap-3 px-3 py-2.5'}`}
+                    activeClassName="bg-sidebar-accent shadow-sm"
+                  >
+                    <div className={`rounded-lg bg-gradient-to-br ${item.color} flex items-center justify-center flex-shrink-0 shadow-md transition-transform group-hover:scale-105 ${collapsed ? 'w-7 h-7' : 'w-9 h-9'}`}>
+                      <item.icon className={`text-white ${collapsed ? 'w-3.5 h-3.5' : 'w-[18px] h-[18px]'}`} />
+                    </div>
+                    {!collapsed && (
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-semibold text-sidebar-foreground">{item.title}</span>
+                          {badge > 0 && (
+                            <span className="text-[10px] font-bold bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">
+                              {badge}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-muted-foreground truncate">{item.subtitle}</p>
+                      </div>
+                    )}
+                  </NavLink>
+                );
 
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild className="h-auto p-0">
-                      <NavLink
-                        to={item.url}
-                        end={item.url === '/'}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 hover:bg-sidebar-accent/60 group"
-                        activeClassName="bg-sidebar-accent shadow-sm"
-                      >
-                        <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${item.color} flex items-center justify-center flex-shrink-0 shadow-md transition-transform group-hover:scale-105`}>
-                          <item.icon className="w-[18px] h-[18px] text-white" />
-                        </div>
-                        {!collapsed && (
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-semibold text-sidebar-foreground">{item.title}</span>
-                              {badge > 0 && (
-                                <span className="text-[10px] font-bold bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">
-                                  {badge}
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-[11px] text-muted-foreground truncate">{item.subtitle}</p>
-                          </div>
-                        )}
-                      </NavLink>
+                      {collapsed ? (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            {linkContent}
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="font-medium">
+                            {item.title}
+                            {badge > 0 && <span className="ml-1.5 text-primary">({badge})</span>}
+                          </TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        linkContent
+                      )}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );
@@ -93,7 +111,7 @@ export default function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4">
+      <SidebarFooter className="p-3">
         {!collapsed && playlistName && (
           <div className="px-3 py-2 rounded-lg bg-sidebar-accent/40">
             <p className="text-[11px] text-muted-foreground truncate">📡 {playlistName}</p>
