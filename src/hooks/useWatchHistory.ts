@@ -34,7 +34,7 @@ export function useWatchHistory() {
 
   const updateProgress = useCallback((id: number | string, type: string, progress: number) => {
     setHistory(prev => prev.map(h =>
-      h.id === id && h.type === type ? { ...h, progress, lastWatched: Date.now() } : h
+      String(h.id) === String(id) && h.type === type ? { ...h, progress, lastWatched: Date.now() } : h
     ));
   }, []);
 
