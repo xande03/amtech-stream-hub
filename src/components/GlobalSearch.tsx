@@ -33,11 +33,11 @@ export default function GlobalSearch() {
     if (!query.trim()) return [];
     const q = query.toLowerCase();
     const movieResults = movies
-      .filter(m => m.name.toLowerCase().includes(q))
+      .filter(m => (m.name || '').toLowerCase().includes(q))
       .slice(0, 8)
       .map(m => ({ id: m.stream_id, name: m.name, image: m.stream_icon, type: 'movie' as const, genre: m.genre }));
     const seriesResults = series
-      .filter(s => s.name.toLowerCase().includes(q))
+      .filter(s => (s.name || '').toLowerCase().includes(q))
       .slice(0, 8)
       .map(s => ({ id: s.series_id, name: s.name, image: s.cover, type: 'series' as const, genre: s.genre }));
     return [...movieResults, ...seriesResults].slice(0, 12);
