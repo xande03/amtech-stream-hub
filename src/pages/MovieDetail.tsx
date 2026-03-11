@@ -53,6 +53,18 @@ export default function MovieDetail() {
           <div className="aspect-[2/3] rounded-xl overflow-hidden bg-secondary">
             {movie.stream_icon ? <img src={movie.stream_icon} alt={movie.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-muted-foreground">Sem capa</div>}
           </div>
+          {(() => {
+            const movieProgress = history.find(h => String(h.id) === String(movie.stream_id) && h.type === 'movie');
+            if (!movieProgress?.progress || movieProgress.progress <= 0) return null;
+            return (
+              <div className="mt-2">
+                <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
+                  <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${movieProgress.progress}%` }} />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">{Math.round(movieProgress.progress)}% assistido</p>
+              </div>
+            );
+          })()}
         </div>
         <div className="flex-1 space-y-4">
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">{movie.name}</h1>
