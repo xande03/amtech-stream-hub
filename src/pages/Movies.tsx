@@ -1,4 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
+
+const SEVEN_DAYS_AGO = Math.floor(Date.now() / 1000) - 7 * 24 * 60 * 60;
+function isRecentlyAdded(added?: string | number): boolean {
+  if (!added) return false;
+  const ts = Number(added);
+  return !isNaN(ts) && ts > SEVEN_DAYS_AGO;
+}
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { getVodStreams, getVodCategories, VodStream, Category } from '@/services/xtreamApi';
