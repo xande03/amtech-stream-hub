@@ -29,16 +29,12 @@ function saveHistory(items: WatchHistoryItem[]) {
 export function useWatchHistory() {
   const [history, setHistory] = useState<WatchHistoryItem[]>(loadHistory);
 
-  // Sync from localStorage on focus (for cross-tab / cross-component sync)
+  // Sync from localStorage on mount and on window focus (cross-component sync)
   useEffect(() => {
+    setHistory(loadHistory());
     const onFocus = () => setHistory(loadHistory());
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
-  }, []);
-
-  // Also re-read on mount to catch changes from other hook instances
-  useEffect(() => {
-    setHistory(loadHistory());
   }, []);
 
   const addToHistory = useCallback((item: Omit<WatchHistoryItem, 'lastWatched'>) => {
