@@ -110,6 +110,85 @@ export function MoviesLoadingSkeleton() {
   );
 }
 
+export function DetailSkeleton() {
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+      <ShimmerBar className="h-5 w-20 rounded" />
+      <div className="flex flex-col md:flex-row gap-6">
+        <div className="w-full md:w-64 flex-shrink-0">
+          <ShimmerBar className="aspect-[2/3] w-full rounded-xl" />
+        </div>
+        <div className="flex-1 space-y-4">
+          <ShimmerBar className="h-8 w-3/4 rounded" delay={0.05} />
+          <div className="flex gap-3">
+            <ShimmerBar className="h-5 w-16 rounded" delay={0.1} />
+            <ShimmerBar className="h-5 w-20 rounded" delay={0.12} />
+            <ShimmerBar className="h-5 w-24 rounded" delay={0.14} />
+          </div>
+          <div className="flex gap-2">
+            <ShimmerBar className="h-7 w-16 rounded-full" delay={0.16} />
+            <ShimmerBar className="h-7 w-20 rounded-full" delay={0.18} />
+            <ShimmerBar className="h-7 w-14 rounded-full" delay={0.2} />
+          </div>
+          <ShimmerBar className="h-4 w-full rounded" delay={0.22} />
+          <ShimmerBar className="h-4 w-5/6 rounded" delay={0.24} />
+          <ShimmerBar className="h-4 w-2/3 rounded" delay={0.26} />
+          <ShimmerBar className="h-5 w-full rounded" delay={0.28} />
+          <ShimmerBar className="h-5 w-4/5 rounded" delay={0.3} />
+          <div className="flex gap-3 pt-2">
+            <ShimmerBar className="h-10 w-32 rounded-lg" delay={0.32} />
+            <ShimmerBar className="h-10 w-28 rounded-lg" delay={0.34} />
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+export function SeriesDetailSkeleton() {
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+      <ShimmerBar className="h-5 w-20 rounded" />
+      <div className="flex flex-col md:flex-row gap-6">
+        <div className="w-full md:w-64 flex-shrink-0">
+          <ShimmerBar className="aspect-[2/3] w-full rounded-xl" />
+        </div>
+        <div className="flex-1 space-y-4">
+          <ShimmerBar className="h-8 w-3/4 rounded" delay={0.05} />
+          <div className="flex gap-3">
+            <ShimmerBar className="h-5 w-16 rounded" delay={0.1} />
+            <ShimmerBar className="h-5 w-20 rounded" delay={0.12} />
+          </div>
+          <ShimmerBar className="h-4 w-full rounded" delay={0.18} />
+          <ShimmerBar className="h-4 w-4/5 rounded" delay={0.2} />
+          <div className="flex gap-3 pt-2">
+            <ShimmerBar className="h-10 w-28 rounded-lg" delay={0.24} />
+            <ShimmerBar className="h-10 w-28 rounded-lg" delay={0.26} />
+          </div>
+        </div>
+      </div>
+      {/* Season tabs */}
+      <div className="flex gap-2 pt-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <ShimmerBar key={i} className="h-9 w-28 rounded-lg" delay={0.3 + i * 0.04} />
+        ))}
+      </div>
+      {/* Episode list */}
+      <div className="space-y-3 pt-2">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-3">
+            <ShimmerBar className="w-10 h-10 rounded-lg flex-shrink-0" delay={0.46 + i * 0.04} />
+            <div className="flex-1 space-y-2">
+              <ShimmerBar className="h-4 w-2/3 rounded" delay={0.48 + i * 0.04} />
+              <ShimmerBar className="h-3 w-1/3 rounded" delay={0.5 + i * 0.04} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
 export function PageLoadingSkeleton() {
   return (
     <motion.div
