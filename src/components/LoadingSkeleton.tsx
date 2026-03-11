@@ -143,7 +143,7 @@ export function LiveTVSkeleton() {
   );
 }
 
-
+export function DetailSkeleton() {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
       <ShimmerBar className="h-5 w-20 rounded" />
