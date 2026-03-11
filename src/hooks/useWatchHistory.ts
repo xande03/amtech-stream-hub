@@ -48,10 +48,16 @@ export function useWatchHistory() {
 
   const updateProgress = useCallback((id: number | string, type: string, progress: number, currentTime?: number, duration?: number) => {
     setHistory(prev => {
-      // If item doesn't exist yet, read fresh from localStorage (it may have been added by another component)
-      let current = prev;
+      // Always read fresh from localStorage to catch items added by other components
+      let current = loadHistory();
+      // If item not found anywhere, skip (will be added by addToHistory later)
       if (!current.some(h => String(h.id) === String(id) && h.type === type)) {
-        current = loadHistory();
+        // Also check prev state
+        if (prev.some(h => String(h.id) === String(id) && h.type === type)) {
+          current = prev;
+        } else {
+          return prev;
+        }
       }
       const next = current.map(h =>
         String(h.id) === String(id) && h.type === type

@@ -40,7 +40,8 @@ export default function MovieDetail() {
   const handlePlay = () => {
     if (!movie) return;
     addToHistory({ id: movie.stream_id, type: 'movie', name: movie.name, icon: movie.stream_icon });
-    navigate(`/player/movie/${movie.stream_id}/${movie.container_extension || 'mp4'}`);
+    const params = new URLSearchParams({ name: movie.name, icon: movie.stream_icon || '' });
+    navigate(`/player/movie/${movie.stream_id}/${movie.container_extension || 'mp4'}?${params.toString()}`);
   };
 
   if (loading) return <DetailSkeleton />;
