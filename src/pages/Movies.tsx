@@ -1,4 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
+
+const SEVEN_DAYS_AGO = Math.floor(Date.now() / 1000) - 7 * 24 * 60 * 60;
+function isRecentlyAdded(added?: string | number): boolean {
+  if (!added) return false;
+  const ts = Number(added);
+  return !isNaN(ts) && ts > SEVEN_DAYS_AGO;
+}
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { getVodStreams, getVodCategories, VodStream, Category } from '@/services/xtreamApi';
@@ -105,6 +112,7 @@ export default function Movies() {
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-3">
         {visible.map((m) => (
           <ContentCard key={m.stream_id} title={m.name} image={m.stream_icon} rating={m.rating} subtitle={m.genre}
+            isNew={isRecentlyAdded(m.added)}
             isFavorite={isFavorite(m.stream_id, 'movie')}
             onFavoriteToggle={() => toggleFavorite({ id: m.stream_id, type: 'movie', name: m.name, icon: m.stream_icon })}
             onClick={() => navigate(`/movies/${m.stream_id}`)} />

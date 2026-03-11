@@ -15,6 +15,14 @@ function parseRating(r?: string | number): number {
   return isNaN(n) ? 0 : n;
 }
 
+const SEVEN_DAYS_AGO = Math.floor(Date.now() / 1000) - 7 * 24 * 60 * 60;
+
+function isRecentlyAdded(added?: string | number): boolean {
+  if (!added) return false;
+  const ts = Number(added);
+  return !isNaN(ts) && ts > SEVEN_DAYS_AGO;
+}
+
 export default function Home() {
   const { accessCode } = useAuth();
   const navigate = useNavigate();
@@ -217,6 +225,7 @@ export default function Home() {
                 title={m.name}
                 image={m.stream_icon}
                 rating={m.rating}
+                isNew={isRecentlyAdded(m.added)}
                 isFavorite={isFavorite(m.stream_id, 'movie')}
                 onFavoriteToggle={() => toggleFavorite({ id: m.stream_id, type: 'movie', name: m.name, icon: m.stream_icon })}
                 onClick={() => navigate(`/movies/${m.stream_id}`)}
@@ -235,6 +244,7 @@ export default function Home() {
                 title={s.name}
                 image={s.cover}
                 rating={s.rating}
+                isNew={isRecentlyAdded(s.last_modified)}
                 isFavorite={isFavorite(s.series_id, 'series')}
                 onFavoriteToggle={() => toggleFavorite({ id: s.series_id, type: 'series', name: s.name, icon: s.cover })}
                 onClick={() => navigate(`/series/${s.series_id}`)}

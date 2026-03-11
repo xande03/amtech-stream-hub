@@ -7,6 +7,7 @@ interface ContentCardProps {
   subtitle?: string;
   rating?: string | number;
   isFavorite?: boolean;
+  isNew?: boolean;
   onFavoriteToggle?: () => void;
   onClick?: () => void;
   aspectRatio?: 'portrait' | 'landscape' | 'square';
@@ -18,6 +19,7 @@ export default function ContentCard({
   subtitle,
   rating,
   isFavorite,
+  isNew,
   onFavoriteToggle,
   onClick,
   aspectRatio = 'portrait',
@@ -66,6 +68,12 @@ export default function ContentCard({
               className={`w-4 h-4 ${isFavorite ? 'fill-destructive text-destructive' : 'text-foreground'}`}
             />
           </button>
+        )}
+
+        {isNew && (
+          <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-accent text-accent-foreground text-[10px] font-bold uppercase tracking-wider">
+            Novo
+          </div>
         )}
 
         {rating && (
