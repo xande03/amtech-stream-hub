@@ -6,6 +6,8 @@ export interface WatchHistoryItem {
   name: string;
   icon?: string;
   progress?: number; // 0-100
+  currentTime?: number; // seconds
+  duration?: number; // seconds
   lastWatched: number;
   episodeInfo?: string;
 }
