@@ -97,6 +97,33 @@ export default function Home() {
     return () => clearInterval(timer);
   }, [heroItems.length]);
 
+  // Featured highlights - top rated with images and trailers
+  const featuredItems = useMemo(() => {
+    const items: Array<{
+      id: number; name: string; image: string; backdrop?: string; rating: number;
+      type: 'movie' | 'series'; genre?: string; plot?: string; trailer?: string;
+    }> = [];
+    movies
+      .filter(m => m.stream_icon && parseRating(m.rating) >= 5)
+      .sort((a, b) => parseRating(b.rating) - parseRating(a.rating))
+      .slice(0, 8)
+      .forEach(m => items.push({
+        id: m.stream_id, name: m.name, image: m.stream_icon, rating: parseRating(m.rating),
+        type: 'movie', genre: m.genre, plot: m.plot,
+      }));
+    series
+      .filter(s => s.cover && parseRating(s.rating) >= 5)
+      .sort((a, b) => parseRating(b.rating) - parseRating(a.rating))
+      .slice(0, 8)
+      .forEach(s => items.push({
+        id: s.series_id, name: s.name, image: s.cover,
+        backdrop: s.backdrop_path?.[0], rating: parseRating(s.rating),
+        type: 'series', genre: s.genre, plot: s.plot,
+        trailer: s.youtube_trailer || undefined,
+      }));
+    return items.sort((a, b) => b.rating - a.rating).slice(0, 10);
+  }, [movies, series]);
+
   // Recent movies/series (non-top-rated, for variety)
   const recentMovies = useMemo(() => movies.slice(0, 20), [movies]);
   const recentSeries = useMemo(() => series.slice(0, 20), [series]);
