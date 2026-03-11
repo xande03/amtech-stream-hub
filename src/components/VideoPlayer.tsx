@@ -158,10 +158,13 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
           if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
             if (retryCountRef.current < maxRetries) {
               retryCountRef.current++;
+              if (isLive) setConnectionStatus('reconnecting');
               // Exponential backoff: 1s, 2s, 4s... for CDN reconnection
               const delay = Math.min(1000 * Math.pow(2, retryCountRef.current - 1), 8000);
               console.log(`[HLS] Network error, retry ${retryCountRef.current}/${maxRetries} in ${delay}ms`);
-              setTimeout(() => { if (hlsRef.current === hls) hls.startLoad(); }, delay);
+              setTimeout(() => {
+                if (hlsRef.current === hls) hls.startLoad();
+              }, delay);
             } else {
               if (onStreamErrorRef.current) onStreamErrorRef.current();
               else setError('Erro de rede. Verifique sua conexão.');
