@@ -1,4 +1,4 @@
-import { Home, Tv, Film, Clapperboard, Heart, Settings } from 'lucide-react';
+import { Home, Tv, Film, Clapperboard, Heart, Clock, Settings } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -19,6 +19,7 @@ const navItems = [
   { title: 'Filmes', url: '/movies', icon: Film },
   { title: 'Séries', url: '/series', icon: Clapperboard },
   { title: 'Favoritos', url: '/favorites', icon: Heart },
+  { title: 'Histórico', url: '/history', icon: Clock },
   { title: 'Configurações', url: '/settings', icon: Settings },
 ];
 
@@ -32,13 +33,13 @@ export default function AppSidebar() {
       <SidebarContent>
         <div className={`p-4 ${collapsed ? 'px-2' : ''}`}>
           <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-lg gradient-primary flex items-center justify-center flex-shrink-0">
-              <Tv className="w-5 h-5 text-primary-foreground" />
+            <div className="w-10 h-10 rounded-lg gradient-primary flex items-center justify-center flex-shrink-0">
+              <Tv className="w-6 h-6 text-primary-foreground" />
             </div>
             {!collapsed && (
               <div>
-                <h1 className="text-sm font-bold text-foreground">AMTECH</h1>
-                <p className="text-[10px] text-muted-foreground">PLAYER</p>
+                <h1 className="text-base font-bold text-foreground">AMTECH</h1>
+                <p className="text-[11px] text-muted-foreground">PLAYER</p>
               </div>
             )}
           </div>
@@ -50,9 +51,9 @@ export default function AppSidebar() {
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink to={item.url} end={item.url === '/'} className="hover:bg-sidebar-accent/50 transition-colors" activeClassName="bg-sidebar-accent text-primary font-medium">
-                      <item.icon className="w-5 h-5 mr-3 flex-shrink-0" />
-                      {!collapsed && <span>{item.title}</span>}
+                    <NavLink to={item.url} end={item.url === '/'} className="hover:bg-sidebar-accent/50 transition-colors py-2.5" activeClassName="bg-sidebar-accent text-primary font-medium">
+                      <item.icon className="w-6 h-6 mr-3 flex-shrink-0" />
+                      {!collapsed && <span className="text-sm font-medium">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
