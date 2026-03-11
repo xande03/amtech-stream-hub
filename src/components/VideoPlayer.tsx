@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import Hls from 'hls.js';
-import { ArrowLeft, Maximize, Minimize, Volume2, VolumeX, RotateCcw, PictureInPicture2 } from 'lucide-react';
+import { ArrowLeft, Maximize, Minimize, Volume2, VolumeX, RotateCcw, PictureInPicture2, SkipForward } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface VideoPlayerProps {
@@ -8,11 +8,13 @@ interface VideoPlayerProps {
   title?: string;
   onProgress?: (progress: number) => void;
   onStreamError?: () => void;
+  onNextEpisode?: () => void;
+  nextEpisodeLabel?: string;
   autoPlay?: boolean;
   isLive?: boolean;
 }
 
-export default function VideoPlayer({ url, title, onProgress, onStreamError, autoPlay = true, isLive = false }: VideoPlayerProps) {
+export default function VideoPlayer({ url, title, onProgress, onStreamError, onNextEpisode, nextEpisodeLabel, autoPlay = true, isLive = false }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -21,11 +23,11 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, aut
   const [muted, setMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isPip, setIsPip] = useState(false);
+  const [showNextOverlay, setShowNextOverlay] = useState(false);
   const retryCountRef = useRef(0);
   const maxRetries = 5;
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Stabilize callbacks with refs to prevent re-triggering loadSource
   const onStreamErrorRef = useRef(onStreamError);
   onStreamErrorRef.current = onStreamError;
   const onProgressRef = useRef(onProgress);
@@ -36,41 +38,26 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, aut
     const lockLandscape = async () => {
       try {
         const orientation = screen.orientation;
-        if (orientation?.lock) {
-          await orientation.lock('landscape');
-        }
-      } catch {
-        // Not supported or not allowed — ignore
-      }
+        if (orientation?.lock) await orientation.lock('landscape');
+      } catch {}
     };
 
-    // Also request fullscreen on mobile for better experience
     const enterFullscreen = async () => {
       try {
         if (containerRef.current && !document.fullscreenElement) {
           await containerRef.current.requestFullscreen();
         }
-      } catch {
-        // ignore
-      }
+      } catch {}
     };
 
-    // Small delay to ensure DOM is ready
     const timer = setTimeout(() => {
       lockLandscape();
-      // Only auto-fullscreen on mobile
-      if (window.innerWidth < 768) {
-        enterFullscreen();
-      }
+      if (window.innerWidth < 768) enterFullscreen();
     }, 300);
 
     return () => {
       clearTimeout(timer);
-      try {
-        screen.orientation?.unlock?.();
-      } catch {
-        // ignore
-      }
+      try { screen.orientation?.unlock?.(); } catch {}
     };
   }, []);
 
@@ -91,6 +78,7 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, aut
     if (!video) return;
 
     setError(null);
+    setShowNextOverlay(false);
     if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
 
     if (hlsRef.current) {
@@ -131,9 +119,7 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, aut
           if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
             if (retryCountRef.current < maxRetries) {
               retryCountRef.current++;
-              setTimeout(() => {
-                if (hlsRef.current === hls) hls.startLoad();
-              }, 2000);
+              setTimeout(() => { if (hlsRef.current === hls) hls.startLoad(); }, 2000);
             } else {
               if (onStreamErrorRef.current) onStreamErrorRef.current();
               else setError('Erro de rede. Verifique sua conexão.');
@@ -177,15 +163,12 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, aut
         }
       }, 15000);
     }
-  }, [url, isLive, tryPlay]); // removed onStreamError from deps
+  }, [url, isLive, tryPlay]);
 
   useEffect(() => {
     loadSource();
     return () => {
-      if (hlsRef.current) {
-        hlsRef.current.destroy();
-        hlsRef.current = null;
-      }
+      if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
       if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
     };
   }, [loadSource]);
@@ -196,7 +179,6 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, aut
     return () => document.removeEventListener('fullscreenchange', onChange);
   }, []);
 
-  // PiP events
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -212,50 +194,51 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, aut
 
   const handleTimeUpdate = useCallback(() => {
     const video = videoRef.current;
-    if (video && video.duration && onProgressRef.current && !isLive) {
-      onProgressRef.current((video.currentTime / video.duration) * 100);
+    if (video && video.duration && !isLive) {
+      const progress = (video.currentTime / video.duration) * 100;
+      if (onProgressRef.current) onProgressRef.current(progress);
+      // Show next episode overlay when near end (>90%)
+      if (onNextEpisode && progress > 90 && !showNextOverlay) {
+        setShowNextOverlay(true);
+      }
     }
-  }, [isLive]);
+  }, [isLive, onNextEpisode, showNextOverlay]);
+
+  // Auto-trigger next episode on video end
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !onNextEpisode) return;
+    const handleEnded = () => onNextEpisode();
+    video.addEventListener('ended', handleEnded);
+    return () => video.removeEventListener('ended', handleEnded);
+  }, [onNextEpisode]);
 
   const toggleFullscreen = () => {
     if (containerRef.current) {
-      if (document.fullscreenElement) {
-        document.exitFullscreen();
-      } else {
-        containerRef.current.requestFullscreen().catch(() => {});
-      }
+      if (document.fullscreenElement) document.exitFullscreen();
+      else containerRef.current.requestFullscreen().catch(() => {});
     }
   };
 
   const toggleMute = () => {
     const video = videoRef.current;
-    if (video) {
-      video.muted = !video.muted;
-      setMuted(video.muted);
-    }
+    if (video) { video.muted = !video.muted; setMuted(video.muted); }
   };
 
   const togglePip = async () => {
     const video = videoRef.current;
     if (!video) return;
     try {
-      if (document.pictureInPictureElement) {
-        await document.exitPictureInPicture();
-      } else if (document.pictureInPictureEnabled) {
-        await video.requestPictureInPicture();
-      }
-    } catch (e) {
-      console.warn('PiP not supported', e);
-    }
+      if (document.pictureInPictureElement) await document.exitPictureInPicture();
+      else if (document.pictureInPictureEnabled) await video.requestPictureInPicture();
+    } catch (e) { console.warn('PiP not supported', e); }
   };
 
-  const retry = () => {
-    retryCountRef.current = 0;
-    loadSource();
-  };
+  const retry = () => { retryCountRef.current = 0; loadSource(); };
 
   return (
     <div ref={containerRef} className="relative bg-background w-full h-full">
+      {/* Top bar */}
       <div className="absolute top-0 left-0 right-0 z-10 flex items-center gap-3 p-3 md:p-4 bg-gradient-to-b from-background/80 to-transparent">
         <button onClick={() => navigate(-1)} className="p-2 rounded-full bg-secondary/60 backdrop-blur-sm hover:bg-secondary transition-colors">
           <ArrowLeft className="w-5 h-5 text-foreground" />
@@ -267,6 +250,11 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, aut
           </span>
         )}
         <div className="flex gap-1">
+          {onNextEpisode && (
+            <button onClick={onNextEpisode} className="p-2 rounded-full bg-secondary/60 backdrop-blur-sm hover:bg-secondary transition-colors" title="Próximo episódio">
+              <SkipForward className="w-5 h-5 text-foreground" />
+            </button>
+          )}
           <button onClick={toggleMute} className="p-2 rounded-full bg-secondary/60 backdrop-blur-sm hover:bg-secondary transition-colors">
             {muted ? <VolumeX className="w-5 h-5 text-foreground" /> : <Volume2 className="w-5 h-5 text-foreground" />}
           </button>
@@ -281,6 +269,20 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, aut
         </div>
       </div>
 
+      {/* Next episode overlay */}
+      {showNextOverlay && onNextEpisode && (
+        <div className="absolute bottom-20 right-4 z-20 animate-fade-in">
+          <button
+            onClick={onNextEpisode}
+            className="flex items-center gap-2 px-5 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm shadow-lg hover:bg-primary/90 transition-colors"
+          >
+            <SkipForward className="w-5 h-5" />
+            {nextEpisodeLabel || 'Próximo Episódio'}
+          </button>
+        </div>
+      )}
+
+      {/* Error overlay */}
       {error && (
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-background/90 text-center p-6">
           <p className="text-destructive font-medium mb-4">{error}</p>
