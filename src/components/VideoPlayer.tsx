@@ -165,9 +165,25 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         retryCountRef.current = 0;
+        // Extract quality levels
+        const levels: QualityLevel[] = hls.levels
+          .map((l, i) => ({
+            index: i,
+            height: l.height || 0,
+            width: l.width || 0,
+            bitrate: l.bitrate || 0,
+            label: l.height ? getQualityLabel(l.height) : `${Math.round((l.bitrate || 0) / 1000)}k`,
+          }))
+          .filter(l => l.height > 0 || l.bitrate > 0)
+          .sort((a, b) => b.height - a.height || b.bitrate - a.bitrate);
+        // Deduplicate by label
+        const seen = new Set<string>();
+        const unique = levels.filter(l => { if (seen.has(l.label)) return false; seen.add(l.label); return true; });
+        setQualityLevels(unique);
+        setCurrentQuality(-1); // Auto
+
         if (isLive) {
           setConnectionStatus('stable');
-          // Auto-hide after 4s
           statusTimerRef.current = setTimeout(() => setConnectionStatus('idle'), 4000);
         }
         tryPlay(video);
