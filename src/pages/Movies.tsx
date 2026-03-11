@@ -7,7 +7,7 @@ function isRecentlyAdded(added?: string | number): boolean {
   return !isNaN(ts) && ts > SEVEN_DAYS_AGO;
 }
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getVodStreams, getVodCategories, VodStream, Category } from '@/services/xtreamApi';
 import ContentCard from '@/components/ContentCard';
 import ContentRow from '@/components/ContentRow';
