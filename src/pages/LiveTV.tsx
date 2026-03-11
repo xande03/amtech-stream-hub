@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { getLiveStreams, getLiveCategories, LiveStream, Category } from '@/services/xtreamApi';
 import { useFavorites } from '@/hooks/useFavorites';
+import { useWatchHistory } from '@/hooks/useWatchHistory';
 import { Input } from '@/components/ui/input';
 import { Search, Tv, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -13,6 +14,7 @@ export default function LiveTV() {
   const { accessCode } = useAuth();
   const navigate = useNavigate();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { addToHistory } = useWatchHistory();
   const [streams, setStreams] = useState<LiveStream[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -76,7 +78,7 @@ export default function LiveTV() {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
           {visible.map((ch, i) => (
             <motion.div key={ch.stream_id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.02, 0.5) }}
-              onClick={() => window.open(`/player/live/${ch.stream_id}`, '_blank')}
+              onClick={() => { addToHistory({ id: ch.stream_id, type: 'live', name: ch.name, icon: ch.stream_icon }); window.open(`/player/live/${ch.stream_id}`, '_blank'); }}
               className="group cursor-pointer bg-card rounded-lg p-3 border border-border hover:border-primary/50 hover:shadow-glow transition-all relative">
               <button
                 onClick={(e) => { e.stopPropagation(); toggleFavorite({ id: ch.stream_id, type: 'live', name: ch.name, icon: ch.stream_icon }); }}
@@ -98,7 +100,7 @@ export default function LiveTV() {
         <div className="space-y-2">
           {visible.map((ch, i) => (
             <motion.div key={ch.stream_id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: Math.min(i * 0.015, 0.4) }}
-              onClick={() => window.open(`/player/live/${ch.stream_id}`, '_blank')}
+              onClick={() => { addToHistory({ id: ch.stream_id, type: 'live', name: ch.name, icon: ch.stream_icon }); window.open(`/player/live/${ch.stream_id}`, '_blank'); }}
               className="group cursor-pointer bg-card rounded-lg p-3 border border-border hover:border-primary/50 hover:shadow-glow transition-all flex items-center gap-3">
               <div className="w-12 h-12 rounded-md overflow-hidden bg-secondary flex-shrink-0 flex items-center justify-center">
                 {ch.stream_icon ? (

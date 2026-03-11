@@ -3,9 +3,9 @@ import { motion } from 'framer-motion';
 function ShimmerBar({ className = '', delay = 0 }: { className?: string; delay?: number }) {
   return (
     <motion.div
-      initial={{ opacity: 0.4 }}
-      animate={{ opacity: [0.4, 0.7, 0.4] }}
-      transition={{ duration: 1.5, repeat: Infinity, delay }}
+      initial={{ opacity: 0.3 }}
+      animate={{ opacity: [0.3, 0.6, 0.3] }}
+      transition={{ duration: 1.8, repeat: Infinity, delay, ease: 'easeInOut' }}
       className={`rounded-lg bg-muted ${className}`}
     />
   );
@@ -43,16 +43,55 @@ export function ContentRowSkeleton({ count = 6 }: { count?: number }) {
   );
 }
 
-export function GridSkeleton({ count = 12 }: { count?: number }) {
+export function GridSkeleton({ count = 12, aspectRatio = 'portrait' }: { count?: number; aspectRatio?: 'portrait' | 'landscape' | 'square' }) {
+  const aspectClass = {
+    portrait: 'aspect-[2/3]',
+    landscape: 'aspect-video',
+    square: 'aspect-square',
+  }[aspectRatio];
+
   return (
-    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-3">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-3"
+    >
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="space-y-2">
-          <ShimmerBar className="aspect-[2/3] w-full rounded-xl" delay={i * 0.05} />
+        <motion.div
+          key={i}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: i * 0.03, duration: 0.3 }}
+          className="space-y-2"
+        >
+          <ShimmerBar className={`${aspectClass} w-full rounded-xl`} delay={i * 0.05} />
           <ShimmerBar className="h-3 w-3/4" delay={i * 0.05 + 0.1} />
-        </div>
+          <ShimmerBar className="h-2 w-1/2" delay={i * 0.05 + 0.15} />
+        </motion.div>
       ))}
-    </div>
+    </motion.div>
+  );
+}
+
+export function SeriesLoadingSkeleton() {
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+      {/* Title */}
+      <ShimmerBar className="h-8 w-32" />
+
+      {/* Search bar skeleton */}
+      <ShimmerBar className="h-12 w-full max-w-lg rounded-xl" delay={0.1} />
+
+      {/* Category pills skeleton */}
+      <div className="flex gap-2 overflow-hidden">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <ShimmerBar key={i} className="h-8 w-20 rounded-full flex-shrink-0" delay={i * 0.05} />
+        ))}
+      </div>
+
+      {/* Grid skeleton */}
+      <GridSkeleton count={14} />
+    </motion.div>
   );
 }
 

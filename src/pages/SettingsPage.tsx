@@ -7,8 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Trash2, Server, Clock, Plus, Eye, EyeOff, Lock, Power, PowerOff,
-  Loader2, Save, Shield, ChevronDown, ChevronUp
+  Trash2, Clock, Plus, Eye, EyeOff, Lock, Power, PowerOff,
+  Loader2, Save, Shield, ChevronDown, ChevronUp, Pencil, X
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -22,24 +22,31 @@ interface PlaylistConfig {
   created_at: string;
 }
 
+interface PlaylistForm {
+  server_url: string;
+  username: string;
+  password: string;
+  playlist_name: string;
+  access_code: string;
+}
+
+const emptyForm: PlaylistForm = { server_url: '', username: '', password: '', playlist_name: '', access_code: '' };
+
 export default function SettingsPage() {
-  const { playlistName, refreshConfig } = useAuth();
+  const { refreshConfig } = useAuth();
   const { history, clearHistory } = useWatchHistory();
 
-  // Admin auth
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
   const [authError, setAuthError] = useState('');
 
-  // Playlist management
   const [playlists, setPlaylists] = useState<PlaylistConfig[]>([]);
   const [loading, setLoading] = useState(false);
-  const [showAddForm, setShowAddForm] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
-    server_url: '', username: '', password: '', playlist_name: '', access_code: '',
-  });
+  const [form, setForm] = useState<PlaylistForm>(emptyForm);
 
   const loadPlaylists = useCallback(async () => {
     setLoading(true);
@@ -57,42 +64,70 @@ export default function SettingsPage() {
   }, [isUnlocked, loadPlaylists]);
 
   const handleUnlock = () => {
-    // We validate server-side; store password for subsequent calls
-    if (!adminPassword.trim()) {
-      setAuthError('Digite a senha');
-      return;
-    }
+    if (!adminPassword.trim()) { setAuthError('Digite a senha'); return; }
     setAuthError('');
     setIsUnlocked(true);
   };
 
-  const handleAddPlaylist = async () => {
-    if (!form.server_url || !form.username || !form.password || !form.access_code) {
+  const openAddForm = () => {
+    setEditingId(null);
+    setForm(emptyForm);
+    setShowForm(true);
+    setShowPassword(false);
+  };
+
+  const openEditForm = (pl: PlaylistConfig) => {
+    setEditingId(pl.id);
+    setForm({
+      server_url: pl.server_url,
+      username: pl.username,
+      password: '', // Don't prefill password
+      playlist_name: pl.playlist_name,
+      access_code: pl.access_code,
+    });
+    setShowForm(true);
+    setShowPassword(false);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingId(null);
+    setForm(emptyForm);
+  };
+
+  const handleSave = async () => {
+    if (!form.server_url || !form.username || !form.access_code) {
       toast.error('Preencha todos os campos obrigatórios');
       return;
     }
+    if (!editingId && !form.password) {
+      toast.error('Senha é obrigatória para nova playlist');
+      return;
+    }
+
     setSaving(true);
     try {
-      const { data, error } = await supabase.functions.invoke('admin-config', {
-        body: {
-          action: 'save_config',
-          admin_password: adminPassword,
-          config: {
-            server_url: form.server_url.trim(),
-            username: form.username.trim(),
-            password: form.password.trim(),
-            playlist_name: form.playlist_name.trim() || 'Nova Playlist',
-            access_code: form.access_code.trim(),
-          },
+      const action = editingId ? 'update_config' : 'save_config';
+      const body: any = {
+        action,
+        admin_password: adminPassword,
+        config: {
+          server_url: form.server_url.trim(),
+          username: form.username.trim(),
+          playlist_name: form.playlist_name.trim() || 'Nova Playlist',
+          access_code: form.access_code.trim(),
         },
-      });
+      };
+      if (form.password) body.config.password = form.password.trim();
+      if (editingId) body.id = editingId;
+
+      const { data, error } = await supabase.functions.invoke('admin-config', { body });
       if (data?.error) {
         if (data.error.includes('Senha')) { setIsUnlocked(false); setAuthError('Senha inválida'); }
         throw new Error(data.error);
       }
-      toast.success('Playlist adicionada!');
-      setForm({ server_url: '', username: '', password: '', playlist_name: '', access_code: '' });
-      setShowAddForm(false);
+      toast.success(editingId ? 'Playlist atualizada!' : 'Playlist adicionada!');
+      closeForm();
       loadPlaylists();
       refreshConfig();
     } catch (err: any) {
@@ -140,7 +175,7 @@ export default function SettingsPage() {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold text-foreground mb-6">Configurações</h1>
 
-      {/* History section - always visible */}
+      {/* History section */}
       <div className="bg-card rounded-xl p-5 border border-border mb-4">
         <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-4">
           <Clock className="w-5 h-5 text-primary" /> Histórico
@@ -191,7 +226,6 @@ export default function SettingsPage() {
                 </div>
               ) : (
                 <>
-                  {/* Playlist list */}
                   {playlists.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-4">Nenhuma playlist cadastrada</p>
                   ) : (
@@ -207,6 +241,9 @@ export default function SettingsPage() {
                             {pl.is_active ? 'ATIVA' : 'INATIVA'}
                           </span>
                           <div className="flex gap-1">
+                            <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => openEditForm(pl)} title="Editar">
+                              <Pencil className="w-4 h-4 text-muted-foreground" />
+                            </Button>
                             <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => handleToggle(pl.id)} title={pl.is_active ? 'Desativar' : 'Ativar'}>
                               {pl.is_active ? <PowerOff className="w-4 h-4 text-muted-foreground" /> : <Power className="w-4 h-4 text-accent" />}
                             </Button>
@@ -219,24 +256,29 @@ export default function SettingsPage() {
                     </div>
                   )}
 
-                  {/* Add form toggle */}
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowAddForm(!showAddForm)}
-                    className="w-full border-dashed border-border text-foreground hover:border-primary/50"
-                  >
-                    {showAddForm ? <ChevronUp className="w-4 h-4 mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
-                    {showAddForm ? 'Cancelar' : 'Adicionar Playlist'}
-                  </Button>
+                  {/* Add/Edit form toggle */}
+                  {!showForm && (
+                    <Button variant="outline" onClick={openAddForm} className="w-full border-dashed border-border text-foreground hover:border-primary/50">
+                      <Plus className="w-4 h-4 mr-2" /> Adicionar Playlist
+                    </Button>
+                  )}
 
                   <AnimatePresence>
-                    {showAddForm && (
+                    {showForm && (
                       <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
                         className="space-y-3 overflow-hidden"
                       >
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-semibold text-foreground">
+                            {editingId ? 'Editar Playlist' : 'Nova Playlist'}
+                          </p>
+                          <button onClick={closeForm} className="p-1 rounded-full hover:bg-muted transition-colors">
+                            <X className="w-4 h-4 text-muted-foreground" />
+                          </button>
+                        </div>
                         <div className="space-y-2">
                           <Label className="text-foreground text-sm">Nome da Playlist</Label>
                           <Input placeholder="Minha Playlist" value={form.playlist_name} onChange={e => setForm(f => ({ ...f, playlist_name: e.target.value }))} className="bg-secondary border-border text-foreground" />
@@ -252,9 +294,11 @@ export default function SettingsPage() {
                             <Input placeholder="Usuário" value={form.username} onChange={e => setForm(f => ({ ...f, username: e.target.value }))} className="bg-secondary border-border text-foreground" />
                           </div>
                           <div className="space-y-2">
-                            <Label className="text-foreground text-sm">Senha *</Label>
+                            <Label className="text-foreground text-sm">
+                              Senha {editingId ? '(deixe vazio para manter)' : '*'}
+                            </Label>
                             <div className="relative">
-                              <Input type={showPassword ? 'text' : 'password'} placeholder="Senha" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} className="bg-secondary border-border text-foreground pr-9" />
+                              <Input type={showPassword ? 'text' : 'password'} placeholder={editingId ? '••••••' : 'Senha'} value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} className="bg-secondary border-border text-foreground pr-9" />
                               <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground">
                                 {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                               </button>
@@ -265,9 +309,9 @@ export default function SettingsPage() {
                           <Label className="text-foreground text-sm">Código de Acesso *</Label>
                           <Input placeholder="Ex: 123" value={form.access_code} onChange={e => setForm(f => ({ ...f, access_code: e.target.value }))} className="bg-secondary border-border text-foreground" />
                         </div>
-                        <Button onClick={handleAddPlaylist} disabled={saving} className="w-full gradient-primary text-primary-foreground font-medium">
+                        <Button onClick={handleSave} disabled={saving} className="w-full gradient-primary text-primary-foreground font-medium">
                           {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                          Salvar Playlist
+                          {editingId ? 'Atualizar Playlist' : 'Salvar Playlist'}
                         </Button>
                       </motion.div>
                     )}

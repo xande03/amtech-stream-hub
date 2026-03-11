@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import DraggableScroll from '@/components/DraggableScroll';
-import { GridSkeleton } from '@/components/LoadingSkeleton';
+import { SeriesLoadingSkeleton } from '@/components/LoadingSkeleton';
 
 const PAGE_SIZE = 60;
 
@@ -55,7 +55,7 @@ export default function SeriesPage() {
 
   const visible = filtered.slice(0, visibleCount);
 
-  if (loading) return <div><h1 className="text-2xl font-bold text-foreground mb-4">Séries</h1><GridSkeleton /></div>;
+  if (loading) return <SeriesLoadingSkeleton />;
 
   const recentlyWatched = history.filter(h => h.type === 'series').slice(0, 15);
 
