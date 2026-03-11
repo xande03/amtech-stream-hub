@@ -22,13 +22,13 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, aut
   const [isFullscreen, setIsFullscreen] = useState(false);
   const retryCountRef = useRef(0);
   const maxRetries = 5;
+  const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const tryPlay = useCallback((video: HTMLVideoElement) => {
     if (!autoPlay) return;
     const playPromise = video.play();
     if (playPromise) {
       playPromise.catch(() => {
-        // Try muted autoplay as fallback
         video.muted = true;
         setMuted(true);
         video.play().catch(() => {});
@@ -41,6 +41,7 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, aut
     if (!video) return;
 
     setError(null);
+    if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
 
     // Cleanup previous HLS instance
     if (hlsRef.current) {
@@ -48,67 +49,94 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, aut
       hlsRef.current = null;
     }
 
-    const isHls = url.includes('.m3u8') || isLive;
+    const isHls = url.includes('.m3u8') || (isLive && !url.includes('.ts'));
 
-    if (isHls) {
-      if (Hls.isSupported()) {
-        const hls = new Hls({
-          enableWorker: true,
-          lowLatencyMode: isLive,
-          maxBufferLength: isLive ? 10 : 30,
-          maxMaxBufferLength: isLive ? 20 : 60,
-          liveSyncDurationCount: 3,
-          liveMaxLatencyDurationCount: 6,
-          liveDurationInfinity: isLive,
-          manifestLoadingTimeOut: 15000,
-          manifestLoadingMaxRetry: 6,
-          levelLoadingTimeOut: 15000,
-          fragLoadingTimeOut: 20000,
-          fragLoadingMaxRetry: 6,
-        });
+    if (isHls && Hls.isSupported()) {
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: isLive,
+        maxBufferLength: isLive ? 10 : 30,
+        maxMaxBufferLength: isLive ? 20 : 60,
+        liveSyncDurationCount: 3,
+        liveMaxLatencyDurationCount: 6,
+        liveDurationInfinity: isLive,
+        manifestLoadingTimeOut: 15000,
+        manifestLoadingMaxRetry: 4,
+        levelLoadingTimeOut: 15000,
+        fragLoadingTimeOut: 20000,
+        fragLoadingMaxRetry: 4,
+      });
 
-        hlsRef.current = hls;
-        hls.loadSource(url);
-        hls.attachMedia(video);
+      hlsRef.current = hls;
+      hls.loadSource(url);
+      hls.attachMedia(video);
 
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          retryCountRef.current = 0;
-          tryPlay(video);
-        });
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        retryCountRef.current = 0;
+        tryPlay(video);
+      });
 
-        hls.on(Hls.Events.ERROR, (_, data) => {
-          if (data.fatal) {
-            if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-              if (retryCountRef.current < maxRetries) {
-                retryCountRef.current++;
-                setTimeout(() => hls.startLoad(), 2000);
+      hls.on(Hls.Events.ERROR, (_, data) => {
+        if (data.fatal) {
+          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+            if (retryCountRef.current < maxRetries) {
+              retryCountRef.current++;
+              setTimeout(() => hls.startLoad(), 2000);
+            } else {
+              // Try next format via onStreamError
+              if (onStreamError) {
+                onStreamError();
               } else {
                 setError('Erro de rede. Verifique sua conexão.');
               }
-            } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-              hls.recoverMediaError();
+            }
+          } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+            hls.recoverMediaError();
+          } else {
+            if (onStreamError) {
+              onStreamError();
             } else {
               setError('Erro ao reproduzir este conteúdo.');
             }
           }
-        });
-      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        // Native HLS (Safari/iOS)
-        video.src = url;
-        video.addEventListener('loadedmetadata', () => tryPlay(video), { once: true });
-        video.addEventListener('error', () => setError('Erro ao carregar stream.'), { once: true });
-      } else {
-        setError('Seu navegador não suporta reprodução HLS.');
-      }
-    } else {
-      // Direct MP4/other formats
+        }
+      });
+
+      // Timeout: if nothing plays within 12s, try next
+      errorTimerRef.current = setTimeout(() => {
+        if (video.readyState < 2 && onStreamError) {
+          hls.destroy();
+          hlsRef.current = null;
+          onStreamError();
+        }
+      }, 12000);
+
+    } else if (isHls && video.canPlayType('application/vnd.apple.mpegurl')) {
+      // Native HLS (Safari/iOS)
       video.src = url;
       video.addEventListener('loadedmetadata', () => tryPlay(video), { once: true });
       video.addEventListener('error', () => {
-        setError('Erro ao carregar o vídeo.');
+        if (onStreamError) onStreamError();
+        else setError('Erro ao carregar stream.');
       }, { once: true });
+    } else {
+      // Direct TS / MP4 / other formats
+      video.src = url;
+      video.addEventListener('loadedmetadata', () => tryPlay(video), { once: true });
+      video.addEventListener('canplay', () => tryPlay(video), { once: true });
+      video.addEventListener('error', () => {
+        if (onStreamError) onStreamError();
+        else setError('Erro ao carregar o vídeo.');
+      }, { once: true });
+
+      // Timeout for direct streams
+      errorTimerRef.current = setTimeout(() => {
+        if (video.readyState < 2 && onStreamError) {
+          onStreamError();
+        }
+      }, 10000);
     }
-  }, [url, isLive, tryPlay]);
+  }, [url, isLive, tryPlay, onStreamError]);
 
   useEffect(() => {
     loadSource();
@@ -117,10 +145,10 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, aut
         hlsRef.current.destroy();
         hlsRef.current = null;
       }
+      if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
     };
   }, [loadSource]);
 
-  // Fullscreen change listener
   useEffect(() => {
     const onChange = () => setIsFullscreen(!!document.fullscreenElement);
     document.addEventListener('fullscreenchange', onChange);
@@ -159,7 +187,6 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, aut
 
   return (
     <div ref={containerRef} className="relative bg-background w-full h-full">
-      {/* Top controls overlay */}
       <div className="absolute top-0 left-0 right-0 z-10 flex items-center gap-3 p-3 md:p-4 bg-gradient-to-b from-background/80 to-transparent">
         <button onClick={() => navigate(-1)} className="p-2 rounded-full bg-secondary/60 backdrop-blur-sm hover:bg-secondary transition-colors">
           <ArrowLeft className="w-5 h-5 text-foreground" />
@@ -180,7 +207,6 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, aut
         </div>
       </div>
 
-      {/* Error overlay */}
       {error && (
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-background/90 text-center p-6">
           <p className="text-destructive font-medium mb-4">{error}</p>
