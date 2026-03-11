@@ -1,13 +1,13 @@
 import { useRef, useCallback, ReactNode } from 'react';
 
-interface DraggableScrollProps {
+interface DraggableScrollProps extends React.HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
   className?: string;
 }
 
 const DRAG_THRESHOLD = 5;
 
-export default function DraggableScroll({ children, className = '' }: DraggableScrollProps) {
+export default function DraggableScroll({ children, className = '', ...props }: DraggableScrollProps) {
   const ref = useRef<HTMLDivElement>(null);
   const startX = useRef(0);
   const scrollLeftStart = useRef(0);
@@ -79,6 +79,7 @@ export default function DraggableScroll({ children, className = '' }: DraggableS
       onTouchEnd={onTouchEnd}
       onClickCapture={onClickCapture}
       className={`flex gap-2 overflow-x-auto hide-scrollbar pb-1 select-none cursor-grab active:cursor-grabbing ${className}`}
+      {...props}
     >
       {children}
     </div>
