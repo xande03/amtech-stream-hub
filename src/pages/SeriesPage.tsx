@@ -113,6 +113,7 @@ export default function SeriesPage() {
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-3">
         {visible.map((s) => (
           <ContentCard key={s.series_id} title={s.name} image={s.cover} rating={s.rating} subtitle={s.genre}
+            isNew={isRecentlyAdded(s.last_modified)}
             isFavorite={isFavorite(s.series_id, 'series')}
             onFavoriteToggle={() => toggleFavorite({ id: s.series_id, type: 'series', name: s.name, icon: s.cover })}
             onClick={() => navigate(`/series/${s.series_id}`)} />
