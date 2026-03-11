@@ -145,6 +145,11 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         retryCountRef.current = 0;
+        if (isLive) {
+          setConnectionStatus('stable');
+          // Auto-hide after 4s
+          statusTimerRef.current = setTimeout(() => setConnectionStatus('idle'), 4000);
+        }
         tryPlay(video);
       });
 
