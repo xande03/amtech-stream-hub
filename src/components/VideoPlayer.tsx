@@ -24,6 +24,8 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, onN
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isPip, setIsPip] = useState(false);
   const [showNextOverlay, setShowNextOverlay] = useState(false);
+  const [showSkipIntro, setShowSkipIntro] = useState(false);
+  const [skipIntroDismissed, setSkipIntroDismissed] = useState(false);
   const retryCountRef = useRef(0);
   const maxRetries = 5;
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
