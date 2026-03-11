@@ -408,6 +408,18 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
     }
   };
 
+  const setQuality = (levelIndex: number) => {
+    const hls = hlsRef.current;
+    if (!hls) return;
+    hls.currentLevel = levelIndex; // -1 = auto
+    setCurrentQuality(levelIndex);
+    setShowQualityMenu(false);
+  };
+
+  const currentQualityLabel = currentQuality === -1
+    ? 'Auto'
+    : qualityLevels.find(l => l.index === currentQuality)?.label || 'Auto';
+
   return (
     <div ref={containerRef} className="relative bg-background w-full h-full">
       {/* Top bar */}
