@@ -49,7 +49,7 @@ export default function SeriesPage() {
   const filtered = useMemo(() => {
     let result = series;
     if (selectedCategory !== 'all') result = result.filter(s => s.category_id === selectedCategory);
-    if (search) { const q = search.toLowerCase(); result = result.filter(s => s.name.toLowerCase().includes(q)); }
+    if (search) { const q = search.toLowerCase(); result = result.filter(s => (s.name || '').toLowerCase().includes(q)); }
     return result;
   }, [series, selectedCategory, search]);
 
