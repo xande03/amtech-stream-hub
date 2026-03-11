@@ -266,23 +266,44 @@ export default function Home() {
         </ContentRow>
       )}
 
-      {/* Live TV */}
-      {liveStreams.length > 0 && (
-        <ContentRow title="TV ao Vivo" onViewAll={() => navigate('/live')}>
-          {liveStreams.map((ch) => (
-            <div key={ch.stream_id} className="w-28 md:w-36 flex-shrink-0">
-              <ContentCard
-                title={ch.name}
-                image={ch.stream_icon}
-                aspectRatio="square"
-                isFavorite={isFavorite(ch.stream_id, 'live')}
-                onFavoriteToggle={() => toggleFavorite({ id: ch.stream_id, type: 'live', name: ch.name, icon: ch.stream_icon })}
-                onClick={() => navigate(`/player/live/${ch.stream_id}`)}
-              />
+      {/* Popular Categories */}
+      {(() => {
+        const popularCats = [
+          ...movieCategories.slice(0, 6).map(c => ({ ...c, type: 'movie' as const, icon: Film })),
+          ...seriesCategories.slice(0, 6).map(c => ({ ...c, type: 'series' as const, icon: Clapperboard })),
+        ].slice(0, 10);
+        if (popularCats.length === 0) return null;
+        const colors = [
+          'from-primary/30 to-primary/10',
+          'from-accent/30 to-accent/10',
+          'from-destructive/20 to-destructive/5',
+          'from-primary/20 to-accent/10',
+          'from-accent/20 to-primary/10',
+        ];
+        return (
+          <div className="mb-2">
+            <h3 className="text-lg font-semibold text-foreground mb-3">📂 Categorias Populares</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              {popularCats.map((cat, i) => {
+                const Icon = cat.icon;
+                return (
+                  <motion.button
+                    key={`${cat.type}-${cat.category_id}`}
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => navigate(cat.type === 'movie' ? '/movies' : '/series')}
+                    className={`relative overflow-hidden rounded-xl p-4 text-left bg-gradient-to-br ${colors[i % colors.length]} border border-border/50 hover:border-primary/30 transition-colors`}
+                  >
+                    <Icon className="w-5 h-5 text-primary mb-2" />
+                    <p className="text-sm font-medium text-foreground truncate">{cat.category_name}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{cat.type === 'movie' ? 'Filmes' : 'Séries'}</p>
+                  </motion.button>
+                );
+              })}
             </div>
-          ))}
-        </ContentRow>
-      )}
+          </div>
+        );
+      })()}
 
       {/* Recent Movies */}
       {recentMovies.length > 0 && (
