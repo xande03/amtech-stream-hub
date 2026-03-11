@@ -106,25 +106,49 @@ export default function SeriesDetail() {
         </div>
 
         <div className="space-y-2">
-          {currentEpisodes.map((ep) => {
+          {currentEpisodes.map((ep, index) => {
             const progress = getEpisodeProgress(ep.id);
             const isWatched = progress > 90;
+            const durationText = ep.info?.duration || '';
 
             return (
               <motion.div key={ep.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
                 className="rounded-lg bg-card border border-border hover:border-primary/30 transition-colors cursor-pointer group overflow-hidden"
                 onClick={() => handlePlayEpisode(ep)}>
-                <div className="flex items-center gap-4 p-3">
-                  <div className="w-24 h-14 rounded-md overflow-hidden bg-secondary flex-shrink-0 flex items-center justify-center relative">
-                    {ep.info?.movie_image ? <img src={ep.info.movie_image} alt={ep.title} className="w-full h-full object-cover" /> : <Play className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />}
-                    {isWatched && (
-                      <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
-                        <CheckCircle2 className="w-6 h-6 text-primary" />
-                      </div>
-                    )}
+                <div className="flex items-start gap-4 p-3">
+                  {/* Episode number */}
+                  <span className="text-lg font-medium text-muted-foreground mt-2 w-6 text-center flex-shrink-0">{index + 1}</span>
+                  
+                  {/* Thumbnail with progress bar overlay */}
+                  <div className="w-28 flex-shrink-0">
+                    <div className="aspect-video rounded-md overflow-hidden bg-secondary relative">
+                      {ep.info?.movie_image ? (
+                        <img src={ep.info.movie_image} alt={ep.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Play className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                        </div>
+                      )}
+                      {isWatched && (
+                        <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
+                          <CheckCircle2 className="w-6 h-6 text-primary" />
+                        </div>
+                      )}
+                      {/* Progress bar at bottom of thumbnail */}
+                      {progress > 0 && progress <= 90 && (
+                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-secondary/80">
+                          <div className="h-full bg-destructive rounded-r-full" style={{ width: `${progress}%` }} />
+                        </div>
+                      )}
+                    </div>
                   </div>
-                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium truncate ${isWatched ? 'text-muted-foreground' : 'text-foreground'}`}>E{ep.episode_num} — {ep.title}</p>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0 pt-0.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className={`text-sm font-semibold ${isWatched ? 'text-muted-foreground' : 'text-foreground'}`}>{ep.title || `Episódio ${ep.episode_num}`}</p>
+                      {durationText && <span className="text-xs text-muted-foreground flex-shrink-0">{durationText}</span>}
+                    </div>
                     {(() => {
                       const epResume = getEpisodeResumeTime(ep.id);
                       if (epResume > 0 && !isWatched) {
@@ -132,17 +156,9 @@ export default function SeriesDetail() {
                       }
                       return null;
                     })()}
-                    {ep.info?.plot && <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{ep.info.plot}</p>}
-                    {ep.info?.duration && <p className="text-xs text-muted-foreground mt-0.5">{ep.info.duration}</p>}
+                    {ep.info?.plot && <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{ep.info.plot}</p>}
                   </div>
-                  <Play className="w-5 h-5 text-muted-foreground group-hover:text-primary flex-shrink-0 transition-colors" />
                 </div>
-                {/* Progress bar */}
-                {progress > 0 && progress <= 90 && (
-                  <div className="w-full h-1 bg-secondary">
-                    <div className="h-full bg-primary rounded-r-full transition-all" style={{ width: `${progress}%` }} />
-                  </div>
-                )}
               </motion.div>
             );
           })}
