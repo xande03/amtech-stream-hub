@@ -118,7 +118,8 @@ Deno.serve(async (req) => {
       // Rewrite playlist URIs to keep all chunks flowing through proxy (avoids mixed-content/CORS)
       if (contentType.includes("mpegurl") || upstreamUrl.includes(".m3u8")) {
         const playlist = await upstreamRes.text();
-        const proxyOrigin = new URL(req.url).origin;
+        const proxyHost = new URL(req.url).host;
+        const proxyOrigin = `https://${proxyHost}`;
 
         const toProxyUrl = (uri: string) => {
           const absolute = new URL(uri, upstreamUrl).toString();
