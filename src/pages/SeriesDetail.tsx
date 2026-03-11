@@ -32,9 +32,20 @@ export default function SeriesDetail() {
       .finally(() => setLoading(false));
   }, [accessCode, id]);
 
+  const formatTime = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${m}:${String(s).padStart(2, '0')}`;
+  };
+
   const getEpisodeProgress = (episodeId: string) => {
     const item = history.find(h => String(h.id) === String(episodeId) && h.type === 'series');
     return item?.progress || 0;
+  };
+
+  const getEpisodeResumeTime = (episodeId: string) => {
+    return getResumeTime(episodeId, 'series');
   };
 
   const handlePlayEpisode = (episode: Episode) => {
