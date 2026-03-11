@@ -34,11 +34,21 @@ export function useWatchHistory() {
     });
   }, []);
 
-  const updateProgress = useCallback((id: number | string, type: string, progress: number) => {
+  const updateProgress = useCallback((id: number | string, type: string, progress: number, currentTime?: number, duration?: number) => {
     setHistory(prev => prev.map(h =>
-      String(h.id) === String(id) && h.type === type ? { ...h, progress, lastWatched: Date.now() } : h
+      String(h.id) === String(id) && h.type === type
+        ? { ...h, progress, currentTime, duration, lastWatched: Date.now() }
+        : h
     ));
   }, []);
+
+  const getResumeTime = useCallback((id: number | string, type: string): number => {
+    const item = history.find(h => String(h.id) === String(id) && h.type === type);
+    if (item?.currentTime && item?.progress && item.progress < 95) {
+      return item.currentTime;
+    }
+    return 0;
+  }, [history]);
 
   const removeFromHistory = useCallback((id: number | string, type: string) => {
     setHistory(prev => prev.filter(h => !(String(h.id) === String(id) && h.type === type)));
