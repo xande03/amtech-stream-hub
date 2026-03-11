@@ -165,3 +165,15 @@ export async function getStreamUrl(accessCode: string, streamType: 'live' | 'mov
   });
   return data.url;
 }
+
+export function getProxyStreamUrl(accessCode: string, streamType: 'live' | 'movie' | 'series', streamId: number | string, extension?: string): string {
+  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID || 'knrubxjvtgkypasndwkn';
+  const params = new URLSearchParams({
+    action: 'proxy_stream',
+    access_code: accessCode,
+    stream_type: streamType,
+    stream_id: String(streamId),
+  });
+  if (extension) params.set('extension', extension);
+  return `https://${projectId}.supabase.co/functions/v1/xtream-proxy?${params.toString()}`;
+}

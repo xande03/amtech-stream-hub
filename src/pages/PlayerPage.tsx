@@ -6,7 +6,7 @@ import { useWatchHistory } from '@/hooks/useWatchHistory';
 import VideoPlayer from '@/components/VideoPlayer';
 import { Loader2 } from 'lucide-react';
 
-const LIVE_EXTENSIONS = ['ts', 'm3u8'];
+const LIVE_EXTENSIONS = ['m3u8', 'ts'];
 
 export default function PlayerPage() {
   const { type, id, ext } = useParams<{ type: string; id: string; ext?: string }>();
@@ -29,7 +29,6 @@ export default function PlayerPage() {
     const streamType = type as 'live' | 'movie' | 'series';
 
     if (ext) {
-      // Explicit extension provided
       getStreamUrl(accessCode, streamType, id, ext)
         .then(url => setStreamUrl(url))
         .catch(err => setError(err.message))
@@ -45,7 +44,7 @@ export default function PlayerPage() {
       return;
     }
 
-    // For live: try extensions in order
+    // For live: try m3u8 first (HLS), then ts
     const tryExt = (index: number) => {
       if (index >= LIVE_EXTENSIONS.length) {
         setError('Não foi possível carregar o canal.');
@@ -65,7 +64,6 @@ export default function PlayerPage() {
     tryExt(0);
   }, [accessCode, type, id, ext, isLive]);
 
-  // Allow retrying with next extension on video error
   const handleStreamError = () => {
     if (!isLive || !accessCode || !id) return;
     const nextIndex = triedExts.current.length;

@@ -22,8 +22,17 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const body = await req.json();
-    const { action, access_code, category_id, vod_id, series_id, stream_type, stream_id, extension } = body;
+    let params: Record<string, any>;
+    
+    if (req.method === "GET") {
+      // Support GET for stream proxy (used as video src)
+      const url = new URL(req.url);
+      params = Object.fromEntries(url.searchParams.entries());
+    } else {
+      params = await req.json();
+    }
+    
+    const { action, access_code, category_id, vod_id, series_id, stream_type, stream_id, extension } = params;
 
     const validation = await getCredentials(access_code);
     if (!validation) {
@@ -36,11 +45,13 @@ Deno.serve(async (req) => {
     const { server_url, username, password, playlist_name } = validation;
     const base = server_url.replace(/\/+$/, "");
 
-    // Handle stream URL request - return the URL directly
+    // Handle stream URL request - return HTTPS URL to avoid mixed content
     if (action === "get_stream_url") {
       const ext = extension || (stream_type === "live" ? "m3u8" : "mp4");
       const pathType = stream_type === "movie" ? "movie" : stream_type === "series" ? "series" : "live";
-      const url = `${base}/${pathType}/${encodeURIComponent(username)}/${encodeURIComponent(password)}/${stream_id}.${ext}`;
+      let url = `${base}/${pathType}/${encodeURIComponent(username)}/${encodeURIComponent(password)}/${stream_id}.${ext}`;
+      // Force HTTPS to avoid mixed content on HTTPS pages
+      url = url.replace(/^http:\/\//, "https://");
       return new Response(
         JSON.stringify({ url }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -73,9 +84,9 @@ Deno.serve(async (req) => {
       case "get_vod_info":
         apiUrl += `&action=get_vod_info&vod_id=${vod_id}`; break;
       case "get_short_epg":
-        apiUrl += `&action=get_short_epg&stream_id=${body.stream_id}&limit=${body.limit || 4}`; break;
+        apiUrl += `&action=get_short_epg&stream_id=${params.stream_id}&limit=${params.limit || 4}`; break;
       case "get_all_epg":
-        apiUrl += `&action=get_simple_data_table&stream_id=${body.stream_id}`; break;
+        apiUrl += `&action=get_simple_data_table&stream_id=${params.stream_id}`; break;
       default:
         return new Response(
           JSON.stringify({ error: "Ação inválida" }),
