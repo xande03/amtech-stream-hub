@@ -43,7 +43,14 @@ Deno.serve(async (req) => {
     }
 
     const { server_url, username, password, playlist_name } = validation;
-    const base = server_url.replace(/\/+$/, "");
+    
+    // Normalize server_url: add http:// if no protocol, handle provider-style names
+    let normalizedUrl = server_url.trim().replace(/\/+$/, "");
+    if (!/^https?:\/\//i.test(normalizedUrl)) {
+      // If it looks like a domain (has dots or colon for port), add http://
+      normalizedUrl = `http://${normalizedUrl}`;
+    }
+    const base = normalizedUrl;
 
     // Handle stream URL request - return HTTPS URL to avoid mixed content
     if (action === "get_stream_url") {
@@ -94,10 +101,13 @@ Deno.serve(async (req) => {
         );
     }
 
+    console.log(`Fetching: ${apiUrl.replace(/password=[^&]+/, 'password=***')}`);
     const apiRes = await fetch(apiUrl);
     if (!apiRes.ok) {
+      const errText = await apiRes.text().catch(() => '');
+      console.error(`API error ${apiRes.status}: ${errText.substring(0, 200)}`);
       return new Response(
-        JSON.stringify({ error: "Erro ao consultar servidor IPTV" }),
+        JSON.stringify({ error: `Erro ao consultar servidor IPTV (${apiRes.status}). Verifique a URL do servidor.` }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -125,8 +135,15 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
+    console.error("Proxy error:", err.message);
+    const msg = err.message || "Erro interno";
+    const isNetworkError = msg.includes("dns") || msg.includes("connect") || msg.includes("fetch");
     return new Response(
-      JSON.stringify({ error: err.message || "Erro interno" }),
+      JSON.stringify({ 
+        error: isNetworkError 
+          ? "Não foi possível conectar ao servidor. Verifique se a URL/provedor está correto (ex: http://servidor.com:8080)."
+          : msg 
+      }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
