@@ -192,6 +192,7 @@ export default function PlayerPage() {
       <VideoPlayer
         url={streamUrl}
         title={displayTitle}
+        startTime={resumeTime}
         onProgress={!isLive ? handleProgress : undefined}
         onStreamError={handleStreamError}
         onNextEpisode={nextEpisode ? handleNextEpisode : undefined}
