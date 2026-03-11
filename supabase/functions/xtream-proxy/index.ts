@@ -135,8 +135,15 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
+    console.error("Proxy error:", err.message);
+    const msg = err.message || "Erro interno";
+    const isNetworkError = msg.includes("dns") || msg.includes("connect") || msg.includes("fetch");
     return new Response(
-      JSON.stringify({ error: err.message || "Erro interno" }),
+      JSON.stringify({ 
+        error: isNetworkError 
+          ? "Não foi possível conectar ao servidor. Verifique se a URL/provedor está correto (ex: http://servidor.com:8080)."
+          : msg 
+      }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
