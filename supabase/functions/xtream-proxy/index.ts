@@ -36,9 +36,46 @@ Deno.serve(async (req) => {
     const { server_url, username, password, playlist_name } = validation;
     const base = server_url.replace(/\/+$/, "");
 
-    // Handle stream URL request - return the URL directly
+    // Handle stream proxy - pipe the actual stream through this function
+    if (action === "proxy_stream") {
+      const ext = extension || (stream_type === "live" ? "ts" : "mp4");
+      const pathType = stream_type === "movie" ? "movie" : stream_type === "series" ? "series" : "live";
+      const streamUrl = `${base}/${pathType}/${encodeURIComponent(username)}/${encodeURIComponent(password)}/${stream_id}.${ext}`;
+      
+      try {
+        const streamRes = await fetch(streamUrl, {
+          headers: { "User-Agent": "Mozilla/5.0" },
+          redirect: "follow",
+        });
+        
+        if (!streamRes.ok) {
+          return new Response(
+            JSON.stringify({ error: "Stream indisponível" }),
+            { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        
+        const contentType = streamRes.headers.get("content-type") || "video/mp2t";
+        
+        return new Response(streamRes.body, {
+          status: 200,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": contentType,
+            "Cache-Control": "no-cache, no-store",
+          },
+        });
+      } catch (e) {
+        return new Response(
+          JSON.stringify({ error: "Erro ao conectar ao stream" }),
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    // Handle stream URL request - return the URL directly (for m3u8 playlists)
     if (action === "get_stream_url") {
-      const ext = extension || (stream_type === "live" ? "m3u8" : "mp4");
+      const ext = extension || (stream_type === "live" ? "ts" : "mp4");
       const pathType = stream_type === "movie" ? "movie" : stream_type === "series" ? "series" : "live";
       const url = `${base}/${pathType}/${encodeURIComponent(username)}/${encodeURIComponent(password)}/${stream_id}.${ext}`;
       return new Response(
