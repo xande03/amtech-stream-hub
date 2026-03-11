@@ -52,11 +52,121 @@ Deno.serve(async (req) => {
     }
     const base = normalizedUrl;
 
+    const resolvePathType = (type: string) =>
+      type === "movie" ? "movie" : type === "series" ? "series" : "live";
+
+    const buildStreamUrl = (type: string, id: string | number, ext: string) => {
+      const pathType = resolvePathType(type);
+      return `${base}/${pathType}/${encodeURIComponent(username)}/${encodeURIComponent(password)}/${id}.${ext}`;
+    };
+
+    const isAllowedSourceUrl = (sourceUrl: string) => {
+      try {
+        const src = new URL(sourceUrl);
+        const baseHost = new URL(base).host;
+        return src.host === baseHost;
+      } catch {
+        return false;
+      }
+    };
+
+    // Handle stream proxy request (binary passthrough + playlist rewrite)
+    if (action === "proxy_stream") {
+      const sourceUrl = typeof params.source_url === "string" ? params.source_url : "";
+      const ext = extension || (stream_type === "live" ? "m3u8" : "mp4");
+
+      if (sourceUrl && !isAllowedSourceUrl(sourceUrl)) {
+        return new Response(
+          JSON.stringify({ error: "URL de origem inválida" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (!sourceUrl && (!stream_type || !stream_id)) {
+        return new Response(
+          JSON.stringify({ error: "Parâmetros de stream inválidos" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const upstreamUrl = sourceUrl || buildStreamUrl(stream_type, stream_id, ext);
+      const upstreamHeaders = new Headers();
+      const range = req.headers.get("range");
+      if (range) upstreamHeaders.set("range", range);
+
+      const upstreamRes = await fetch(upstreamUrl, { headers: upstreamHeaders });
+      if (!upstreamRes.ok && upstreamRes.status !== 206) {
+        return new Response(
+          JSON.stringify({ error: `Erro no proxy do stream (${upstreamRes.status})` }),
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const contentType =
+        upstreamRes.headers.get("content-type") ||
+        (upstreamUrl.includes(".m3u8") ? "application/vnd.apple.mpegurl" : "video/mp2t");
+
+      const headers = new Headers(corsHeaders);
+      headers.set("Content-Type", contentType);
+      ["cache-control", "accept-ranges", "content-range", "content-length", "etag", "last-modified"].forEach((h) => {
+        const value = upstreamRes.headers.get(h);
+        if (value) headers.set(h, value);
+      });
+
+      let body: BodyInit | ReadableStream<Uint8Array> | null = upstreamRes.body;
+
+      // Rewrite playlist URIs to keep all chunks flowing through proxy (avoids mixed-content/CORS)
+      if (contentType.includes("mpegurl") || upstreamUrl.includes(".m3u8")) {
+        const playlist = await upstreamRes.text();
+        const proxyHost = new URL(req.url).host;
+        const proxyOrigin = `https://${proxyHost}`;
+
+        const toProxyUrl = (uri: string) => {
+          const absolute = new URL(uri, upstreamUrl).toString();
+          return `${proxyOrigin}/functions/v1/xtream-proxy?action=proxy_stream&access_code=${encodeURIComponent(access_code)}&source_url=${encodeURIComponent(absolute)}`;
+        };
+
+        const rewritten = playlist
+          .split("\n")
+          .map((line) => {
+            const trimmed = line.trim();
+            if (!trimmed) return line;
+
+            // Rewrite key URIs: #EXT-X-KEY:...URI="..."
+            if (trimmed.startsWith("#")) {
+              return line.replace(/URI="([^"]+)"/g, (_match, uri) => {
+                try {
+                  return `URI="${toProxyUrl(uri)}"`;
+                } catch {
+                  return _match;
+                }
+              });
+            }
+
+            // Rewrite media segment / child playlist lines
+            try {
+              return toProxyUrl(trimmed);
+            } catch {
+              return line;
+            }
+          })
+          .join("\n");
+
+        body = rewritten;
+        headers.set("Content-Type", "application/vnd.apple.mpegurl");
+        headers.delete("content-length");
+      }
+
+      return new Response(body, {
+        status: upstreamRes.status,
+        headers,
+      });
+    }
+
     // Handle stream URL request - return HTTPS URL to avoid mixed content
     if (action === "get_stream_url") {
       const ext = extension || (stream_type === "live" ? "m3u8" : "mp4");
-      const pathType = stream_type === "movie" ? "movie" : stream_type === "series" ? "series" : "live";
-      let url = `${base}/${pathType}/${encodeURIComponent(username)}/${encodeURIComponent(password)}/${stream_id}.${ext}`;
+      let url = buildStreamUrl(stream_type, stream_id, ext);
       // Force HTTPS to avoid mixed content on HTTPS pages
       url = url.replace(/^http:\/\//, "https://");
       return new Response(
