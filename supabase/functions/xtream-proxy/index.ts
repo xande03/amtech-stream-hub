@@ -119,9 +119,9 @@ Deno.serve(async (req) => {
       case "get_vod_info":
         apiUrl += `&action=get_vod_info&vod_id=${vod_id}`; break;
       case "get_short_epg":
-        apiUrl += `&action=get_short_epg&stream_id=${body.stream_id}&limit=${body.limit || 4}`; break;
+        apiUrl += `&action=get_short_epg&stream_id=${params.stream_id}&limit=${params.limit || 4}`; break;
       case "get_all_epg":
-        apiUrl += `&action=get_simple_data_table&stream_id=${body.stream_id}`; break;
+        apiUrl += `&action=get_simple_data_table&stream_id=${params.stream_id}`; break;
       default:
         return new Response(
           JSON.stringify({ error: "Ação inválida" }),
