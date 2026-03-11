@@ -103,17 +103,36 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
       const hls = new Hls({
         enableWorker: true,
         lowLatencyMode: isLive,
-        maxBufferLength: isLive ? 10 : 60,
-        maxMaxBufferLength: isLive ? 20 : 120,
-        liveSyncDurationCount: 3,
-        liveMaxLatencyDurationCount: 6,
+        // Buffer: live keeps small buffer (2-10s segments from CDN), VOD can buffer ahead
+        maxBufferLength: isLive ? 8 : 60,
+        maxMaxBufferLength: isLive ? 15 : 120,
+        maxBufferSize: isLive ? 30 * 1000 * 1000 : 60 * 1000 * 1000, // 30MB live, 60MB VOD
+        maxBufferHole: isLive ? 0.3 : 0.5,
+        // Live sync: stay close to live edge (CDN delivers 2-10s segments)
+        liveSyncDurationCount: isLive ? 2 : 3,
+        liveMaxLatencyDurationCount: isLive ? 5 : 6,
         liveDurationInfinity: isLive,
-        manifestLoadingTimeOut: 20000,
-        manifestLoadingMaxRetry: 6,
-        levelLoadingTimeOut: 20000,
-        fragLoadingTimeOut: 25000,
-        fragLoadingMaxRetry: 6,
+        liveBackBufferLength: isLive ? 30 : 90, // Keep 30s rewind for live
+        // Adaptive bitrate: auto-switch quality based on bandwidth (SD/HD/FHD)
+        abrEwmaDefaultEstimate: 1000000, // 1Mbps initial estimate
+        abrEwmaFastLive: isLive ? 2.0 : 3.0,
+        abrEwmaSlowLive: isLive ? 6.0 : 9.0,
+        abrBandWidthUpFactor: 0.7,
+        // Network: aggressive timeouts and retries for CDN failover
+        manifestLoadingTimeOut: 15000,
+        manifestLoadingMaxRetry: 8,
+        manifestLoadingRetryDelay: 1000,
+        levelLoadingTimeOut: 15000,
+        levelLoadingMaxRetry: 6,
+        levelLoadingRetryDelay: 1000,
+        fragLoadingTimeOut: 20000,
+        fragLoadingMaxRetry: 8,
+        fragLoadingRetryDelay: 1000,
         startFragPrefetch: true,
+        // Progressive loading for smoother playback
+        progressive: !isLive,
+        // Backtrack when switching levels for seamless quality transitions
+        backBufferLength: isLive ? 30 : 90,
       });
 
       hlsRef.current = hls;
