@@ -32,6 +32,8 @@ export default function Home() {
   const [liveStreams, setLiveStreams] = useState<LiveStream[]>([]);
   const [movies, setMovies] = useState<VodStream[]>([]);
   const [series, setSeries] = useState<Series[]>([]);
+  const [movieCategories, setMovieCategories] = useState<Category[]>([]);
+  const [seriesCategories, setSeriesCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [heroIndex, setHeroIndex] = useState(0);
 
@@ -42,10 +44,14 @@ export default function Home() {
       getLiveStreams(accessCode).catch(() => []),
       getVodStreams(accessCode).catch(() => []),
       getSeriesList(accessCode).catch(() => []),
-    ]).then(([live, vod, ser]) => {
+      getVodCategories(accessCode).catch(() => []),
+      getSeriesCategories(accessCode).catch(() => []),
+    ]).then(([live, vod, ser, vodCats, serCats]) => {
       setLiveStreams(live.slice(0, 20));
       setMovies(vod);
       setSeries(ser);
+      setMovieCategories(vodCats);
+      setSeriesCategories(serCats);
     }).finally(() => setLoading(false));
   }, [accessCode]);
 
