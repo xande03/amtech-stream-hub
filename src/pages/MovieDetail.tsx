@@ -14,7 +14,7 @@ export default function MovieDetail() {
   const { accessCode } = useAuth();
   const navigate = useNavigate();
   const { isFavorite, toggleFavorite } = useFavorites();
-  const { addToHistory } = useWatchHistory();
+  const { addToHistory, history } = useWatchHistory();
   const [movie, setMovie] = useState<VodStream | null>(null);
   const [info, setInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -53,6 +53,18 @@ export default function MovieDetail() {
           <div className="aspect-[2/3] rounded-xl overflow-hidden bg-secondary">
             {movie.stream_icon ? <img src={movie.stream_icon} alt={movie.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-muted-foreground">Sem capa</div>}
           </div>
+          {(() => {
+            const movieProgress = history.find(h => String(h.id) === String(movie.stream_id) && h.type === 'movie');
+            if (!movieProgress?.progress || movieProgress.progress <= 0) return null;
+            return (
+              <div className="mt-2">
+                <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
+                  <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${movieProgress.progress}%` }} />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">{Math.round(movieProgress.progress)}% assistido</p>
+              </div>
+            );
+          })()}
         </div>
         <div className="flex-1 space-y-4">
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">{movie.name}</h1>
@@ -66,7 +78,13 @@ export default function MovieDetail() {
           {cast && <p className="text-sm text-muted-foreground"><span className="text-foreground font-medium">Elenco:</span> {cast}</p>}
           {director && <p className="text-sm text-muted-foreground"><span className="text-foreground font-medium">Diretor:</span> {director}</p>}
           <div className="flex gap-3 pt-2">
-            <Button onClick={handlePlay} className="gradient-primary text-primary-foreground font-medium px-8"><Play className="w-4 h-4 mr-2" /> Assistir</Button>
+            {(() => {
+              const mp = history.find(h => String(h.id) === String(movie.stream_id) && h.type === 'movie');
+              const label = mp?.progress && mp.progress > 5 ? 'Continuar Assistindo' : 'Assistir';
+              return (
+                <Button onClick={handlePlay} className="gradient-primary text-primary-foreground font-medium px-8"><Play className="w-4 h-4 mr-2" /> {label}</Button>
+              );
+            })()}
             <Button variant="outline" onClick={() => toggleFavorite({ id: movie.stream_id, type: 'movie', name: movie.name, icon: movie.stream_icon })} className="border-border text-foreground hover:bg-secondary">
               <Heart className={`w-4 h-4 mr-2 ${isFavorite(movie.stream_id, 'movie') ? 'fill-destructive text-destructive' : ''}`} />
               {isFavorite(movie.stream_id, 'movie') ? 'Favoritado' : 'Favoritar'}

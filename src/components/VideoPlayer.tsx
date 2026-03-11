@@ -24,6 +24,8 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, onN
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isPip, setIsPip] = useState(false);
   const [showNextOverlay, setShowNextOverlay] = useState(false);
+  const [showSkipIntro, setShowSkipIntro] = useState(false);
+  const [skipIntroDismissed, setSkipIntroDismissed] = useState(false);
   const retryCountRef = useRef(0);
   const maxRetries = 5;
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -196,13 +198,20 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, onN
     const video = videoRef.current;
     if (video && video.duration && !isLive) {
       const progress = (video.currentTime / video.duration) * 100;
+      const currentTime = video.currentTime;
       if (onProgressRef.current) onProgressRef.current(progress);
+      // Show skip intro in first 2 minutes (10s-120s)
+      if (!skipIntroDismissed && currentTime >= 10 && currentTime <= 120) {
+        if (!showSkipIntro) setShowSkipIntro(true);
+      } else if (showSkipIntro) {
+        setShowSkipIntro(false);
+      }
       // Show next episode overlay when near end (>90%)
       if (onNextEpisode && progress > 90 && !showNextOverlay) {
         setShowNextOverlay(true);
       }
     }
-  }, [isLive, onNextEpisode, showNextOverlay]);
+  }, [isLive, onNextEpisode, showNextOverlay, showSkipIntro, skipIntroDismissed]);
 
   // Auto-trigger next episode on video end
   useEffect(() => {
@@ -268,6 +277,24 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, onN
           </button>
         </div>
       </div>
+
+      {/* Skip Intro button */}
+      {showSkipIntro && !skipIntroDismissed && (
+        <div className="absolute bottom-20 left-4 z-20 animate-fade-in">
+          <button
+            onClick={() => {
+              const video = videoRef.current;
+              if (video) video.currentTime = 120;
+              setShowSkipIntro(false);
+              setSkipIntroDismissed(true);
+            }}
+            className="flex items-center gap-2 px-5 py-3 rounded-xl bg-secondary/90 backdrop-blur-sm text-foreground font-medium text-sm shadow-lg border border-border hover:bg-secondary transition-colors"
+          >
+            <SkipForward className="w-4 h-4" />
+            Pular Intro
+          </button>
+        </div>
+      )}
 
       {/* Next episode overlay */}
       {showNextOverlay && onNextEpisode && (

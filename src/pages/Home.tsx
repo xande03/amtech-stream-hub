@@ -186,30 +186,34 @@ export default function Home() {
         </div>
       )}
 
-      {/* Continue Watching */}
-      {history.length > 0 && (
-        <ContentRow title="Continuar Assistindo">
-          {history.slice(0, 10).map((item) => (
-            <div key={`${item.type}-${item.id}`} className="w-36 md:w-44 flex-shrink-0">
-              <ContentCard
-                title={item.name}
-                image={item.icon}
-                subtitle={item.episodeInfo}
-                aspectRatio="landscape"
-                onClick={() => {
-                  if (item.type === 'live') navigate(`/player/live/${item.id}`);
-                  else if (item.type === 'movie') navigate(`/player/movie/${item.id}`);
-                }}
-              />
-              {item.progress !== undefined && item.progress > 0 && (
-                <div className="w-full h-1 bg-secondary rounded-full mt-1 overflow-hidden">
-                  <div className="h-full bg-primary rounded-full" style={{ width: `${item.progress}%` }} />
+      {/* Continue Watching - only items with partial progress */}
+      {(() => {
+        const continueWatching = history.filter(h => h.progress && h.progress > 5 && h.progress < 95);
+        if (continueWatching.length === 0) return null;
+        return (
+          <ContentRow title="▶️ Continuar Assistindo">
+            {continueWatching.slice(0, 15).map((item) => (
+              <div key={`cw-${item.type}-${item.id}`} className="w-36 md:w-44 flex-shrink-0">
+                <ContentCard
+                  title={item.name}
+                  image={item.icon}
+                  subtitle={item.episodeInfo}
+                  aspectRatio={item.type === 'live' ? 'square' : 'portrait'}
+                  onClick={() => {
+                    if (item.type === 'live') window.open(`/player/live/${item.id}`, '_blank');
+                    else if (item.type === 'movie') navigate(`/movies/${item.id}`);
+                    else navigate(`/series/${item.id}`);
+                  }}
+                />
+                <div className="w-full h-1.5 bg-secondary rounded-full mt-1.5 overflow-hidden">
+                  <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${item.progress}%` }} />
                 </div>
-              )}
-            </div>
-          ))}
-        </ContentRow>
-      )}
+                <p className="text-[10px] text-muted-foreground mt-0.5">{Math.round(item.progress || 0)}% assistido</p>
+              </div>
+            ))}
+          </ContentRow>
+        );
+      })()}
 
       {/* Top Movies */}
       {topMovies.length > 0 && (
