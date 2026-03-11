@@ -33,13 +33,13 @@ export default function AppSidebar() {
       <SidebarContent>
         <div className={`p-4 ${collapsed ? 'px-2' : ''}`}>
           <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-lg gradient-primary flex items-center justify-center flex-shrink-0">
-              <Tv className="w-5 h-5 text-primary-foreground" />
+            <div className="w-10 h-10 rounded-lg gradient-primary flex items-center justify-center flex-shrink-0">
+              <Tv className="w-6 h-6 text-primary-foreground" />
             </div>
             {!collapsed && (
               <div>
-                <h1 className="text-sm font-bold text-foreground">AMTECH</h1>
-                <p className="text-[10px] text-muted-foreground">PLAYER</p>
+                <h1 className="text-base font-bold text-foreground">AMTECH</h1>
+                <p className="text-[11px] text-muted-foreground">PLAYER</p>
               </div>
             )}
           </div>
