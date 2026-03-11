@@ -78,7 +78,13 @@ export default function MovieDetail() {
           {cast && <p className="text-sm text-muted-foreground"><span className="text-foreground font-medium">Elenco:</span> {cast}</p>}
           {director && <p className="text-sm text-muted-foreground"><span className="text-foreground font-medium">Diretor:</span> {director}</p>}
           <div className="flex gap-3 pt-2">
-            <Button onClick={handlePlay} className="gradient-primary text-primary-foreground font-medium px-8"><Play className="w-4 h-4 mr-2" /> Assistir</Button>
+            {(() => {
+              const mp = history.find(h => String(h.id) === String(movie.stream_id) && h.type === 'movie');
+              const label = mp?.progress && mp.progress > 5 ? 'Continuar Assistindo' : 'Assistir';
+              return (
+                <Button onClick={handlePlay} className="gradient-primary text-primary-foreground font-medium px-8"><Play className="w-4 h-4 mr-2" /> {label}</Button>
+              );
+            })()}
             <Button variant="outline" onClick={() => toggleFavorite({ id: movie.stream_id, type: 'movie', name: movie.name, icon: movie.stream_icon })} className="border-border text-foreground hover:bg-secondary">
               <Heart className={`w-4 h-4 mr-2 ${isFavorite(movie.stream_id, 'movie') ? 'fill-destructive text-destructive' : ''}`} />
               {isFavorite(movie.stream_id, 'movie') ? 'Favoritado' : 'Favoritar'}
