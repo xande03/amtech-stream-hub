@@ -11,11 +11,12 @@ interface StreamAttempt {
   proxy: boolean;
 }
 
+// Live channels: HLS first (standard IPTV delivery), then TS fallback, then proxy variants
 const LIVE_ATTEMPTS: StreamAttempt[] = [
-  { ext: 'm3u8', proxy: false },
-  { ext: 'ts', proxy: false },
-  { ext: 'm3u8', proxy: true },
-  { ext: 'ts', proxy: true },
+  { ext: 'm3u8', proxy: false },   // Direct HLS from CDN (most common)
+  { ext: 'ts', proxy: false },     // Direct MPEG-TS raw stream
+  { ext: 'm3u8', proxy: true },    // Proxied HLS (avoids CORS/mixed content)
+  { ext: 'ts', proxy: true },      // Proxied TS
 ];
 
 export default function PlayerPage() {
@@ -142,9 +143,12 @@ export default function PlayerPage() {
     if (!isLive || !accessCode || !id) return;
     const nextIndex = attemptIndex.current + 1;
     if (nextIndex < LIVE_ATTEMPTS.length) {
+      console.log(`[Live] Attempt ${nextIndex + 1}/${LIVE_ATTEMPTS.length}: ${LIVE_ATTEMPTS[nextIndex].ext} (proxy: ${LIVE_ATTEMPTS[nextIndex].proxy})`);
       setError(null);
       setLoading(true);
-      tryNextAttempt(accessCode, type as 'live', id, nextIndex);
+      setStreamUrl(null); // Reset URL to force remount
+      // Small delay to allow cleanup before next attempt
+      setTimeout(() => tryNextAttempt(accessCode, type as 'live', id, nextIndex), 500);
     }
   };
 

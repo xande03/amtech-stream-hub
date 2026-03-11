@@ -103,17 +103,36 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
       const hls = new Hls({
         enableWorker: true,
         lowLatencyMode: isLive,
-        maxBufferLength: isLive ? 10 : 60,
-        maxMaxBufferLength: isLive ? 20 : 120,
-        liveSyncDurationCount: 3,
-        liveMaxLatencyDurationCount: 6,
+        // Buffer: live keeps small buffer (2-10s segments from CDN), VOD can buffer ahead
+        maxBufferLength: isLive ? 8 : 60,
+        maxMaxBufferLength: isLive ? 15 : 120,
+        maxBufferSize: isLive ? 30 * 1000 * 1000 : 60 * 1000 * 1000, // 30MB live, 60MB VOD
+        maxBufferHole: isLive ? 0.3 : 0.5,
+        // Live sync: stay close to live edge (CDN delivers 2-10s segments)
+        liveSyncDurationCount: isLive ? 2 : 3,
+        liveMaxLatencyDurationCount: isLive ? 5 : 6,
         liveDurationInfinity: isLive,
-        manifestLoadingTimeOut: 20000,
-        manifestLoadingMaxRetry: 6,
-        levelLoadingTimeOut: 20000,
-        fragLoadingTimeOut: 25000,
-        fragLoadingMaxRetry: 6,
+        liveBackBufferLength: isLive ? 30 : 90, // Keep 30s rewind for live
+        // Adaptive bitrate: auto-switch quality based on bandwidth (SD/HD/FHD)
+        abrEwmaDefaultEstimate: 1000000, // 1Mbps initial estimate
+        abrEwmaFastLive: isLive ? 2.0 : 3.0,
+        abrEwmaSlowLive: isLive ? 6.0 : 9.0,
+        abrBandWidthUpFactor: 0.7,
+        // Network: aggressive timeouts and retries for CDN failover
+        manifestLoadingTimeOut: 15000,
+        manifestLoadingMaxRetry: 8,
+        manifestLoadingRetryDelay: 1000,
+        levelLoadingTimeOut: 15000,
+        levelLoadingMaxRetry: 6,
+        levelLoadingRetryDelay: 1000,
+        fragLoadingTimeOut: 20000,
+        fragLoadingMaxRetry: 8,
+        fragLoadingRetryDelay: 1000,
         startFragPrefetch: true,
+        // Progressive loading for smoother playback
+        progressive: !isLive,
+        // Backtrack when switching levels for seamless quality transitions
+        backBufferLength: isLive ? 30 : 90,
       });
 
       hlsRef.current = hls;
@@ -130,19 +149,54 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
           if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
             if (retryCountRef.current < maxRetries) {
               retryCountRef.current++;
-              setTimeout(() => { if (hlsRef.current === hls) hls.startLoad(); }, 2000);
+              // Exponential backoff: 1s, 2s, 4s... for CDN reconnection
+              const delay = Math.min(1000 * Math.pow(2, retryCountRef.current - 1), 8000);
+              console.log(`[HLS] Network error, retry ${retryCountRef.current}/${maxRetries} in ${delay}ms`);
+              setTimeout(() => { if (hlsRef.current === hls) hls.startLoad(); }, delay);
             } else {
               if (onStreamErrorRef.current) onStreamErrorRef.current();
               else setError('Erro de rede. Verifique sua conexão.');
             }
           } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+            // Try media error recovery (codec switch, buffer flush)
+            console.log('[HLS] Media error, attempting recovery...');
             hls.recoverMediaError();
           } else {
             if (onStreamErrorRef.current) onStreamErrorRef.current();
             else setError('Erro ao reproduzir este conteúdo.');
           }
+        } else if (isLive && data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+          // Non-fatal network errors in live: try to recover silently
+          console.log('[HLS] Non-fatal network error, continuing...');
         }
       });
+
+      // For live streams, periodically check if playback stalled and recover
+      if (isLive) {
+        const stallCheck = setInterval(() => {
+          if (video.paused || !hlsRef.current || hlsRef.current !== hls) {
+            clearInterval(stallCheck);
+            return;
+          }
+          // If buffered but not playing, nudge to live edge
+          if (video.readyState >= 2 && video.currentTime > 0) {
+            const buffered = video.buffered;
+            if (buffered.length > 0) {
+              const liveEdge = buffered.end(buffered.length - 1);
+              const lag = liveEdge - video.currentTime;
+              // If too far behind live edge (>15s), jump forward
+              if (lag > 15) {
+                console.log(`[HLS Live] Lag ${lag.toFixed(1)}s, jumping to live edge`);
+                video.currentTime = liveEdge - 2;
+              }
+            }
+          }
+        }, 5000);
+
+        // Clean up stall checker
+        const origDestroy = hls.destroy.bind(hls);
+        hls.destroy = () => { clearInterval(stallCheck); origDestroy(); };
+      }
 
       errorTimerRef.current = setTimeout(() => {
         if (video.readyState < 2 && onStreamErrorRef.current) {
@@ -150,7 +204,7 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
           hlsRef.current = null;
           onStreamErrorRef.current();
         }
-      }, 15000);
+      }, 12000);
 
     } else if (isHls && video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = url;
