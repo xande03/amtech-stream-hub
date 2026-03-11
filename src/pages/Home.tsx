@@ -199,7 +199,14 @@ export default function Home() {
         return (
           <ContentRow title="▶️ Continuar Assistindo">
             {continueWatching.slice(0, 15).map((item) => (
-              <div key={`cw-${item.type}-${item.id}`} className="w-36 md:w-44 flex-shrink-0">
+              <div key={`cw-${item.type}-${item.id}`} className="w-36 md:w-44 flex-shrink-0 relative group/cw">
+                <button
+                  onClick={(e) => { e.stopPropagation(); removeFromHistory(item.id, item.type); }}
+                  className="absolute top-1 right-1 z-10 p-1 rounded-full bg-background/80 backdrop-blur-sm opacity-0 group-hover/cw:opacity-100 transition-opacity"
+                  title="Remover"
+                >
+                  <X className="w-3.5 h-3.5 text-muted-foreground" />
+                </button>
                 <ContentCard
                   title={item.name}
                   image={item.icon}
