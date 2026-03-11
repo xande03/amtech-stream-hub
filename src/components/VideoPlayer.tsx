@@ -25,6 +25,55 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, aut
   const maxRetries = 5;
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Stabilize callbacks with refs to prevent re-triggering loadSource
+  const onStreamErrorRef = useRef(onStreamError);
+  onStreamErrorRef.current = onStreamError;
+  const onProgressRef = useRef(onProgress);
+  onProgressRef.current = onProgress;
+
+  // Lock to landscape on mount (mobile)
+  useEffect(() => {
+    const lockLandscape = async () => {
+      try {
+        const orientation = screen.orientation;
+        if (orientation?.lock) {
+          await orientation.lock('landscape');
+        }
+      } catch {
+        // Not supported or not allowed — ignore
+      }
+    };
+
+    // Also request fullscreen on mobile for better experience
+    const enterFullscreen = async () => {
+      try {
+        if (containerRef.current && !document.fullscreenElement) {
+          await containerRef.current.requestFullscreen();
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    // Small delay to ensure DOM is ready
+    const timer = setTimeout(() => {
+      lockLandscape();
+      // Only auto-fullscreen on mobile
+      if (window.innerWidth < 768) {
+        enterFullscreen();
+      }
+    }, 300);
+
+    return () => {
+      clearTimeout(timer);
+      try {
+        screen.orientation?.unlock?.();
+      } catch {
+        // ignore
+      }
+    };
+  }, []);
+
   const tryPlay = useCallback((video: HTMLVideoElement) => {
     if (!autoPlay) return;
     const playPromise = video.play();
@@ -55,16 +104,17 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, aut
       const hls = new Hls({
         enableWorker: true,
         lowLatencyMode: isLive,
-        maxBufferLength: isLive ? 10 : 30,
-        maxMaxBufferLength: isLive ? 20 : 60,
+        maxBufferLength: isLive ? 10 : 60,
+        maxMaxBufferLength: isLive ? 20 : 120,
         liveSyncDurationCount: 3,
         liveMaxLatencyDurationCount: 6,
         liveDurationInfinity: isLive,
-        manifestLoadingTimeOut: 15000,
-        manifestLoadingMaxRetry: 4,
-        levelLoadingTimeOut: 15000,
-        fragLoadingTimeOut: 20000,
-        fragLoadingMaxRetry: 4,
+        manifestLoadingTimeOut: 20000,
+        manifestLoadingMaxRetry: 6,
+        levelLoadingTimeOut: 20000,
+        fragLoadingTimeOut: 25000,
+        fragLoadingMaxRetry: 6,
+        startFragPrefetch: true,
       });
 
       hlsRef.current = hls;
@@ -81,33 +131,35 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, aut
           if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
             if (retryCountRef.current < maxRetries) {
               retryCountRef.current++;
-              setTimeout(() => hls.startLoad(), 2000);
+              setTimeout(() => {
+                if (hlsRef.current === hls) hls.startLoad();
+              }, 2000);
             } else {
-              if (onStreamError) onStreamError();
+              if (onStreamErrorRef.current) onStreamErrorRef.current();
               else setError('Erro de rede. Verifique sua conexão.');
             }
           } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
             hls.recoverMediaError();
           } else {
-            if (onStreamError) onStreamError();
+            if (onStreamErrorRef.current) onStreamErrorRef.current();
             else setError('Erro ao reproduzir este conteúdo.');
           }
         }
       });
 
       errorTimerRef.current = setTimeout(() => {
-        if (video.readyState < 2 && onStreamError) {
+        if (video.readyState < 2 && onStreamErrorRef.current) {
           hls.destroy();
           hlsRef.current = null;
-          onStreamError();
+          onStreamErrorRef.current();
         }
-      }, 12000);
+      }, 15000);
 
     } else if (isHls && video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = url;
       video.addEventListener('loadedmetadata', () => tryPlay(video), { once: true });
       video.addEventListener('error', () => {
-        if (onStreamError) onStreamError();
+        if (onStreamErrorRef.current) onStreamErrorRef.current();
         else setError('Erro ao carregar stream.');
       }, { once: true });
     } else {
@@ -115,17 +167,17 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, aut
       video.addEventListener('loadedmetadata', () => tryPlay(video), { once: true });
       video.addEventListener('canplay', () => tryPlay(video), { once: true });
       video.addEventListener('error', () => {
-        if (onStreamError) onStreamError();
+        if (onStreamErrorRef.current) onStreamErrorRef.current();
         else setError('Erro ao carregar o vídeo.');
       }, { once: true });
 
       errorTimerRef.current = setTimeout(() => {
-        if (video.readyState < 2 && onStreamError) {
-          onStreamError();
+        if (video.readyState < 2 && onStreamErrorRef.current) {
+          onStreamErrorRef.current();
         }
-      }, 10000);
+      }, 15000);
     }
-  }, [url, isLive, tryPlay, onStreamError]);
+  }, [url, isLive, tryPlay]); // removed onStreamError from deps
 
   useEffect(() => {
     loadSource();
@@ -160,10 +212,10 @@ export default function VideoPlayer({ url, title, onProgress, onStreamError, aut
 
   const handleTimeUpdate = useCallback(() => {
     const video = videoRef.current;
-    if (video && video.duration && onProgress && !isLive) {
-      onProgress((video.currentTime / video.duration) * 100);
+    if (video && video.duration && onProgressRef.current && !isLive) {
+      onProgressRef.current((video.currentTime / video.duration) * 100);
     }
-  }, [onProgress, isLive]);
+  }, [isLive]);
 
   const toggleFullscreen = () => {
     if (containerRef.current) {
