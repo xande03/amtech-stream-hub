@@ -45,12 +45,42 @@ Deno.serve(async (req) => {
     const { server_url, username, password, playlist_name } = validation;
     const base = server_url.replace(/\/+$/, "");
 
+    // Handle stream proxy - pipe the stream through this function to avoid mixed content
+    if (action === "proxy_stream") {
+      const ext = extension || (stream_type === "live" ? "ts" : "mp4");
+      const pathType = stream_type === "movie" ? "movie" : stream_type === "series" ? "series" : "live";
+      const streamUrl = `${base}/${pathType}/${encodeURIComponent(username)}/${encodeURIComponent(password)}/${stream_id}.${ext}`;
+      
+      const streamRes = await fetch(streamUrl, {
+        headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
+        redirect: "follow",
+      });
+      
+      if (!streamRes.ok || !streamRes.body) {
+        return new Response(
+          JSON.stringify({ error: "Stream indisponível", status: streamRes.status }),
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      const contentType = streamRes.headers.get("content-type") || "video/mp2t";
+      
+      return new Response(streamRes.body, {
+        status: 200,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": contentType,
+          "Cache-Control": "no-cache, no-store",
+          "Transfer-Encoding": "chunked",
+        },
+      });
+    }
+
     // Handle stream URL request - return HTTPS URL to avoid mixed content
     if (action === "get_stream_url") {
       const ext = extension || (stream_type === "live" ? "ts" : "mp4");
       const pathType = stream_type === "movie" ? "movie" : stream_type === "series" ? "series" : "live";
       let url = `${base}/${pathType}/${encodeURIComponent(username)}/${encodeURIComponent(password)}/${stream_id}.${ext}`;
-      // Force HTTPS to avoid mixed content issues
       url = url.replace(/^http:\/\//, "https://");
       return new Response(
         JSON.stringify({ url }),
