@@ -3,9 +3,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { getVodStreams, getVodCategories, VodStream, Category } from '@/services/xtreamApi';
 import ContentCard from '@/components/ContentCard';
+import ContentRow from '@/components/ContentRow';
 import { useFavorites } from '@/hooks/useFavorites';
+import { useWatchHistory } from '@/hooks/useWatchHistory';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
 
 const PAGE_SIZE = 60;
