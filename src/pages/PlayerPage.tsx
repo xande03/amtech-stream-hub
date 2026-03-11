@@ -67,12 +67,13 @@ export default function PlayerPage() {
   // For live streams proxied through edge function, retry with m3u8 on error
   const handleStreamError = () => {
     if (!isLive || !accessCode || !id) return;
-    // Try m3u8 as fallback
-    const proxyUrl = getProxyStreamUrl(accessCode, type as 'live', id, 'm3u8');
-    if (streamUrl !== proxyUrl) {
-      setStreamUrl(proxyUrl);
-    } else {
-      setError('Não foi possível carregar o canal.');
+    const nextIndex = triedExts.current.length;
+    if (nextIndex < LIVE_EXTENSIONS.length) {
+      const extension = LIVE_EXTENSIONS[nextIndex];
+      triedExts.current.push(extension);
+      getStreamUrl(accessCode, type as 'live', id, extension)
+        .then(url => setStreamUrl(url))
+        .catch(() => setError('Não foi possível carregar o canal.'));
     }
   };
 
