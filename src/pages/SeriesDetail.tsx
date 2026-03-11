@@ -7,6 +7,7 @@ import { useWatchHistory } from '@/hooks/useWatchHistory';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { Play, Heart, ArrowLeft, Star } from 'lucide-react';
+import { SeriesDetailSkeleton } from '@/components/LoadingSkeleton';
 
 export default function SeriesDetail() {
   const { id } = useParams<{ id: string }>();
