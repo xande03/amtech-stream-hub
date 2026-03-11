@@ -95,7 +95,22 @@ export function SeriesLoadingSkeleton() {
   );
 }
 
-export function PageLoadingSkeleton() {
+export function MoviesLoadingSkeleton() {
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+      <ShimmerBar className="h-8 w-28" />
+      <ShimmerBar className="h-12 w-full max-w-lg rounded-xl" delay={0.1} />
+      <div className="flex gap-2 overflow-hidden">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <ShimmerBar key={i} className="h-8 w-20 rounded-full flex-shrink-0" delay={i * 0.05} />
+        ))}
+      </div>
+      <GridSkeleton count={14} />
+    </motion.div>
+  );
+}
+
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
