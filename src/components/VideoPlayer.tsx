@@ -149,19 +149,54 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
           if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
             if (retryCountRef.current < maxRetries) {
               retryCountRef.current++;
-              setTimeout(() => { if (hlsRef.current === hls) hls.startLoad(); }, 2000);
+              // Exponential backoff: 1s, 2s, 4s... for CDN reconnection
+              const delay = Math.min(1000 * Math.pow(2, retryCountRef.current - 1), 8000);
+              console.log(`[HLS] Network error, retry ${retryCountRef.current}/${maxRetries} in ${delay}ms`);
+              setTimeout(() => { if (hlsRef.current === hls) hls.startLoad(); }, delay);
             } else {
               if (onStreamErrorRef.current) onStreamErrorRef.current();
               else setError('Erro de rede. Verifique sua conexão.');
             }
           } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+            // Try media error recovery (codec switch, buffer flush)
+            console.log('[HLS] Media error, attempting recovery...');
             hls.recoverMediaError();
           } else {
             if (onStreamErrorRef.current) onStreamErrorRef.current();
             else setError('Erro ao reproduzir este conteúdo.');
           }
+        } else if (isLive && data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+          // Non-fatal network errors in live: try to recover silently
+          console.log('[HLS] Non-fatal network error, continuing...');
         }
       });
+
+      // For live streams, periodically check if playback stalled and recover
+      if (isLive) {
+        const stallCheck = setInterval(() => {
+          if (video.paused || !hlsRef.current || hlsRef.current !== hls) {
+            clearInterval(stallCheck);
+            return;
+          }
+          // If buffered but not playing, nudge to live edge
+          if (video.readyState >= 2 && video.currentTime > 0) {
+            const buffered = video.buffered;
+            if (buffered.length > 0) {
+              const liveEdge = buffered.end(buffered.length - 1);
+              const lag = liveEdge - video.currentTime;
+              // If too far behind live edge (>15s), jump forward
+              if (lag > 15) {
+                console.log(`[HLS Live] Lag ${lag.toFixed(1)}s, jumping to live edge`);
+                video.currentTime = liveEdge - 2;
+              }
+            }
+          }
+        }, 5000);
+
+        // Clean up stall checker
+        const origDestroy = hls.destroy.bind(hls);
+        hls.destroy = () => { clearInterval(stallCheck); origDestroy(); };
+      }
 
       errorTimerRef.current = setTimeout(() => {
         if (video.readyState < 2 && onStreamErrorRef.current) {
@@ -169,7 +204,7 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
           hlsRef.current = null;
           onStreamErrorRef.current();
         }
-      }, 15000);
+      }, 12000);
 
     } else if (isHls && video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = url;
