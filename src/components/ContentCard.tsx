@@ -38,21 +38,36 @@ export default function ContentCard({
       onClick={onClick}
     >
       <div className={`relative ${aspectClass} rounded-lg overflow-hidden bg-secondary mb-2`}>
-        {image ? (
+        {image && image.trim() ? (
           <img
-            src={image}
+            src={image.trim()}
             alt={title}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
             loading="lazy"
+            referrerPolicy="no-referrer"
+            crossOrigin="anonymous"
             onError={(e) => {
-              (e.target as HTMLImageElement).src = '/placeholder.svg';
+              const img = e.target as HTMLImageElement;
+              // If crossOrigin failed, retry without it
+              if (img.crossOrigin) {
+                img.crossOrigin = '';
+                img.src = image.trim();
+                return;
+              }
+              // Final fallback: hide image and show title
+              img.style.display = 'none';
+              const fallback = img.parentElement?.querySelector('[data-fallback]') as HTMLElement;
+              if (fallback) fallback.style.display = 'flex';
             }}
           />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-secondary">
-            <span className="text-muted-foreground text-xs text-center px-2">{title}</span>
-          </div>
-        )}
+        ) : null}
+        <div
+          data-fallback
+          className="w-full h-full flex items-center justify-center bg-secondary absolute inset-0"
+          style={{ display: image && image.trim() ? 'none' : 'flex' }}
+        >
+          <span className="text-muted-foreground text-xs text-center px-2 line-clamp-3">{title}</span>
+        </div>
 
         <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
