@@ -261,6 +261,7 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
     return () => {
       if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
       if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
+      if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
     };
   }, [loadSource]);
 
