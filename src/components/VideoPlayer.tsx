@@ -186,11 +186,14 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
       // When a fragment loads successfully after reconnecting, mark stable
       if (isLive) {
         hls.on(Hls.Events.FRAG_LOADED, () => {
-          if (connectionStatus === 'reconnecting' || connectionStatus === 'connecting') {
-            setConnectionStatus('stable');
-            if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
-            statusTimerRef.current = setTimeout(() => setConnectionStatus('idle'), 4000);
-          }
+          setConnectionStatus(prev => {
+            if (prev === 'reconnecting' || prev === 'connecting') {
+              if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
+              statusTimerRef.current = setTimeout(() => setConnectionStatus('idle'), 4000);
+              return 'stable';
+            }
+            return prev;
+          });
         });
       }
 
