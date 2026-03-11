@@ -63,12 +63,12 @@ export default function SeriesPage() {
         </div>
 
         {platformCategories.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
+          <DraggableScroll>
             <span className="text-xs text-muted-foreground self-center mr-1 whitespace-nowrap">Plataformas:</span>
             {platformCategories.map(cat => (
               <button key={cat.category_id} onClick={() => setSelectedCategory(cat.category_id)} className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-colors ${selectedCategory === cat.category_id ? 'gradient-primary text-primary-foreground' : 'bg-accent text-accent-foreground hover:bg-accent/80'}`}>{cat.category_name}</button>
             ))}
-          </div>
+          </DraggableScroll>
         )}
 
         <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
