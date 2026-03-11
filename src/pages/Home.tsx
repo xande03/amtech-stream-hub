@@ -259,7 +259,7 @@ export default function Home() {
       {featuredItems.length > 0 && (
         <div className="mb-2">
           <h3 className="text-lg font-semibold text-foreground mb-3">⭐ Destaques</h3>
-          <ContentRow>
+          <ContentRow title=" ">
             {featuredItems.map((item) => (
               <motion.div
                 key={`feat-${item.type}-${item.id}`}
