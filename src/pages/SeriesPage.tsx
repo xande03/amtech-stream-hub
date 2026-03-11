@@ -71,12 +71,12 @@ export default function SeriesPage() {
           </DraggableScroll>
         )}
 
-        <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
+        <DraggableScroll>
           <button onClick={() => setSelectedCategory('all')} className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors ${selectedCategory === 'all' ? 'gradient-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'}`}>Todas</button>
           {otherCategories.map(cat => (
             <button key={cat.category_id} onClick={() => setSelectedCategory(cat.category_id)} className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors ${selectedCategory === cat.category_id ? 'gradient-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'}`}>{cat.category_name}</button>
           ))}
-        </div>
+        </DraggableScroll>
       </div>
 
       {recentlyWatched.length > 0 && selectedCategory === 'all' && !search && (
