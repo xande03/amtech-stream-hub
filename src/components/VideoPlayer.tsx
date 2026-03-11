@@ -28,6 +28,7 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
   const [showSkipIntro, setShowSkipIntro] = useState(false);
   const [skipIntroDismissed, setSkipIntroDismissed] = useState(false);
   const retryCountRef = useRef(0);
+  const hasResumedRef = useRef(false);
   const maxRetries = 5;
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
