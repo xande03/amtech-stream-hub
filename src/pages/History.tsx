@@ -45,7 +45,7 @@ export default function History() {
                   title={item.name}
                   image={item.icon}
                   aspectRatio="square"
-                  onClick={() => navigate(`/player/live/${item.id}`)}
+                  onClick={() => window.open(`/player/live/${item.id}`, '_blank')}
                 />
                 {item.progress !== undefined && item.progress > 0 && (
                   <div className="w-full h-1 bg-secondary rounded-full mt-1 overflow-hidden">

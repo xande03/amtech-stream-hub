@@ -38,7 +38,7 @@ export default function Favorites() {
                 aspectRatio="square"
                 isFavorite
                 onFavoriteToggle={() => toggleFavorite(f)}
-                onClick={() => navigate(`/player/live/${f.id}`)}
+                onClick={() => window.open(`/player/live/${f.id}`, '_blank')}
               />
             ))}
           </div>
