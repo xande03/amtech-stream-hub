@@ -7,6 +7,7 @@ interface ContentCardProps {
   subtitle?: string;
   rating?: string | number;
   isFavorite?: boolean;
+  isNew?: boolean;
   onFavoriteToggle?: () => void;
   onClick?: () => void;
   aspectRatio?: 'portrait' | 'landscape' | 'square';
