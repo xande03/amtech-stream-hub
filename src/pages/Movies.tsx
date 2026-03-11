@@ -18,7 +18,7 @@ import { Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
 import DraggableScroll from '@/components/DraggableScroll';
-import { GridSkeleton } from '@/components/LoadingSkeleton';
+import { MoviesLoadingSkeleton } from '@/components/LoadingSkeleton';
 
 const PAGE_SIZE = 60;
 
@@ -54,7 +54,7 @@ export default function Movies() {
 
   const visible = filtered.slice(0, visibleCount);
 
-  if (loading) return <div><h1 className="text-2xl font-bold text-foreground mb-4">Filmes</h1><GridSkeleton /></div>;
+  if (loading) return <MoviesLoadingSkeleton />;
 
   const recentlyWatched = history.filter(h => h.type === 'movie').slice(0, 15);
 
