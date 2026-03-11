@@ -28,6 +28,17 @@ export default function MovieDetail() {
     ]).then(([m, i]) => { setMovie(m); setInfo(i); }).finally(() => setLoading(false));
   }, [accessCode, id]);
 
+  const { addToHistory, history, getResumeTime } = useWatchHistory();
+
+  const formatTime = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${m}:${String(s).padStart(2, '0')}`;
+  };
+
+  const resumeTime = movie ? getResumeTime(movie.stream_id, 'movie') : 0;
+
   const handlePlay = () => {
     if (!movie) return;
     addToHistory({ id: movie.stream_id, type: 'movie', name: movie.name, icon: movie.stream_icon });
