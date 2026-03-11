@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { getStreamUrl } from '@/services/xtreamApi';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
 import VideoPlayer from '@/components/VideoPlayer';
 import { Loader2 } from 'lucide-react';
+
+const LIVE_EXTENSIONS = ['ts', 'm3u8'];
 
 export default function PlayerPage() {
   const { type, id, ext } = useParams<{ type: string; id: string; ext?: string }>();
@@ -14,6 +16,7 @@ export default function PlayerPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const triedExts = useRef<string[]>([]);
 
   const isLive = type === 'live';
 
@@ -21,14 +24,59 @@ export default function PlayerPage() {
     if (!accessCode || !type || !id) return;
     setLoading(true);
     setError(null);
+    triedExts.current = [];
+
     const streamType = type as 'live' | 'movie' | 'series';
-    // For live, try m3u8 first; for VOD use mp4 or provided ext
-    const extension = ext || (isLive ? 'm3u8' : 'mp4');
-    getStreamUrl(accessCode, streamType, id, extension)
-      .then(url => setStreamUrl(url))
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false));
+
+    if (ext) {
+      // Explicit extension provided
+      getStreamUrl(accessCode, streamType, id, ext)
+        .then(url => setStreamUrl(url))
+        .catch(err => setError(err.message))
+        .finally(() => setLoading(false));
+      return;
+    }
+
+    if (!isLive) {
+      getStreamUrl(accessCode, streamType, id, 'mp4')
+        .then(url => setStreamUrl(url))
+        .catch(err => setError(err.message))
+        .finally(() => setLoading(false));
+      return;
+    }
+
+    // For live: try extensions in order
+    const tryExt = (index: number) => {
+      if (index >= LIVE_EXTENSIONS.length) {
+        setError('Não foi possível carregar o canal.');
+        setLoading(false);
+        return;
+      }
+      const extension = LIVE_EXTENSIONS[index];
+      triedExts.current.push(extension);
+      getStreamUrl(accessCode, streamType, id, extension)
+        .then(url => {
+          setStreamUrl(url);
+          setLoading(false);
+        })
+        .catch(() => tryExt(index + 1));
+    };
+
+    tryExt(0);
   }, [accessCode, type, id, ext, isLive]);
+
+  // Allow retrying with next extension on video error
+  const handleStreamError = () => {
+    if (!isLive || !accessCode || !id) return;
+    const nextIndex = triedExts.current.length;
+    if (nextIndex < LIVE_EXTENSIONS.length) {
+      const extension = LIVE_EXTENSIONS[nextIndex];
+      triedExts.current.push(extension);
+      getStreamUrl(accessCode, type as 'live', id, extension)
+        .then(url => setStreamUrl(url))
+        .catch(() => setError('Não foi possível carregar o canal.'));
+    }
+  };
 
   if (loading) {
     return (
@@ -65,6 +113,7 @@ export default function PlayerPage() {
         url={streamUrl}
         title={titleMap[type || ''] || 'Reproduzindo'}
         onProgress={!isLive ? handleProgress : undefined}
+        onStreamError={handleStreamError}
         autoPlay
         isLive={isLive}
       />

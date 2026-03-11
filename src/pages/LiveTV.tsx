@@ -1,59 +1,13 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { getLiveStreams, getLiveCategories, getShortEpg, LiveStream, Category, EpgEntry } from '@/services/xtreamApi';
+import { getLiveStreams, getLiveCategories, LiveStream, Category } from '@/services/xtreamApi';
 import { useFavorites } from '@/hooks/useFavorites';
 import { Input } from '@/components/ui/input';
-import { Search, Tv, Radio, Clock, Heart } from 'lucide-react';
+import { Search, Tv, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-function EpgInfo({ accessCode, streamId }: { accessCode: string; streamId: number }) {
-  const [epg, setEpg] = useState<EpgEntry[]>([]);
-
-  useEffect(() => {
-    let cancelled = false;
-    getShortEpg(accessCode, streamId, 2)
-      .then(entries => { if (!cancelled) setEpg(entries); })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [accessCode, streamId]);
-
-  if (epg.length === 0) return null;
-
-  const now = Math.floor(Date.now() / 1000);
-  const current = epg.find(e => e.start_timestamp <= now && e.stop_timestamp > now) || epg[0];
-  const next = epg.find(e => e.start_timestamp > now);
-
-  const formatTime = (ts: number) => {
-    const d = new Date(ts * 1000);
-    return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-  };
-
-  const progress = current ? Math.min(100, Math.max(0, ((now - current.start_timestamp) / (current.stop_timestamp - current.start_timestamp)) * 100)) : 0;
-
-  return (
-    <div className="mt-1.5 space-y-1">
-      {current && (
-        <div>
-          <div className="flex items-center gap-1">
-            <Radio className="w-3 h-3 text-destructive animate-pulse" />
-            <span className="text-[10px] text-foreground font-medium truncate">{current.title}</span>
-          </div>
-          <div className="w-full h-0.5 bg-secondary rounded-full mt-0.5 overflow-hidden">
-            <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${progress}%` }} />
-          </div>
-          <span className="text-[9px] text-muted-foreground">{formatTime(current.start_timestamp)} - {formatTime(current.stop_timestamp)}</span>
-        </div>
-      )}
-      {next && (
-        <div className="flex items-center gap-1">
-          <Clock className="w-2.5 h-2.5 text-muted-foreground" />
-          <span className="text-[9px] text-muted-foreground truncate">{formatTime(next.start_timestamp)} {next.title}</span>
-        </div>
-      )}
-    </div>
-  );
-}
+const PAGE_SIZE = 60;
 
 export default function LiveTV() {
   const { accessCode } = useAuth();
@@ -65,6 +19,7 @@ export default function LiveTV() {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   useEffect(() => {
     if (!accessCode) return;
@@ -78,12 +33,17 @@ export default function LiveTV() {
     }).finally(() => setLoading(false));
   }, [accessCode]);
 
+  // Reset visible count when filter changes
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [selectedCategory, search]);
+
   const filtered = useMemo(() => {
     let result = streams;
     if (selectedCategory !== 'all') result = result.filter(s => s.category_id === selectedCategory);
     if (search) { const q = search.toLowerCase(); result = result.filter(s => s.name.toLowerCase().includes(q)); }
     return result;
   }, [streams, selectedCategory, search]);
+
+  const visible = filtered.slice(0, visibleCount);
 
   if (loading) {
     return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
@@ -114,7 +74,7 @@ export default function LiveTV() {
 
       {viewMode === 'grid' ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-          {filtered.map((ch, i) => (
+          {visible.map((ch, i) => (
             <motion.div key={ch.stream_id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.02, 0.5) }}
               onClick={() => navigate(`/player/live/${ch.stream_id}`)}
               className="group cursor-pointer bg-card rounded-lg p-3 border border-border hover:border-primary/50 hover:shadow-glow transition-all relative">
@@ -131,13 +91,12 @@ export default function LiveTV() {
                 ) : (<Tv className="w-8 h-8 text-muted-foreground" />)}
               </div>
               <p className="text-sm text-foreground font-medium truncate">{ch.name}</p>
-              {accessCode && <EpgInfo accessCode={accessCode} streamId={ch.stream_id} />}
             </motion.div>
           ))}
         </div>
       ) : (
         <div className="space-y-2">
-          {filtered.map((ch, i) => (
+          {visible.map((ch, i) => (
             <motion.div key={ch.stream_id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: Math.min(i * 0.015, 0.4) }}
               onClick={() => navigate(`/player/live/${ch.stream_id}`)}
               className="group cursor-pointer bg-card rounded-lg p-3 border border-border hover:border-primary/50 hover:shadow-glow transition-all flex items-center gap-3">
@@ -149,18 +108,23 @@ export default function LiveTV() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-foreground font-medium truncate">{ch.name}</p>
-                {accessCode && <EpgInfo accessCode={accessCode} streamId={ch.stream_id} />}
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={(e) => { e.stopPropagation(); toggleFavorite({ id: ch.stream_id, type: 'live', name: ch.name, icon: ch.stream_icon }); }}
-                  className="p-1.5 rounded-full hover:bg-secondary transition-colors"
-                >
-                  <Heart className={`w-4 h-4 ${isFavorite(ch.stream_id, 'live') ? 'fill-destructive text-destructive' : 'text-muted-foreground'}`} />
-                </button>
-              </div>
+              <button
+                onClick={(e) => { e.stopPropagation(); toggleFavorite({ id: ch.stream_id, type: 'live', name: ch.name, icon: ch.stream_icon }); }}
+                className="p-1.5 rounded-full hover:bg-secondary transition-colors"
+              >
+                <Heart className={`w-4 h-4 ${isFavorite(ch.stream_id, 'live') ? 'fill-destructive text-destructive' : 'text-muted-foreground'}`} />
+              </button>
             </motion.div>
           ))}
+        </div>
+      )}
+
+      {visibleCount < filtered.length && (
+        <div className="flex justify-center mt-6">
+          <button onClick={() => setVisibleCount(c => c + PAGE_SIZE)} className="px-6 py-2 rounded-lg bg-primary text-primary-foreground font-medium text-sm">
+            Carregar mais ({filtered.length - visibleCount} restantes)
+          </button>
         </div>
       )}
 

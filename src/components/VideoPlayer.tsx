@@ -7,6 +7,7 @@ interface VideoPlayerProps {
   url: string;
   title?: string;
   onProgress?: (progress: number) => void;
+  onStreamError?: () => void;
   autoPlay?: boolean;
   isLive?: boolean;
 }
