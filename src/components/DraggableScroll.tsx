@@ -7,7 +7,7 @@ interface DraggableScrollProps extends React.HTMLAttributes<HTMLDivElement> {
 
 const DRAG_THRESHOLD = 5;
 
-export default function DraggableScroll({ children, className = '' }: DraggableScrollProps) {
+export default function DraggableScroll({ children, className = '', ...props }: DraggableScrollProps) {
   const ref = useRef<HTMLDivElement>(null);
   const startX = useRef(0);
   const scrollLeftStart = useRef(0);
