@@ -1,13 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { getLiveStreams, getVodStreams, getSeriesList, LiveStream, VodStream, Series } from '@/services/xtreamApi';
+import { getLiveStreams, getVodStreams, getSeriesList, getVodCategories, getSeriesCategories, LiveStream, VodStream, Series, Category } from '@/services/xtreamApi';
 import ContentCard from '@/components/ContentCard';
 import ContentRow from '@/components/ContentRow';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Tv, Info, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Play, Tv, Info, ChevronLeft, ChevronRight, X, Film, Clapperboard } from 'lucide-react';
 import { PageLoadingSkeleton } from '@/components/LoadingSkeleton';
 
 function parseRating(r?: string | number): number {
@@ -28,10 +28,12 @@ export default function Home() {
   const { accessCode } = useAuth();
   const navigate = useNavigate();
   const { isFavorite, toggleFavorite } = useFavorites();
-  const { history } = useWatchHistory();
+  const { history, removeFromHistory } = useWatchHistory();
   const [liveStreams, setLiveStreams] = useState<LiveStream[]>([]);
   const [movies, setMovies] = useState<VodStream[]>([]);
   const [series, setSeries] = useState<Series[]>([]);
+  const [movieCategories, setMovieCategories] = useState<Category[]>([]);
+  const [seriesCategories, setSeriesCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [heroIndex, setHeroIndex] = useState(0);
 
@@ -42,10 +44,14 @@ export default function Home() {
       getLiveStreams(accessCode).catch(() => []),
       getVodStreams(accessCode).catch(() => []),
       getSeriesList(accessCode).catch(() => []),
-    ]).then(([live, vod, ser]) => {
+      getVodCategories(accessCode).catch(() => []),
+      getSeriesCategories(accessCode).catch(() => []),
+    ]).then(([live, vod, ser, vodCats, serCats]) => {
       setLiveStreams(live.slice(0, 20));
       setMovies(vod);
       setSeries(ser);
+      setMovieCategories(vodCats);
+      setSeriesCategories(serCats);
     }).finally(() => setLoading(false));
   }, [accessCode]);
 
@@ -193,7 +199,14 @@ export default function Home() {
         return (
           <ContentRow title="▶️ Continuar Assistindo">
             {continueWatching.slice(0, 15).map((item) => (
-              <div key={`cw-${item.type}-${item.id}`} className="w-36 md:w-44 flex-shrink-0">
+              <div key={`cw-${item.type}-${item.id}`} className="w-36 md:w-44 flex-shrink-0 relative group/cw">
+                <button
+                  onClick={(e) => { e.stopPropagation(); removeFromHistory(item.id, item.type); }}
+                  className="absolute top-1 right-1 z-10 p-1 rounded-full bg-background/80 backdrop-blur-sm opacity-0 group-hover/cw:opacity-100 transition-opacity"
+                  title="Remover"
+                >
+                  <X className="w-3.5 h-3.5 text-muted-foreground" />
+                </button>
                 <ContentCard
                   title={item.name}
                   image={item.icon}
@@ -253,23 +266,44 @@ export default function Home() {
         </ContentRow>
       )}
 
-      {/* Live TV */}
-      {liveStreams.length > 0 && (
-        <ContentRow title="TV ao Vivo" onViewAll={() => navigate('/live')}>
-          {liveStreams.map((ch) => (
-            <div key={ch.stream_id} className="w-28 md:w-36 flex-shrink-0">
-              <ContentCard
-                title={ch.name}
-                image={ch.stream_icon}
-                aspectRatio="square"
-                isFavorite={isFavorite(ch.stream_id, 'live')}
-                onFavoriteToggle={() => toggleFavorite({ id: ch.stream_id, type: 'live', name: ch.name, icon: ch.stream_icon })}
-                onClick={() => navigate(`/player/live/${ch.stream_id}`)}
-              />
+      {/* Popular Categories */}
+      {(() => {
+        const popularCats = [
+          ...movieCategories.slice(0, 6).map(c => ({ ...c, type: 'movie' as const, icon: Film })),
+          ...seriesCategories.slice(0, 6).map(c => ({ ...c, type: 'series' as const, icon: Clapperboard })),
+        ].slice(0, 10);
+        if (popularCats.length === 0) return null;
+        const colors = [
+          'from-primary/30 to-primary/10',
+          'from-accent/30 to-accent/10',
+          'from-destructive/20 to-destructive/5',
+          'from-primary/20 to-accent/10',
+          'from-accent/20 to-primary/10',
+        ];
+        return (
+          <div className="mb-2">
+            <h3 className="text-lg font-semibold text-foreground mb-3">📂 Categorias Populares</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              {popularCats.map((cat, i) => {
+                const Icon = cat.icon;
+                return (
+                  <motion.button
+                    key={`${cat.type}-${cat.category_id}`}
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => navigate(cat.type === 'movie' ? '/movies' : '/series')}
+                    className={`relative overflow-hidden rounded-xl p-4 text-left bg-gradient-to-br ${colors[i % colors.length]} border border-border/50 hover:border-primary/30 transition-colors`}
+                  >
+                    <Icon className="w-5 h-5 text-primary mb-2" />
+                    <p className="text-sm font-medium text-foreground truncate">{cat.category_name}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{cat.type === 'movie' ? 'Filmes' : 'Séries'}</p>
+                  </motion.button>
+                );
+              })}
             </div>
-          ))}
-        </ContentRow>
-      )}
+          </div>
+        );
+      })()}
 
       {/* Recent Movies */}
       {recentMovies.length > 0 && (

@@ -38,7 +38,11 @@ export function useWatchHistory() {
     ));
   }, []);
 
+  const removeFromHistory = useCallback((id: number | string, type: string) => {
+    setHistory(prev => prev.filter(h => !(String(h.id) === String(id) && h.type === type)));
+  }, []);
+
   const clearHistory = useCallback(() => setHistory([]), []);
 
-  return { history, addToHistory, updateProgress, clearHistory };
+  return { history, addToHistory, updateProgress, removeFromHistory, clearHistory };
 }
