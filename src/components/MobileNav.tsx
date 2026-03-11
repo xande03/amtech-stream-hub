@@ -12,6 +12,7 @@ const items = [
   { path: '/series', icon: Clapperboard, label: 'Séries' },
   { path: '/favorites', icon: Heart, label: 'Favoritos' },
   { path: '/history', icon: Clock, label: 'Histórico' },
+  { path: '/finder', icon: Sparkles, label: 'Encontrar' },
   { path: '/settings', icon: Settings, label: 'Configurações' },
 ];
 
