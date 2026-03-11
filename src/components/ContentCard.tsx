@@ -45,16 +45,8 @@ export default function ContentCard({
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
             loading="lazy"
             referrerPolicy="no-referrer"
-            crossOrigin="anonymous"
             onError={(e) => {
               const img = e.target as HTMLImageElement;
-              // If crossOrigin failed, retry without it
-              if (img.crossOrigin) {
-                img.crossOrigin = '';
-                img.src = image.trim();
-                return;
-              }
-              // Final fallback: hide image and show title
               img.style.display = 'none';
               const fallback = img.parentElement?.querySelector('[data-fallback]') as HTMLElement;
               if (fallback) fallback.style.display = 'flex';
