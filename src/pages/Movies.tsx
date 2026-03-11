@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
+import DraggableScroll from '@/components/DraggableScroll';
 
 const PAGE_SIZE = 60;
 
@@ -64,20 +65,20 @@ export default function Movies() {
         </div>
 
         {platformCategories.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
+          <DraggableScroll>
             <span className="text-xs text-muted-foreground self-center mr-1 whitespace-nowrap">Plataformas:</span>
             {platformCategories.map(cat => (
               <button key={cat.category_id} onClick={() => setSelectedCategory(cat.category_id)} className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-colors ${selectedCategory === cat.category_id ? 'gradient-primary text-primary-foreground' : 'bg-accent text-accent-foreground hover:bg-accent/80'}`}>{cat.category_name}</button>
             ))}
-          </div>
+          </DraggableScroll>
         )}
 
-        <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
+        <DraggableScroll>
           <button onClick={() => setSelectedCategory('all')} className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors ${selectedCategory === 'all' ? 'gradient-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'}`}>Todos</button>
           {otherCategories.map(cat => (
             <button key={cat.category_id} onClick={() => setSelectedCategory(cat.category_id)} className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors ${selectedCategory === cat.category_id ? 'gradient-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'}`}>{cat.category_name}</button>
           ))}
-        </div>
+        </DraggableScroll>
       </div>
 
       {recentlyWatched.length > 0 && selectedCategory === 'all' && !search && (
