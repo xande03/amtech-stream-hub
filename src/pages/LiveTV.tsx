@@ -98,7 +98,7 @@ export default function LiveTV() {
         <div className="space-y-2">
           {visible.map((ch, i) => (
             <motion.div key={ch.stream_id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: Math.min(i * 0.015, 0.4) }}
-              onClick={() => navigate(`/player/live/${ch.stream_id}`)}
+              onClick={() => window.open(`/player/live/${ch.stream_id}`, '_blank')}
               className="group cursor-pointer bg-card rounded-lg p-3 border border-border hover:border-primary/50 hover:shadow-glow transition-all flex items-center gap-3">
               <div className="w-12 h-12 rounded-md overflow-hidden bg-secondary flex-shrink-0 flex items-center justify-center">
                 {ch.stream_icon ? (
