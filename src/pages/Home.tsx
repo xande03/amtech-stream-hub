@@ -7,7 +7,7 @@ import ContentRow from '@/components/ContentRow';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Tv, Info, ChevronLeft, ChevronRight, X, Film, Clapperboard } from 'lucide-react';
+import { Play, Tv, Info, ChevronLeft, ChevronRight, X, Film, Clapperboard, Star, ExternalLink } from 'lucide-react';
 import { PageLoadingSkeleton } from '@/components/LoadingSkeleton';
 
 function parseRating(r?: string | number): number {
