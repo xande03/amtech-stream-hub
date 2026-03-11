@@ -66,6 +66,11 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
   }, []);
 
   const tryPlay = useCallback((video: HTMLVideoElement) => {
+    // Resume from saved position
+    if (!hasResumedRef.current && startTime > 0) {
+      video.currentTime = startTime;
+      hasResumedRef.current = true;
+    }
     if (!autoPlay) return;
     const playPromise = video.play();
     if (playPromise) {
@@ -75,7 +80,7 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
         video.play().catch(() => {});
       });
     }
-  }, [autoPlay]);
+  }, [autoPlay, startTime]);
 
   const loadSource = useCallback(() => {
     const video = videoRef.current;
