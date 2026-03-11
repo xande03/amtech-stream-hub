@@ -43,7 +43,14 @@ Deno.serve(async (req) => {
     }
 
     const { server_url, username, password, playlist_name } = validation;
-    const base = server_url.replace(/\/+$/, "");
+    
+    // Normalize server_url: add http:// if no protocol, handle provider-style names
+    let normalizedUrl = server_url.trim().replace(/\/+$/, "");
+    if (!/^https?:\/\//i.test(normalizedUrl)) {
+      // If it looks like a domain (has dots or colon for port), add http://
+      normalizedUrl = `http://${normalizedUrl}`;
+    }
+    const base = normalizedUrl;
 
     // Handle stream URL request - return HTTPS URL to avoid mixed content
     if (action === "get_stream_url") {
