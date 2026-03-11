@@ -1,4 +1,4 @@
-import { Home, Tv, Film, Clapperboard, Heart, Settings } from 'lucide-react';
+import { Home, Tv, Film, Clapperboard, Heart, Clock, Settings } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -19,6 +19,7 @@ const navItems = [
   { title: 'Filmes', url: '/movies', icon: Film },
   { title: 'Séries', url: '/series', icon: Clapperboard },
   { title: 'Favoritos', url: '/favorites', icon: Heart },
+  { title: 'Histórico', url: '/history', icon: Clock },
   { title: 'Configurações', url: '/settings', icon: Settings },
 ];
 
