@@ -79,6 +79,7 @@ export default function DraggableScroll({ children, className = '', ...props }: 
       onTouchEnd={onTouchEnd}
       onClickCapture={onClickCapture}
       className={`flex gap-2 overflow-x-auto hide-scrollbar pb-1 select-none cursor-grab active:cursor-grabbing ${className}`}
+      {...props}
     >
       {children}
     </div>
