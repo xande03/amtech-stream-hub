@@ -200,7 +200,7 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
     if (video && video.duration && !isLive) {
       const progress = (video.currentTime / video.duration) * 100;
       const currentTime = video.currentTime;
-      if (onProgressRef.current) onProgressRef.current(progress);
+      if (onProgressRef.current) onProgressRef.current(progress, currentTime, video.duration);
       // Show skip intro in first 2 minutes (10s-120s)
       if (!skipIntroDismissed && currentTime >= 10 && currentTime <= 120) {
         if (!showSkipIntro) setShowSkipIntro(true);
