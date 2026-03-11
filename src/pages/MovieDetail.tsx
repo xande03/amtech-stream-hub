@@ -60,20 +60,23 @@ export default function MovieDetail() {
       <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4 transition-colors"><ArrowLeft className="w-4 h-4" /> Voltar</button>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col md:flex-row gap-6">
         <div className="w-full md:w-64 flex-shrink-0">
-          <div className="aspect-[2/3] rounded-xl overflow-hidden bg-secondary">
+          <div className="aspect-[2/3] rounded-xl overflow-hidden bg-secondary relative">
             {movie.stream_icon ? <img src={movie.stream_icon} alt={movie.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-muted-foreground">Sem capa</div>}
+            {/* Progress bar at bottom of poster */}
+            {(() => {
+              const movieProgress = history.find(h => String(h.id) === String(movie.stream_id) && h.type === 'movie');
+              if (!movieProgress?.progress || movieProgress.progress <= 0) return null;
+              return (
+                <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-secondary/80">
+                  <div className="h-full bg-destructive rounded-r-full" style={{ width: `${movieProgress.progress}%` }} />
+                </div>
+              );
+            })()}
           </div>
           {(() => {
             const movieProgress = history.find(h => String(h.id) === String(movie.stream_id) && h.type === 'movie');
             if (!movieProgress?.progress || movieProgress.progress <= 0) return null;
-            return (
-              <div className="mt-2">
-                <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
-                  <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${movieProgress.progress}%` }} />
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">{Math.round(movieProgress.progress)}% assistido</p>
-              </div>
-            );
+            return <p className="text-xs text-muted-foreground mt-1.5">{Math.round(movieProgress.progress)}% assistido</p>;
           })()}
         </div>
         <div className="flex-1 space-y-4">
