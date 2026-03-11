@@ -22,8 +22,9 @@ export default function PlayerPage() {
   const { type, id, ext } = useParams<{ type: string; id: string; ext?: string }>();
   const [searchParams] = useSearchParams();
   const { accessCode } = useAuth();
-  const { updateProgress, addToHistory } = useWatchHistory();
+  const { updateProgress, addToHistory, getResumeTime } = useWatchHistory();
   const [streamUrl, setStreamUrl] = useState<string | null>(null);
+  const [resumeTime, setResumeTime] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
