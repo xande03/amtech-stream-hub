@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { getStreamUrl, getProxyStreamUrl } from '@/services/xtreamApi';
+import { getStreamUrl } from '@/services/xtreamApi';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
 import VideoPlayer from '@/components/VideoPlayer';
 import { Loader2 } from 'lucide-react';
+
+const LIVE_EXTENSIONS = ['m3u8', 'ts'];
 
 export default function PlayerPage() {
   const { type, id, ext } = useParams<{ type: string; id: string; ext?: string }>();
@@ -14,6 +16,7 @@ export default function PlayerPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const triedExts = useRef<string[]>([]);
 
   const isLive = type === 'live';
 
@@ -21,32 +24,55 @@ export default function PlayerPage() {
     if (!accessCode || !type || !id) return;
     setLoading(true);
     setError(null);
+    triedExts.current = [];
 
     const streamType = type as 'live' | 'movie' | 'series';
 
-    if (isLive) {
-      // Use proxy for live streams to avoid mixed content (HTTP on HTTPS page)
-      const proxyUrl = getProxyStreamUrl(accessCode, streamType, id, 'ts');
-      setStreamUrl(proxyUrl);
-      setLoading(false);
+    if (ext) {
+      getStreamUrl(accessCode, streamType, id, ext)
+        .then(url => setStreamUrl(url))
+        .catch(err => setError(err.message))
+        .finally(() => setLoading(false));
       return;
     }
 
-    const extension = ext || 'mp4';
-    getStreamUrl(accessCode, streamType, id, extension)
-      .then(url => setStreamUrl(url))
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false));
+    if (!isLive) {
+      getStreamUrl(accessCode, streamType, id, 'mp4')
+        .then(url => setStreamUrl(url))
+        .catch(err => setError(err.message))
+        .finally(() => setLoading(false));
+      return;
+    }
+
+    // For live: try m3u8 first (HLS), then ts
+    const tryExt = (index: number) => {
+      if (index >= LIVE_EXTENSIONS.length) {
+        setError('Não foi possível carregar o canal.');
+        setLoading(false);
+        return;
+      }
+      const extension = LIVE_EXTENSIONS[index];
+      triedExts.current.push(extension);
+      getStreamUrl(accessCode, streamType, id, extension)
+        .then(url => {
+          setStreamUrl(url);
+          setLoading(false);
+        })
+        .catch(() => tryExt(index + 1));
+    };
+
+    tryExt(0);
   }, [accessCode, type, id, ext, isLive]);
 
   const handleStreamError = () => {
     if (!isLive || !accessCode || !id) return;
-    // Try m3u8 as fallback
-    const m3u8Url = getProxyStreamUrl(accessCode, type as 'live', id, 'm3u8');
-    if (streamUrl !== m3u8Url) {
-      setStreamUrl(m3u8Url);
-    } else {
-      setError('Não foi possível carregar o canal.');
+    const nextIndex = triedExts.current.length;
+    if (nextIndex < LIVE_EXTENSIONS.length) {
+      const extension = LIVE_EXTENSIONS[nextIndex];
+      triedExts.current.push(extension);
+      getStreamUrl(accessCode, type as 'live', id, extension)
+        .then(url => setStreamUrl(url))
+        .catch(() => setError('Não foi possível carregar o canal.'));
     }
   };
 
