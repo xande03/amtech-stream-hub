@@ -6,7 +6,7 @@ import { useFavorites } from '@/hooks/useFavorites';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { Play, Heart, ArrowLeft, Star, CheckCircle2 } from 'lucide-react';
+import { Play, Heart, ArrowLeft, Star, CheckCircle2, RotateCcw } from 'lucide-react';
 import { SeriesDetailSkeleton } from '@/components/LoadingSkeleton';
 
 export default function SeriesDetail() {
@@ -14,7 +14,7 @@ export default function SeriesDetail() {
   const { accessCode } = useAuth();
   const navigate = useNavigate();
   const { isFavorite, toggleFavorite } = useFavorites();
-  const { addToHistory, history } = useWatchHistory();
+  const { addToHistory, history, getResumeTime } = useWatchHistory();
   const [seriesInfo, setSeriesInfo] = useState<SeriesInfo | null>(null);
   const [selectedSeason, setSelectedSeason] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -32,9 +32,20 @@ export default function SeriesDetail() {
       .finally(() => setLoading(false));
   }, [accessCode, id]);
 
+  const formatTime = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${m}:${String(s).padStart(2, '0')}`;
+  };
+
   const getEpisodeProgress = (episodeId: string) => {
     const item = history.find(h => String(h.id) === String(episodeId) && h.type === 'series');
     return item?.progress || 0;
+  };
+
+  const getEpisodeResumeTime = (episodeId: string) => {
+    return getResumeTime(episodeId, 'series');
   };
 
   const handlePlayEpisode = (episode: Episode) => {
@@ -112,8 +123,15 @@ export default function SeriesDetail() {
                       </div>
                     )}
                   </div>
-                  <div className="flex-1 min-w-0">
+                   <div className="flex-1 min-w-0">
                     <p className={`text-sm font-medium truncate ${isWatched ? 'text-muted-foreground' : 'text-foreground'}`}>E{ep.episode_num} — {ep.title}</p>
+                    {(() => {
+                      const epResume = getEpisodeResumeTime(ep.id);
+                      if (epResume > 0 && !isWatched) {
+                        return <p className="text-xs text-primary flex items-center gap-1 mt-0.5"><RotateCcw className="w-3 h-3" /> Retomar de {formatTime(epResume)}</p>;
+                      }
+                      return null;
+                    })()}
                     {ep.info?.plot && <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{ep.info.plot}</p>}
                     {ep.info?.duration && <p className="text-xs text-muted-foreground mt-0.5">{ep.info.duration}</p>}
                   </div>

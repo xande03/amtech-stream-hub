@@ -6,7 +6,7 @@ import { useFavorites } from '@/hooks/useFavorites';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { Play, Heart, ArrowLeft, Star, Clock, Calendar } from 'lucide-react';
+import { Play, Heart, ArrowLeft, Star, Clock, Calendar, RotateCcw } from 'lucide-react';
 import { DetailSkeleton } from '@/components/LoadingSkeleton';
 
 export default function MovieDetail() {
@@ -14,10 +14,17 @@ export default function MovieDetail() {
   const { accessCode } = useAuth();
   const navigate = useNavigate();
   const { isFavorite, toggleFavorite } = useFavorites();
-  const { addToHistory, history } = useWatchHistory();
+  const { addToHistory, history, getResumeTime } = useWatchHistory();
   const [movie, setMovie] = useState<VodStream | null>(null);
   const [info, setInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  const formatTime = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${m}:${String(s).padStart(2, '0')}`;
+  };
 
   useEffect(() => {
     if (!accessCode || !id) return;
@@ -27,6 +34,8 @@ export default function MovieDetail() {
       getVodInfo(accessCode, Number(id)).catch(() => null),
     ]).then(([m, i]) => { setMovie(m); setInfo(i); }).finally(() => setLoading(false));
   }, [accessCode, id]);
+
+  const resumeTime = movie ? getResumeTime(movie.stream_id, 'movie') : 0;
 
   const handlePlay = () => {
     if (!movie) return;
@@ -77,14 +86,16 @@ export default function MovieDetail() {
           {plot && <p className="text-muted-foreground text-sm leading-relaxed">{plot}</p>}
           {cast && <p className="text-sm text-muted-foreground"><span className="text-foreground font-medium">Elenco:</span> {cast}</p>}
           {director && <p className="text-sm text-muted-foreground"><span className="text-foreground font-medium">Diretor:</span> {director}</p>}
-          <div className="flex gap-3 pt-2">
-            {(() => {
-              const mp = history.find(h => String(h.id) === String(movie.stream_id) && h.type === 'movie');
-              const label = mp?.progress && mp.progress > 5 ? 'Continuar Assistindo' : 'Assistir';
-              return (
-                <Button onClick={handlePlay} className="gradient-primary text-primary-foreground font-medium px-8"><Play className="w-4 h-4 mr-2" /> {label}</Button>
-              );
-            })()}
+          <div className="flex flex-wrap gap-3 pt-2">
+            {resumeTime > 0 ? (
+              <Button onClick={handlePlay} className="gradient-primary text-primary-foreground font-medium px-6">
+                <RotateCcw className="w-4 h-4 mr-2" /> Retomar de {formatTime(resumeTime)}
+              </Button>
+            ) : (
+              <Button onClick={handlePlay} className="gradient-primary text-primary-foreground font-medium px-8">
+                <Play className="w-4 h-4 mr-2" /> Assistir
+              </Button>
+            )}
             <Button variant="outline" onClick={() => toggleFavorite({ id: movie.stream_id, type: 'movie', name: movie.name, icon: movie.stream_icon })} className="border-border text-foreground hover:bg-secondary">
               <Heart className={`w-4 h-4 mr-2 ${isFavorite(movie.stream_id, 'movie') ? 'fill-destructive text-destructive' : ''}`} />
               {isFavorite(movie.stream_id, 'movie') ? 'Favoritado' : 'Favoritar'}
