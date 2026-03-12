@@ -16,30 +16,39 @@ async function getCredentials(accessCode: string) {
   return data;
 }
 
-// Common IPTV provider domain suffixes to try when a bare name is given
+// Common IPTV provider domain suffixes and ports to try
 const PROVIDER_SUFFIXES = [
-  ".bar:8080",
-  ".tv:8080",
-  ".bar:80",
-  ".tv:80",
-  ".bar:25461",
-  ".tv:25461",
-  ".bar",
-  ".tv",
-  ".xyz:8080",
-  ".xyz:25461",
-  ".xyz",
-  ".vip:8080",
-  ".vip:25461",
-  ".vip",
-  ".pro:8080",
-  ".pro",
-  ".click:8080",
-  ".click",
-  ".online:8080",
-  ".online",
-  ".top:8080",
-  ".top",
+  // Most common IPTV patterns
+  ".bar:8080", ".bar:80", ".bar:25461", ".bar:8880", ".bar",
+  ".tv:8080", ".tv:80", ".tv:25461", ".tv:8880", ".tv",
+  ".run:8080", ".run:80", ".run:25461", ".run",
+  ".is:8080", ".is:80", ".is:25461", ".is",
+  ".xyz:8080", ".xyz:80", ".xyz:25461", ".xyz",
+  ".vip:8080", ".vip:80", ".vip:25461", ".vip",
+  ".pro:8080", ".pro:80", ".pro:25461", ".pro",
+  ".click:8080", ".click:80", ".click",
+  ".online:8080", ".online:80", ".online",
+  ".top:8080", ".top:80", ".top",
+  ".net:8080", ".net:80", ".net:25461", ".net",
+  ".com:8080", ".com:80", ".com:25461", ".com",
+  ".me:8080", ".me:80", ".me",
+  ".link:8080", ".link:80", ".link",
+  ".io:8080", ".io:80", ".io",
+  ".cc:8080", ".cc:80", ".cc",
+  ".ws:8080", ".ws:80", ".ws",
+  ".to:8080", ".to:80", ".to",
+  ".in:8080", ".in:80", ".in",
+  ".co:8080", ".co:80", ".co",
+  ".site:8080", ".site:80", ".site",
+  ".stream:8080", ".stream:80", ".stream",
+  ".watch:8080", ".watch",
+  ".live:8080", ".live",
+  ".fun:8080", ".fun",
+  ".club:8080", ".club",
+  ".world:8080", ".world",
+  ".one:8080", ".one",
+  ".info:8080", ".info",
+  ".org:8080", ".org",
 ];
 
 // Check if the input looks like a full URL or domain (has dots, colons with port, or protocol)
@@ -47,60 +56,58 @@ function isFullUrl(input: string): boolean {
   return /^https?:\/\//i.test(input) || input.includes('.') || /:\d+/.test(input);
 }
 
+// Fetch with per-request timeout
+async function fetchWithTimeout(url: string, timeoutMs: number, signal?: AbortSignal): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const combinedSignal = signal
+    ? AbortSignal.any([signal, controller.signal])
+    : controller.signal;
+  try {
+    return await fetch(url, { signal: combinedSignal, headers: { "Accept": "application/json" } });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // Try to resolve a bare provider name to a working server URL
 async function resolveProviderUrl(providerName: string, username: string, password: string): Promise<string | null> {
   const name = providerName.trim().toLowerCase().replace(/\/+$/, "");
   
-  // If it already looks like a URL, just normalize it
   if (isFullUrl(name)) {
     let url = name;
-    if (!/^https?:\/\//i.test(url)) {
-      url = `http://${url}`;
-    }
+    if (!/^https?:\/\//i.test(url)) url = `http://${url}`;
     return url.replace(/\/+$/, "");
   }
 
-  // Try common provider URL patterns in parallel batches
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
+  const globalController = new AbortController();
+  const globalTimeout = setTimeout(() => globalController.abort(), 20000);
 
   try {
-    // Try all suffixes concurrently - first successful one wins
-    const attempts = PROVIDER_SUFFIXES.map(async (suffix) => {
-      const baseUrl = `http://${name}${suffix}`;
-      const testUrl = `${baseUrl}/player_api.php?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
-      try {
-        const res = await fetch(testUrl, { 
-          signal: controller.signal,
-          headers: { "Accept": "application/json" },
-        });
-        if (res.ok) {
-          const text = await res.text();
-          // Verify it's a valid Xtream response (should contain user_info or be valid JSON)
-          try {
+    // Race all attempts - first valid response wins
+    const result = await Promise.any(
+      PROVIDER_SUFFIXES.map(async (suffix) => {
+        const baseUrl = `http://${name}${suffix}`;
+        const testUrl = `${baseUrl}/player_api.php?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
+        try {
+          const res = await fetchWithTimeout(testUrl, 8000, globalController.signal);
+          if (res.ok) {
+            const text = await res.text();
             const json = JSON.parse(text);
             if (json.user_info || json.server_info || Array.isArray(json)) {
               return baseUrl;
             }
-          } catch {
-            // Not valid JSON, skip
           }
+        } catch {
+          // skip
         }
-      } catch {
-        // Connection failed, skip
-      }
-      return null;
-    });
-
-    // Use Promise.any-like behavior: resolve with first non-null
-    const results = await Promise.allSettled(attempts);
-    for (const result of results) {
-      if (result.status === "fulfilled" && result.value) {
-        return result.value;
-      }
-    }
+        throw new Error("not found");
+      })
+    );
+  } catch {
+    // All attempts failed
   } finally {
-    clearTimeout(timeout);
+    clearTimeout(globalTimeout);
   }
 
   return null;
