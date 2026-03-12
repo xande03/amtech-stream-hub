@@ -31,6 +31,7 @@ export function hdImage(
     q: String(quality),
     output: format,
     fit,
+    sharp: '1',
   });
 
   if (width) params.set('w', String(width));
@@ -41,11 +42,11 @@ export function hdImage(
 
 /** Poster (portrait 2:3) — cards in grids */
 export const posterImage = (url?: string | null) =>
-  hdImage(url, { width: 400, height: 600, quality: 85 });
+  hdImage(url, { width: 500, height: 750, quality: 90 });
 
 /** Poster small — for row carousels */
 export const posterSmall = (url?: string | null) =>
-  hdImage(url, { width: 300, height: 450, quality: 80 });
+  hdImage(url, { width: 400, height: 600, quality: 85 });
 
 /** Backdrop / banner — wide hero images */
 export const backdropImage = (url?: string | null) =>
@@ -57,7 +58,7 @@ export const heroImage = (url?: string | null) =>
 
 /** Featured card thumbnail */
 export const featuredImage = (url?: string | null) =>
-  hdImage(url, { width: 640, height: 360, quality: 85 });
+  hdImage(url, { width: 800, height: 450, quality: 90 });
 
 /** Episode thumbnail */
 export const episodeThumbnail = (url?: string | null) =>
