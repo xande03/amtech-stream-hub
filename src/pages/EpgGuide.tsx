@@ -280,15 +280,19 @@ export default function EpgGuide() {
                       return (
                         <div
                           key={entry.id || eIdx}
-                          className={`absolute top-1 bottom-1 rounded-md px-2 py-1 overflow-hidden cursor-default group transition-colors border ${
+                          onClick={() => {
+                            addToHistory({ id: stream.stream_id, type: 'live', name: stream.name, icon: stream.stream_icon });
+                            window.open(`/player/live/${stream.stream_id}`, '_blank');
+                          }}
+                          className={`absolute top-1 bottom-1 rounded-md px-2 py-1 overflow-hidden cursor-pointer group/ep transition-colors border ${
                             isNow
-                              ? 'bg-primary/20 border-primary/50 shadow-sm'
+                              ? 'bg-primary/20 border-primary/50 shadow-sm hover:bg-primary/30'
                               : isPast
-                                ? 'bg-muted/40 border-border/30'
+                                ? 'bg-muted/40 border-border/30 hover:bg-muted/60'
                                 : 'bg-secondary/60 border-border/40 hover:bg-secondary/90'
                           }`}
                           style={{ left: leftPx, width: widthPx }}
-                          title={`${entry.title}\n${formatTime(start)} - ${formatTime(end)}${entry.description ? '\n' + entry.description : ''}`}
+                          title={`▶ Assistir ${stream.name}\n${entry.title}\n${formatTime(start)} - ${formatTime(end)}${entry.description ? '\n' + entry.description : ''}`}
                         >
                           <p className={`text-[10px] font-semibold truncate leading-tight ${
                             isNow ? 'text-primary' : isPast ? 'text-muted-foreground/60' : 'text-foreground'
