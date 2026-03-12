@@ -267,7 +267,7 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
           hlsRef.current = null;
           onStreamErrorRef.current();
         }
-      }, 12000);
+      }, 20000);
 
     } else if (isHls && video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = url;
