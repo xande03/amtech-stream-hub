@@ -269,9 +269,21 @@ export default function Home() {
                 subtitle={item.episodeInfo}
                 aspectRatio={item.type === 'live' ? 'square' : 'portrait'}
                 onClick={() => {
-                  if (item.type === 'live') window.open(`/player/live/${item.id}`, '_blank');
-                  else if (item.type === 'movie') navigate(`/movies/${item.id}`);
-                  else navigate(`/series/${item.id}`);
+                  if (item.type === 'live') {
+                    window.open(`/player/live/${item.id}`, '_blank');
+                  } else if (item.type === 'movie') {
+                    const params = new URLSearchParams({ name: item.name, icon: item.icon || '' });
+                    navigate(`/player/movie/${item.id}/mp4?${params.toString()}`);
+                  } else if (item.type === 'series') {
+                    // Parse episodeInfo like "S1E3" to build player URL
+                    const match = item.episodeInfo?.match(/S(\d+)E(\d+)/i);
+                    const params = new URLSearchParams({ name: item.name, icon: item.icon || '' });
+                    if (match) {
+                      params.set('season', match[1]);
+                      params.set('ep', match[2]);
+                    }
+                    navigate(`/player/series/${item.id}?${params.toString()}`);
+                  }
                 }}
               />
               <div className="w-full h-1.5 bg-secondary rounded-full mt-1.5 overflow-hidden">
