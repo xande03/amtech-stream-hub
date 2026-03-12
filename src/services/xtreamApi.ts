@@ -166,6 +166,11 @@ export async function getStreamUrl(accessCode: string, streamType: 'live' | 'mov
   return data.url;
 }
 
+export async function checkChannelsStatus(accessCode: string, streamIds: number[]): Promise<Record<number, boolean>> {
+  const data = await callProxy({ action: 'check_channels', access_code: accessCode, stream_ids: streamIds });
+  return data?.results || {};
+}
+
 export function getProxyStreamUrl(accessCode: string, streamType: 'live' | 'movie' | 'series', streamId: number | string, extension?: string): string {
   const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID || 'knrubxjvtgkypasndwkn';
   const params = new URLSearchParams({
