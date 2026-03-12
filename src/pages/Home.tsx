@@ -315,15 +315,13 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
-                <div className="p-3">
-                  {item.genre && <p className="text-xs text-muted-foreground truncate mb-1">{item.genre}</p>}
-                  {item.plot && <p className="text-xs text-muted-foreground line-clamp-2">{item.plot}</p>}
+                <div className="p-2.5">
                   {item.trailer && (
                     <button
                       onClick={(e) => { e.stopPropagation(); window.open(`https://www.youtube.com/watch?v=${item.trailer}`, '_blank'); }}
-                      className="flex items-center gap-1 text-xs text-primary font-medium mt-2 hover:underline"
+                      className="flex items-center gap-1 text-xs text-primary font-medium hover:underline"
                     >
-                      <ExternalLink className="w-3 h-3" /> Assistir Trailer
+                      <ExternalLink className="w-3 h-3" /> Trailer
                     </button>
                   )}
                 </div>
