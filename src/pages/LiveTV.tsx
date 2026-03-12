@@ -52,7 +52,7 @@ export default function LiveTV() {
   if (loading) return <LiveTVSkeleton />;
 
   return (
-    <div>
+    <div className="pt-12 md:pt-0">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold text-foreground">TV ao Vivo</h1>
         <div className="flex gap-1 bg-secondary rounded-lg p-0.5">
