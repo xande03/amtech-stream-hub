@@ -11,6 +11,7 @@ import { motion } from 'framer-motion';
 import { Play, Heart, ArrowLeft, Star, CheckCircle2, RotateCcw } from 'lucide-react';
 import { SeriesDetailSkeleton } from '@/components/LoadingSkeleton';
 import YouTubeTrailer from '@/components/YouTubeTrailer';
+import { backdropImage, posterImage, episodeThumbnail } from '@/lib/imageProxy';
 
 export default function SeriesDetail() {
   const { id } = useParams<{ id: string }>();
@@ -101,7 +102,7 @@ export default function SeriesDetail() {
       {/* Backdrop banner */}
       {backdrop && (
         <div className="relative -mx-4 -mt-4 md:-mx-6 md:-mt-6 mb-6 h-48 md:h-72 overflow-hidden rounded-b-2xl">
-          <img src={backdrop} alt="" className="w-full h-full object-cover" />
+          <img src={backdropImage(backdrop)} alt="" className="w-full h-full object-cover" onError={(e) => { const img = e.target as HTMLImageElement; if (!img.dataset.retried) { img.dataset.retried = '1'; img.src = backdrop; return; } img.style.display = 'none'; }} />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
         </div>
       )}
@@ -110,7 +111,7 @@ export default function SeriesDetail() {
         <div className="flex flex-col md:flex-row gap-6 mb-8">
           <div className="w-full md:w-56 flex-shrink-0">
             <div className="aspect-[2/3] rounded-xl overflow-hidden bg-secondary">
-              {info.cover ? <img src={info.cover} alt={info.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-muted-foreground">Sem capa</div>}
+              {info.cover ? <img src={posterImage(info.cover)} alt={info.name} className="w-full h-full object-cover" onError={(e) => { const img = e.target as HTMLImageElement; if (!img.dataset.retried) { img.dataset.retried = '1'; img.src = info.cover; } }} /> : <div className="w-full h-full flex items-center justify-center text-muted-foreground">Sem capa</div>}
             </div>
           </div>
           <div className="flex-1 space-y-3">
@@ -159,7 +160,7 @@ export default function SeriesDetail() {
                   <div className="w-28 flex-shrink-0">
                     <div className="aspect-video rounded-md overflow-hidden bg-secondary relative">
                       {ep.info?.movie_image ? (
-                        <img src={ep.info.movie_image} alt={ep.title} className="w-full h-full object-cover" />
+                        <img src={episodeThumbnail(ep.info.movie_image)} alt={ep.title} className="w-full h-full object-cover" onError={(e) => { const img = e.target as HTMLImageElement; if (!img.dataset.retried) { img.dataset.retried = '1'; img.src = ep.info.movie_image!; } }} />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
                           <Play className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />

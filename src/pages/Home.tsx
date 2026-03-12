@@ -9,6 +9,7 @@ import { useWatchHistory } from '@/hooks/useWatchHistory';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Tv, Info, ChevronLeft, ChevronRight, X, Film, Clapperboard, Star, ExternalLink } from 'lucide-react';
 import { PageLoadingSkeleton } from '@/components/LoadingSkeleton';
+import { heroImage, featuredImage, backdropImage } from '@/lib/imageProxy';
 
 function parseRating(r?: string | number): number {
   if (!r) return 0;
@@ -166,10 +167,10 @@ export default function Home() {
               className="absolute inset-0"
             >
               <img
-                src={currentHero.image}
+                src={heroImage(currentHero.image)}
                 alt={currentHero.name}
                 className="w-full h-full object-cover"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                onError={(e) => { const img = e.target as HTMLImageElement; if (!img.dataset.retried) { img.dataset.retried = '1'; img.src = currentHero.image; return; } img.style.display = 'none'; }}
               />
               <div className="absolute inset-0 bg-gradient-to-r from-background via-background/70 to-transparent" />
               <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
@@ -289,11 +290,11 @@ export default function Home() {
               >
                 <div className="relative aspect-video overflow-hidden bg-secondary">
                   <img
-                    src={item.backdrop || item.image}
+                    src={featuredImage(item.backdrop || item.image)}
                     alt={item.name}
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     loading="lazy"
-                    onError={(e) => { (e.target as HTMLImageElement).src = item.image; }}
+                    onError={(e) => { const img = e.target as HTMLImageElement; if (!img.dataset.retried) { img.dataset.retried = '1'; img.src = item.backdrop || item.image; return; } img.src = item.image; }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent" />
                   <div className="absolute bottom-3 left-3 right-3">

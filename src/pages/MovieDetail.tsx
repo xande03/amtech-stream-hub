@@ -11,6 +11,7 @@ import { motion } from 'framer-motion';
 import { Play, Heart, ArrowLeft, Star, Clock, Calendar, RotateCcw } from 'lucide-react';
 import { DetailSkeleton } from '@/components/LoadingSkeleton';
 import YouTubeTrailer from '@/components/YouTubeTrailer';
+import { backdropImage, posterImage } from '@/lib/imageProxy';
 
 export default function MovieDetail() {
   const { id } = useParams<{ id: string }>();
@@ -94,7 +95,7 @@ export default function MovieDetail() {
       {/* Backdrop banner */}
       {backdrop && (
         <div className="relative -mx-4 -mt-4 md:-mx-6 md:-mt-6 mb-6 h-48 md:h-72 overflow-hidden rounded-b-2xl">
-          <img src={backdrop} alt="" className="w-full h-full object-cover" />
+          <img src={backdropImage(backdrop)} alt="" className="w-full h-full object-cover" onError={(e) => { const img = e.target as HTMLImageElement; if (!img.dataset.retried) { img.dataset.retried = '1'; img.src = backdrop; return; } img.style.display = 'none'; }} />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
         </div>
       )}
@@ -102,7 +103,7 @@ export default function MovieDetail() {
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col md:flex-row gap-6">
         <div className="w-full md:w-64 flex-shrink-0">
           <div className="aspect-[2/3] rounded-xl overflow-hidden bg-secondary relative">
-            {movie.stream_icon ? <img src={movie.stream_icon} alt={movie.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-muted-foreground">Sem capa</div>}
+            {movie.stream_icon ? <img src={posterImage(movie.stream_icon)} alt={movie.name} className="w-full h-full object-cover" onError={(e) => { const img = e.target as HTMLImageElement; if (!img.dataset.retried) { img.dataset.retried = '1'; img.src = movie.stream_icon; } }} /> : <div className="w-full h-full flex items-center justify-center text-muted-foreground">Sem capa</div>}
             {(() => {
               const movieProgress = history.find(h => String(h.id) === String(movie.stream_id) && h.type === 'movie');
               if (!movieProgress?.progress || movieProgress.progress <= 0) return null;

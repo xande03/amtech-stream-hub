@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Heart } from 'lucide-react';
+import { posterImage, posterSmall, iconImage, hdImage } from '@/lib/imageProxy';
 
 interface ContentCardProps {
   title: string;
@@ -11,6 +12,7 @@ interface ContentCardProps {
   onFavoriteToggle?: () => void;
   onClick?: () => void;
   aspectRatio?: 'portrait' | 'landscape' | 'square';
+  hdSize?: 'small' | 'normal';
 }
 
 export default function ContentCard({
@@ -23,12 +25,23 @@ export default function ContentCard({
   onFavoriteToggle,
   onClick,
   aspectRatio = 'portrait',
+  hdSize = 'normal',
 }: ContentCardProps) {
   const aspectClass = {
     portrait: 'aspect-[2/3]',
     landscape: 'aspect-video',
     square: 'aspect-square',
   }[aspectRatio];
+
+  // Choose proxy function based on aspect ratio and size
+  const getHdUrl = (url?: string) => {
+    if (!url) return '';
+    if (aspectRatio === 'square') return iconImage(url);
+    if (aspectRatio === 'landscape') return hdImage(url, { width: 480, height: 270, quality: 85 });
+    return hdSize === 'small' ? posterSmall(url) : posterImage(url);
+  };
+
+  const hdSrc = getHdUrl(image);
 
   return (
     <motion.div
@@ -38,20 +51,26 @@ export default function ContentCard({
       onClick={onClick}
     >
       <div className={`relative ${aspectClass} rounded-lg overflow-hidden bg-secondary mb-2`}>
-        {image && image.trim() ? (
+        {hdSrc ? (
           <img
-            src={image.trim()}
+            src={hdSrc}
             alt={title}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
             loading="lazy"
             referrerPolicy="no-referrer"
             onError={(e) => {
               const img = e.target as HTMLImageElement;
-              const src = image.trim();
-              // Retry via proxy to bypass CORS/hotlink issues
-              if (!img.dataset.retried) {
+              const originalSrc = (image || '').trim();
+              // If proxy failed, try original directly
+              if (img.dataset.retried !== '2' && originalSrc) {
+                if (img.dataset.retried === '1') {
+                  img.dataset.retried = '2';
+                  img.src = originalSrc;
+                  return;
+                }
                 img.dataset.retried = '1';
-                img.src = `https://images.weserv.nl/?url=${encodeURIComponent(src)}&default=1`;
+                // Try without proxy params
+                img.src = `https://images.weserv.nl/?url=${encodeURIComponent(originalSrc)}&default=1`;
                 return;
               }
               // Final fallback: show title text
@@ -64,7 +83,7 @@ export default function ContentCard({
         <div
           data-fallback
           className="w-full h-full flex items-center justify-center bg-secondary absolute inset-0"
-          style={{ display: image && image.trim() ? 'none' : 'flex' }}
+          style={{ display: hdSrc ? 'none' : 'flex' }}
         >
           <span className="text-muted-foreground text-xs text-center px-2 line-clamp-3">{title}</span>
         </div>
