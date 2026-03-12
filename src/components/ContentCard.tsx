@@ -1,3 +1,4 @@
+import { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Heart } from 'lucide-react';
 import { posterImage, posterSmall, iconImage, hdImage } from '@/lib/imageProxy';
