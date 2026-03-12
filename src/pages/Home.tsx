@@ -412,7 +412,7 @@ export default function Home() {
       {recentMovies.length > 0 && (
         <ContentRow title="Filmes Recentes" onViewAll={() => navigate('/movies')}>
           {recentMovies.map((m) => (
-            <div key={m.stream_id} className="w-32 md:w-40 flex-shrink-0">
+            <div key={m.stream_id} className="w-40 md:w-48 flex-shrink-0">
               <ContentCard
                 title={m.name}
                 image={m.stream_icon}
