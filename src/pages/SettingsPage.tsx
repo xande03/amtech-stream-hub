@@ -108,7 +108,6 @@ export default function SettingsPage() {
     setTesting(true);
     setTestResult(null);
     try {
-      // Use a temporary access code to test - we'll call the proxy with a test action
       const { data, error } = await supabase.functions.invoke('xtream-proxy', {
         body: {
           action: 'test_connection',
@@ -120,6 +119,10 @@ export default function SettingsPage() {
       if (error || data?.error) {
         setTestResult({ ok: false, msg: data?.error || error?.message || 'Falha na conexão' });
       } else {
+        // Auto-fill resolved URL if provider name was used
+        if (data?.resolved_url && data.resolved_url !== form.server_url.trim()) {
+          setForm(f => ({ ...f, server_url: data.resolved_url }));
+        }
         setTestResult({ ok: true, msg: `Conectado! ${data?.user_info?.status === 'Active' ? 'Conta ativa' : 'Servidor respondeu'}` });
       }
     } catch (err: any) {
