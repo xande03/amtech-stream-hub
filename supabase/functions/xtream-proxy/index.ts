@@ -104,11 +104,10 @@ async function resolveProviderUrl(providerName: string, username: string, passwo
         throw new Error("not found");
       })
     );
-    return result;
-      }
-    }
+  } catch {
+    // All attempts failed
   } finally {
-    clearTimeout(timeout);
+    clearTimeout(globalTimeout);
   }
 
   return null;
