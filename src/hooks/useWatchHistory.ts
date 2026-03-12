@@ -10,6 +10,7 @@ export interface WatchHistoryItem {
   duration?: number; // seconds
   lastWatched: number;
   episodeInfo?: string;
+  playlistCode?: string; // tracks which playlist this item belongs to
 }
 
 const STORAGE_KEY = 'amtech_history';

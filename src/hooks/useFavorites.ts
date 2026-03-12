@@ -6,6 +6,7 @@ export interface FavoriteItem {
   name: string;
   icon?: string;
   addedAt: number;
+  playlistCode?: string; // tracks which playlist this item belongs to
 }
 
 const STORAGE_KEY = 'amtech_favorites';
