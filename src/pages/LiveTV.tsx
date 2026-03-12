@@ -5,13 +5,13 @@ import { getLiveStreams, getLiveCategories, checkChannelsStatus, LiveStream, Cat
 import { useFavorites } from '@/hooks/useFavorites';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
 import { Input } from '@/components/ui/input';
-import { Search, Tv, Heart, Wifi, WifiOff, Loader2 } from 'lucide-react';
+import { Search, Tv, Heart, Wifi, WifiOff, Loader2, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { LiveTVSkeleton } from '@/components/LoadingSkeleton';
 import DraggableScroll from '@/components/DraggableScroll';
 
 const PAGE_SIZE = 60;
-const CHECK_BATCH_SIZE = 30;
+const CHECK_BATCH_SIZE = 50;
 
 export default function LiveTV() {
   const { accessCode } = useAuth();
@@ -60,16 +60,17 @@ export default function LiveTV() {
     }
   }, [accessCode]);
 
-  // Auto-check when category changes
+  // Auto-check when category changes or on initial load
   useEffect(() => {
     if (!streams.length || loading) return;
     const toCheck = selectedCategory === 'all'
       ? streams.slice(0, CHECK_BATCH_SIZE)
-      : streams.filter(s => s.category_id === selectedCategory).slice(0, CHECK_BATCH_SIZE * 2);
+      : streams.filter(s => s.category_id === selectedCategory);
     
     // Only check channels we haven't checked yet
     const unchecked = toCheck.filter(s => channelStatus[s.stream_id] === undefined);
     if (unchecked.length > 0) {
+      console.log(`Auto-checking ${unchecked.length} channels for category: ${selectedCategory}`);
       checkStatus(unchecked);
     }
   }, [selectedCategory, streams, loading]);
@@ -145,13 +146,17 @@ export default function LiveTV() {
                 idsToReset.forEach(id => delete next[id]);
                 return next;
               });
-              checkStatus(inCategory.slice(0, CHECK_BATCH_SIZE * 2));
+              checkStatus(inCategory);
             }}
             disabled={checkingStatus}
             className="p-1.5 rounded-md bg-secondary hover:bg-secondary/80 transition-colors disabled:opacity-50"
             title="Re-verificar status dos canais"
           >
-            <Loader2 className={`w-4 h-4 text-primary ${checkingStatus ? 'animate-spin' : ''}`} />
+            {checkingStatus ? (
+              <Loader2 className="w-4 h-4 text-primary animate-spin" />
+            ) : (
+              <RefreshCw className="w-4 h-4 text-primary" />
+            )}
           </button>
           <div className="flex gap-1 bg-secondary rounded-lg p-0.5">
             <button onClick={() => setViewMode('grid')} className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>Grid</button>
