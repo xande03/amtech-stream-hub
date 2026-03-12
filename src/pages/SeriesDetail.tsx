@@ -94,8 +94,17 @@ export default function SeriesDetail() {
   const seasons = Object.keys(episodes || {}).sort((a, b) => Number(a) - Number(b));
   const currentEpisodes = episodes[selectedSeason] || [];
 
+  const backdrop = info.backdrop_path?.[0] || '';
+
   return (
     <div>
+      {/* Backdrop banner */}
+      {backdrop && (
+        <div className="relative -mx-4 -mt-4 md:-mx-6 md:-mt-6 mb-6 h-48 md:h-72 overflow-hidden rounded-b-2xl">
+          <img src={backdrop} alt="" className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+        </div>
+      )}
       <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4 transition-colors"><ArrowLeft className="w-4 h-4" /> Voltar</button>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         <div className="flex flex-col md:flex-row gap-6 mb-8">
