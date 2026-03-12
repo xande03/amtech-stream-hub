@@ -58,7 +58,7 @@ export const heroImage = (url?: string | null) =>
 
 /** Featured card thumbnail */
 export const featuredImage = (url?: string | null) =>
-  hdImage(url, { width: 640, height: 360, quality: 85 });
+  hdImage(url, { width: 800, height: 450, quality: 90 });
 
 /** Episode thumbnail */
 export const episodeThumbnail = (url?: string | null) =>
