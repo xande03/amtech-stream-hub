@@ -1,4 +1,4 @@
-import { Home, Tv, Film, Clapperboard, Heart, Clock, Settings, Sparkles } from 'lucide-react';
+import { Home, Tv, Film, Clapperboard, Heart, Clock, Settings, Sparkles, CalendarClock } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
 import amtechIcon from '@/assets/amtech-icon.png';
