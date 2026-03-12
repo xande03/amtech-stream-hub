@@ -308,6 +308,7 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
     return () => document.removeEventListener('fullscreenchange', onChange);
   }, []);
 
+  // PiP events
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -320,6 +321,67 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
       video.removeEventListener('leavepictureinpicture', onLeave);
     };
   }, []);
+
+  // Auto-enter PiP when user leaves the page/app (visibility change)
+  useEffect(() => {
+    const handleVisibility = async () => {
+      const video = videoRef.current;
+      if (!video || video.paused) return;
+      if (document.hidden && document.pictureInPictureEnabled && !document.pictureInPictureElement) {
+        try {
+          await video.requestPictureInPicture();
+        } catch {}
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, []);
+
+  // Media Session API for lock screen / notification controls
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: title || 'Reproduzindo',
+      artist: isLive ? 'TV ao Vivo' : 'Xerife Player',
+      album: 'Xerife Player',
+    });
+
+    navigator.mediaSession.setActionHandler('play', () => {
+      videoRef.current?.play().catch(() => {});
+    });
+    navigator.mediaSession.setActionHandler('pause', () => {
+      videoRef.current?.pause();
+    });
+    navigator.mediaSession.setActionHandler('stop', () => {
+      videoRef.current?.pause();
+    });
+    if (!isLive) {
+      navigator.mediaSession.setActionHandler('seekbackward', () => {
+        const v = videoRef.current;
+        if (v) v.currentTime = Math.max(0, v.currentTime - 10);
+      });
+      navigator.mediaSession.setActionHandler('seekforward', () => {
+        const v = videoRef.current;
+        if (v) v.currentTime = Math.min(v.duration || 0, v.currentTime + 10);
+      });
+    }
+    if (onNextEpisode) {
+      navigator.mediaSession.setActionHandler('nexttrack', () => {
+        onNextEpisode();
+      });
+    }
+
+    return () => {
+      try {
+        navigator.mediaSession.setActionHandler('play', null);
+        navigator.mediaSession.setActionHandler('pause', null);
+        navigator.mediaSession.setActionHandler('stop', null);
+        navigator.mediaSession.setActionHandler('seekbackward', null);
+        navigator.mediaSession.setActionHandler('seekforward', null);
+        navigator.mediaSession.setActionHandler('nexttrack', null);
+      } catch {}
+    };
+  }, [title, isLive, onNextEpisode]);
 
   const handleTimeUpdate = useCallback(() => {
     const video = videoRef.current;
