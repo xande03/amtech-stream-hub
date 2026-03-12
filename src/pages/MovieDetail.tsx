@@ -8,8 +8,9 @@ import ContentCard from '@/components/ContentCard';
 import ContentRow from '@/components/ContentRow';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { Play, Heart, ArrowLeft, Star, Clock, Calendar, RotateCcw, Youtube } from 'lucide-react';
+import { Play, Heart, ArrowLeft, Star, Clock, Calendar, RotateCcw } from 'lucide-react';
 import { DetailSkeleton } from '@/components/LoadingSkeleton';
+import YouTubeTrailer from '@/components/YouTubeTrailer';
 
 export default function MovieDetail() {
   const { id } = useParams<{ id: string }>();
