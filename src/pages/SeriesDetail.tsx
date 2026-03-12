@@ -65,13 +65,6 @@ export default function SeriesDetail() {
     navigate(`/player/series/${episode.id}/${ext}?${params.toString()}`);
   };
 
-  if (loading) return <SeriesDetailSkeleton />;
-  if (!seriesInfo) return <div className="text-center py-12 text-muted-foreground">Série não encontrada.<br /><button onClick={() => navigate('/series')} className="text-primary mt-4 underline">Voltar</button></div>;
-
-  const { info, episodes } = seriesInfo;
-  const seasons = Object.keys(episodes || {}).sort((a, b) => Number(a) - Number(b));
-  const currentEpisodes = episodes[selectedSeason] || [];
-
   const similarSeries = useMemo(() => {
     if (!seriesInfo || allSeries.length === 0) return [];
     const si = seriesInfo.info;
@@ -92,6 +85,13 @@ export default function SeriesDetail() {
       .slice(0, 20)
       .map(s => s.series);
   }, [seriesInfo, allSeries]);
+
+  if (loading) return <SeriesDetailSkeleton />;
+  if (!seriesInfo) return <div className="text-center py-12 text-muted-foreground">Série não encontrada.<br /><button onClick={() => navigate('/series')} className="text-primary mt-4 underline">Voltar</button></div>;
+
+  const { info, episodes } = seriesInfo;
+  const seasons = Object.keys(episodes || {}).sort((a, b) => Number(a) - Number(b));
+  const currentEpisodes = episodes[selectedSeason] || [];
 
   return (
     <div>
