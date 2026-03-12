@@ -72,6 +72,27 @@ export default function SeriesDetail() {
   const seasons = Object.keys(episodes || {}).sort((a, b) => Number(a) - Number(b));
   const currentEpisodes = episodes[selectedSeason] || [];
 
+  const similarSeries = useMemo(() => {
+    if (!seriesInfo || allSeries.length === 0) return [];
+    const si = seriesInfo.info;
+    const genreStr = (si.genre || '').toLowerCase();
+    const genres = genreStr.split(',').map((g: string) => g.trim()).filter(Boolean);
+
+    return allSeries
+      .filter(s => s.series_id !== si.series_id)
+      .map(s => {
+        let score = 0;
+        if (s.category_id === si.category_id) score += 3;
+        const sGenre = (s.genre || '').toLowerCase();
+        genres.forEach(g => { if (sGenre.includes(g)) score += 2; });
+        return { series: s, score };
+      })
+      .filter(s => s.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 20)
+      .map(s => s.series);
+  }, [seriesInfo, allSeries]);
+
   return (
     <div>
       <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4 transition-colors"><ArrowLeft className="w-4 h-4" /> Voltar</button>
