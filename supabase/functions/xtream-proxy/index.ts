@@ -327,28 +327,37 @@ Deno.serve(async (req) => {
     // Check multiple channels online status
     if (action === "check_channels") {
       const streamIds: number[] = params.stream_ids || [];
+      console.log(`check_channels: checking ${streamIds.length} channels`);
       if (!streamIds.length) {
         return new Response(JSON.stringify({ results: {} }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // Check up to 30 channels in parallel with short timeouts
-      const idsToCheck = streamIds.slice(0, 30);
+      // Check up to 50 channels in parallel with HEAD requests
+      const idsToCheck = streamIds.slice(0, 50);
       const results: Record<number, boolean> = {};
 
       await Promise.allSettled(
         idsToCheck.map(async (id) => {
           const url = `${base}/live/${encodeURIComponent(username)}/${encodeURIComponent(password)}/${id}.m3u8`;
           try {
-            const res = await fetchWithTimeout(url, 4000);
-            results[id] = res.ok || res.status === 200 || res.status === 206 || res.status === 302;
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 5000);
+            const res = await fetch(url, { 
+              method: "HEAD", 
+              signal: controller.signal,
+              redirect: "follow",
+            });
+            clearTimeout(timer);
+            results[id] = res.ok || res.status === 302 || res.status === 206;
           } catch {
             results[id] = false;
           }
         })
       );
 
+      console.log(`check_channels: done. Online: ${Object.values(results).filter(v => v).length}, Offline: ${Object.values(results).filter(v => !v).length}`);
       return new Response(JSON.stringify({ results }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

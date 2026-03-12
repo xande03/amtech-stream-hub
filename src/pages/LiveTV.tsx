@@ -11,7 +11,7 @@ import { LiveTVSkeleton } from '@/components/LoadingSkeleton';
 import DraggableScroll from '@/components/DraggableScroll';
 
 const PAGE_SIZE = 60;
-const CHECK_BATCH_SIZE = 30;
+const CHECK_BATCH_SIZE = 50;
 
 export default function LiveTV() {
   const { accessCode } = useAuth();
