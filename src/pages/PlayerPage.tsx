@@ -146,9 +146,8 @@ export default function PlayerPage() {
       console.log(`[Live] Attempt ${nextIndex + 1}/${LIVE_ATTEMPTS.length}: ${LIVE_ATTEMPTS[nextIndex].ext} (proxy: ${LIVE_ATTEMPTS[nextIndex].proxy})`);
       setError(null);
       setLoading(true);
-      setStreamUrl(null); // Reset URL to force remount
-      // Small delay to allow cleanup before next attempt
-      setTimeout(() => tryNextAttempt(accessCode, type as 'live', id, nextIndex), 500);
+      setStreamUrl(null);
+      setTimeout(() => tryNextAttempt(accessCode, type as 'live', id, nextIndex), 800);
     }
   };
 
