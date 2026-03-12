@@ -335,7 +335,7 @@ export default function Home() {
       {topMovies.length > 0 && (
         <ContentRow title="🔥 Filmes Recém Adicionados" onViewAll={() => navigate('/movies')}>
           {topMovies.slice(0, 20).map((m) => (
-            <div key={m.stream_id} className="w-32 md:w-40 flex-shrink-0">
+            <div key={m.stream_id} className="w-40 md:w-48 flex-shrink-0">
               <ContentCard
                 title={m.name}
                 image={m.stream_icon}
