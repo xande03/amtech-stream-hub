@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getLiveStreams, getLiveCategories, getShortEpg, LiveStream, Category, EpgEntry } from '@/services/xtreamApi';
+import { useWatchHistory } from '@/hooks/useWatchHistory';
 import { Input } from '@/components/ui/input';
-import { Search, Tv, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Tv, Clock, ChevronLeft, ChevronRight, Play } from 'lucide-react';
 import { motion } from 'framer-motion';
 import DraggableScroll from '@/components/DraggableScroll';
 
