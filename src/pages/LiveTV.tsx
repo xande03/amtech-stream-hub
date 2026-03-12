@@ -5,7 +5,7 @@ import { getLiveStreams, getLiveCategories, checkChannelsStatus, LiveStream, Cat
 import { useFavorites } from '@/hooks/useFavorites';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
 import { Input } from '@/components/ui/input';
-import { Search, Tv, Heart, Wifi, WifiOff, Loader2 } from 'lucide-react';
+import { Search, Tv, Heart, Wifi, WifiOff, Loader2, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { LiveTVSkeleton } from '@/components/LoadingSkeleton';
 import DraggableScroll from '@/components/DraggableScroll';
