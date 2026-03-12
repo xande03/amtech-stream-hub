@@ -148,12 +148,29 @@ export default function Home() {
   const recentMovies = useMemo(() => movies.slice(0, 20), [movies]);
   const recentSeries = useMemo(() => series.slice(0, 20), [series]);
 
+  // Enrich history items with cover from series list if icon is missing
+  const enrichedHistory = useMemo(() => {
+    return history.map(h => {
+      if (h.icon) return h;
+      if (h.type === 'series') {
+        const match = series.find(s => s.name === h.name);
+        if (match?.cover) return { ...h, icon: match.cover };
+        if (match?.backdrop_path?.[0]) return { ...h, icon: match.backdrop_path[0] };
+      }
+      if (h.type === 'movie') {
+        const match = movies.find(m => m.name === h.name);
+        if (match?.stream_icon) return { ...h, icon: match.stream_icon };
+      }
+      return h;
+    });
+  }, [history, series, movies]);
+
+  const continueWatching = enrichedHistory.filter(h => h.progress && h.progress > 5 && h.progress < 95);
+  const recentlyWatched = enrichedHistory.filter(h => !(h.progress && h.progress > 5 && h.progress < 95));
+
   if (loading) return <PageLoadingSkeleton />;
 
   const currentHero = heroItems[heroIndex];
-
-  const continueWatching = history.filter(h => h.progress && h.progress > 5 && h.progress < 95);
-  const recentlyWatched = history.filter(h => !(h.progress && h.progress > 5 && h.progress < 95));
 
   return (
     <div className="space-y-6">
