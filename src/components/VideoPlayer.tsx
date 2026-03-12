@@ -630,6 +630,7 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
         className="w-full h-full object-contain"
         controls
         playsInline
+        disablePictureInPicture={false}
         muted={muted}
         onTimeUpdate={handleTimeUpdate}
       />
