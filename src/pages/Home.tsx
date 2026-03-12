@@ -186,13 +186,7 @@ export default function Home() {
                 <span className="text-sm text-primary font-medium">★ {currentHero.rating}</span>
               )}
             </div>
-            <h2 className="text-xl md:text-3xl lg:text-4xl font-bold text-foreground mb-1 line-clamp-2">{currentHero.name}</h2>
-            {currentHero.genre && (
-              <p className="text-xs md:text-sm text-muted-foreground mb-1 line-clamp-1">{currentHero.genre}</p>
-            )}
-            {currentHero.plot && (
-              <p className="text-xs md:text-sm text-muted-foreground mb-3 line-clamp-2 hidden md:block">{currentHero.plot}</p>
-            )}
+            <h2 className="text-xl md:text-3xl lg:text-4xl font-bold text-foreground mb-3 line-clamp-2">{currentHero.name}</h2>
             <div className="flex gap-2">
               <button
                 onClick={() => navigate(currentHero.type === 'movie' ? `/movies/${currentHero.id}` : `/series/${currentHero.id}`)}
