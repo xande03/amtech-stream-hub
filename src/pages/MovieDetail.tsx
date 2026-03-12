@@ -86,7 +86,7 @@ export default function MovieDetail() {
   const cast = movieInfo?.cast || movie?.cast || '';
   const director = movieInfo?.director || movie?.director || '';
   const youtubeTrailer = movieInfo?.youtube_trailer || info?.info?.youtube_trailer || '';
-  const trailerUrl = youtubeTrailer ? (youtubeTrailer.startsWith('http') ? youtubeTrailer : `https://www.youtube.com/watch?v=${youtubeTrailer}`) : '';
+  const trailerValue = youtubeTrailer;
 
   return (
     <div>
