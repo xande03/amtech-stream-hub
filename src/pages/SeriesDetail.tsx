@@ -56,7 +56,8 @@ export default function SeriesDetail() {
 
   const handlePlayEpisode = (episode: Episode) => {
     if (!seriesInfo) return;
-    addToHistory({ id: episode.id, type: 'series', name: seriesInfo.info.name, icon: seriesInfo.info.cover, episodeInfo: `S${episode.season}E${episode.episode_num}` });
+    const seriesCover = seriesInfo.info.cover || seriesInfo.info.backdrop_path?.[0] || '';
+    addToHistory({ id: episode.id, type: 'series', name: seriesInfo.info.name, icon: seriesCover, episodeInfo: `S${episode.season}E${episode.episode_num}` });
     const ext = episode.container_extension || 'mp4';
     const params = new URLSearchParams({
       seriesId: String(seriesInfo.info.series_id),
