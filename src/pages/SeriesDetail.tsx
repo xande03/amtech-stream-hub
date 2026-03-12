@@ -111,7 +111,7 @@ export default function SeriesDetail() {
         <div className="flex flex-col md:flex-row gap-6 mb-8">
           <div className="w-full md:w-56 flex-shrink-0">
             <div className="aspect-[2/3] rounded-xl overflow-hidden bg-secondary">
-              {info.cover ? <img src={info.cover} alt={info.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-muted-foreground">Sem capa</div>}
+              {info.cover ? <img src={posterImage(info.cover)} alt={info.name} className="w-full h-full object-cover" onError={(e) => { const img = e.target as HTMLImageElement; if (!img.dataset.retried) { img.dataset.retried = '1'; img.src = info.cover; } }} /> : <div className="w-full h-full flex items-center justify-center text-muted-foreground">Sem capa</div>}
             </div>
           </div>
           <div className="flex-1 space-y-3">
