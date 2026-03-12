@@ -6,14 +6,14 @@ import amtechIcon from '@/assets/amtech-icon.png';
 import GlobalSearch from '@/components/GlobalSearch';
 
 const items = [
-  { path: '/', icon: Home, label: 'Início' },
-  { path: '/live', icon: Tv, label: 'TV ao Vivo' },
-  { path: '/movies', icon: Film, label: 'Filmes' },
-  { path: '/series', icon: Clapperboard, label: 'Séries' },
-  { path: '/favorites', icon: Heart, label: 'Favoritos' },
-  { path: '/history', icon: Clock, label: 'Histórico' },
-  { path: '/finder', icon: Sparkles, label: 'Encontrar' },
-  { path: '/settings', icon: Settings, label: 'Configurações' },
+  { path: '/', icon: Home, label: 'Início', color: 'from-indigo-500 to-violet-600', glow: 'shadow-indigo-500/25' },
+  { path: '/live', icon: Tv, label: 'TV ao Vivo', color: 'from-rose-500 to-pink-600', glow: 'shadow-rose-500/25' },
+  { path: '/movies', icon: Film, label: 'Filmes', color: 'from-amber-500 to-orange-600', glow: 'shadow-amber-500/25' },
+  { path: '/series', icon: Clapperboard, label: 'Séries', color: 'from-emerald-500 to-teal-600', glow: 'shadow-emerald-500/25' },
+  { path: '/favorites', icon: Heart, label: 'Favoritos', color: 'from-pink-500 to-rose-600', glow: 'shadow-pink-500/25' },
+  { path: '/history', icon: Clock, label: 'Histórico', color: 'from-sky-500 to-blue-600', glow: 'shadow-sky-500/25' },
+  { path: '/finder', icon: Sparkles, label: 'Encontrar', color: 'from-fuchsia-500 to-purple-600', glow: 'shadow-fuchsia-500/25' },
+  { path: '/settings', icon: Settings, label: 'Configurações', color: 'from-slate-400 to-slate-600', glow: 'shadow-slate-500/25' },
 ];
 
 export default function MobileNav() {
@@ -78,24 +78,31 @@ export default function MobileNav() {
               </div>
 
               {/* Navigation items */}
-              <div className="px-3 pb-6 grid grid-cols-3 gap-2">
-                {items.map(({ path, icon: Icon, label }) => {
+              <div className="px-3 pb-6 grid grid-cols-3 gap-2.5">
+                {items.map(({ path, icon: Icon, label, color, glow }, i) => {
                   const active = path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
                   return (
-                    <button
+                    <motion.button
                       key={path}
+                      initial={{ opacity: 0, scale: 0.85 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: i * 0.04, type: 'spring', stiffness: 400, damping: 25 }}
                       onClick={() => handleNavigate(path)}
-                      className={`flex flex-col items-center gap-2 py-4 px-2 rounded-xl transition-all ${
+                      className={`group relative flex flex-col items-center gap-2.5 py-5 px-2 rounded-2xl transition-all duration-200 ${
                         active
-                          ? 'bg-primary/15 border border-primary/30'
-                          : 'bg-muted/40 border border-transparent hover:bg-muted/70'
+                          ? `bg-gradient-to-br ${color} shadow-lg ${glow}`
+                          : 'bg-muted/30 border border-border/40 hover:bg-muted/60 hover:border-border/70 hover:shadow-md'
                       }`}
                     >
-                      <Icon className={`w-6 h-6 ${active ? 'text-primary' : 'text-muted-foreground'}`} />
-                      <span className={`text-xs font-medium ${active ? 'text-primary' : 'text-muted-foreground'}`}>
+                      <Icon className={`w-6 h-6 transition-colors ${
+                        active ? 'text-white' : 'text-muted-foreground group-hover:text-foreground'
+                      }`} />
+                      <span className={`text-[11px] font-semibold leading-tight text-center transition-colors ${
+                        active ? 'text-white' : 'text-muted-foreground group-hover:text-foreground'
+                      }`}>
                         {label}
                       </span>
-                    </button>
+                    </motion.button>
                   );
                 })}
               </div>
