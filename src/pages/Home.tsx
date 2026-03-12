@@ -312,9 +312,20 @@ export default function Home() {
                 image={item.icon}
                 aspectRatio={item.type === 'live' ? 'square' : 'portrait'}
                 onClick={() => {
-                  if (item.type === 'live') window.open(`/player/live/${item.id}`, '_blank');
-                  else if (item.type === 'movie') navigate(`/movies/${item.id}`);
-                  else navigate(`/series/${item.id}`);
+                  if (item.type === 'live') {
+                    window.open(`/player/live/${item.id}`, '_blank');
+                  } else if (item.type === 'movie') {
+                    const params = new URLSearchParams({ name: item.name, icon: item.icon || '' });
+                    navigate(`/player/movie/${item.id}/mp4?${params.toString()}`);
+                  } else if (item.type === 'series') {
+                    const match = item.episodeInfo?.match(/S(\d+)E(\d+)/i);
+                    const params = new URLSearchParams({ name: item.name, icon: item.icon || '' });
+                    if (match) {
+                      params.set('season', match[1]);
+                      params.set('ep', match[2]);
+                    }
+                    navigate(`/player/series/${item.id}?${params.toString()}`);
+                  }
                 }}
               />
             </div>
