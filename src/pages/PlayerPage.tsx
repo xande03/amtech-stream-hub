@@ -11,7 +11,7 @@ interface StreamAttempt {
   proxy: boolean;
 }
 
-// Live channels: prioriza proxy para evitar bloqueios de CORS/mixed-content/certificado do provedor
+// Live channels: proxy first to avoid CORS/mixed-content, then direct fallback
 const LIVE_ATTEMPTS: StreamAttempt[] = [
   { ext: 'm3u8', proxy: true },
   { ext: 'ts', proxy: true },
