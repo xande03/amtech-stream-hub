@@ -8,7 +8,7 @@ import ContentCard from '@/components/ContentCard';
 import ContentRow from '@/components/ContentRow';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { Play, Heart, ArrowLeft, Star, Clock, Calendar, RotateCcw } from 'lucide-react';
+import { Play, Heart, ArrowLeft, Star, Clock, Calendar, RotateCcw, Youtube } from 'lucide-react';
 import { DetailSkeleton } from '@/components/LoadingSkeleton';
 
 export default function MovieDetail() {
@@ -84,6 +84,8 @@ export default function MovieDetail() {
   const releaseDate = movieInfo?.releaseDate || movieInfo?.releasedate || movie?.releaseDate || '';
   const cast = movieInfo?.cast || movie?.cast || '';
   const director = movieInfo?.director || movie?.director || '';
+  const youtubeTrailer = movieInfo?.youtube_trailer || info?.info?.youtube_trailer || '';
+  const trailerUrl = youtubeTrailer ? (youtubeTrailer.startsWith('http') ? youtubeTrailer : `https://www.youtube.com/watch?v=${youtubeTrailer}`) : '';
 
   return (
     <div>
@@ -133,6 +135,13 @@ export default function MovieDetail() {
               <Heart className={`w-4 h-4 mr-2 ${isFavorite(movie.stream_id, 'movie') ? 'fill-destructive text-destructive' : ''}`} />
               {isFavorite(movie.stream_id, 'movie') ? 'Favoritado' : 'Favoritar'}
             </Button>
+            {trailerUrl && (
+              <Button variant="outline" asChild className="border-border text-foreground hover:bg-secondary">
+                <a href={trailerUrl} target="_blank" rel="noopener noreferrer">
+                  <Youtube className="w-4 h-4 mr-2 text-destructive" /> Trailer
+                </a>
+              </Button>
+            )}
           </div>
         </div>
       </motion.div>
