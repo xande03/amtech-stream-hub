@@ -11,6 +11,7 @@ import { motion } from 'framer-motion';
 import { Play, Heart, ArrowLeft, Star, Clock, Calendar, RotateCcw } from 'lucide-react';
 import { DetailSkeleton } from '@/components/LoadingSkeleton';
 import YouTubeTrailer from '@/components/YouTubeTrailer';
+import { backdropImage, posterImage } from '@/lib/imageProxy';
 
 export default function MovieDetail() {
   const { id } = useParams<{ id: string }>();
