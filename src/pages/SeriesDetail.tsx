@@ -8,8 +8,9 @@ import ContentCard from '@/components/ContentCard';
 import ContentRow from '@/components/ContentRow';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { Play, Heart, ArrowLeft, Star, CheckCircle2, RotateCcw, Youtube } from 'lucide-react';
+import { Play, Heart, ArrowLeft, Star, CheckCircle2, RotateCcw } from 'lucide-react';
 import { SeriesDetailSkeleton } from '@/components/LoadingSkeleton';
+import YouTubeTrailer from '@/components/YouTubeTrailer';
 
 export default function SeriesDetail() {
   const { id } = useParams<{ id: string }>();
@@ -117,13 +118,7 @@ export default function SeriesDetail() {
               <Heart className={`w-4 h-4 mr-2 ${isFavorite(info.series_id, 'series') ? 'fill-destructive text-destructive' : ''}`} />
               {isFavorite(info.series_id, 'series') ? 'Favoritado' : 'Favoritar'}
             </Button>
-            {info.youtube_trailer && (
-              <Button variant="outline" asChild className="border-border text-foreground hover:bg-secondary">
-                <a href={info.youtube_trailer.startsWith('http') ? info.youtube_trailer : `https://www.youtube.com/watch?v=${info.youtube_trailer}`} target="_blank" rel="noopener noreferrer">
-                  <Youtube className="w-4 h-4 mr-2 text-destructive" /> Trailer
-                </a>
-              </Button>
-            )}
+            {info.youtube_trailer && <YouTubeTrailer trailer={info.youtube_trailer} />}
           </div>
         </div>
 
