@@ -146,13 +146,17 @@ export default function LiveTV() {
                 idsToReset.forEach(id => delete next[id]);
                 return next;
               });
-              checkStatus(inCategory.slice(0, CHECK_BATCH_SIZE * 2));
+              checkStatus(inCategory);
             }}
             disabled={checkingStatus}
             className="p-1.5 rounded-md bg-secondary hover:bg-secondary/80 transition-colors disabled:opacity-50"
             title="Re-verificar status dos canais"
           >
-            <Loader2 className={`w-4 h-4 text-primary ${checkingStatus ? 'animate-spin' : ''}`} />
+            {checkingStatus ? (
+              <Loader2 className="w-4 h-4 text-primary animate-spin" />
+            ) : (
+              <RefreshCw className="w-4 h-4 text-primary" />
+            )}
           </button>
           <div className="flex gap-1 bg-secondary rounded-lg p-0.5">
             <button onClick={() => setViewMode('grid')} className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>Grid</button>
