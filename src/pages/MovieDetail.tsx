@@ -136,13 +136,7 @@ export default function MovieDetail() {
               <Heart className={`w-4 h-4 mr-2 ${isFavorite(movie.stream_id, 'movie') ? 'fill-destructive text-destructive' : ''}`} />
               {isFavorite(movie.stream_id, 'movie') ? 'Favoritado' : 'Favoritar'}
             </Button>
-            {trailerUrl && (
-              <Button variant="outline" asChild className="border-border text-foreground hover:bg-secondary">
-                <a href={trailerUrl} target="_blank" rel="noopener noreferrer">
-                  <Youtube className="w-4 h-4 mr-2 text-destructive" /> Trailer
-                </a>
-              </Button>
-            )}
+            {trailerValue && <YouTubeTrailer trailer={trailerValue} />}
           </div>
         </div>
       </motion.div>
