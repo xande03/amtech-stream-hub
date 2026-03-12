@@ -1,3 +1,4 @@
+import { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Heart } from 'lucide-react';
 import { posterImage, posterSmall, iconImage, hdImage } from '@/lib/imageProxy';
@@ -42,6 +43,10 @@ export default function ContentCard({
   };
 
   const hdSrc = getHdUrl(image);
+  // Tiny blur placeholder (20px wide)
+  const blurSrc = image ? hdImage(image, { width: 20, height: 30, quality: 20, format: 'jpg' }) : '';
+  const [loaded, setLoaded] = useState(false);
+  const onLoad = useCallback(() => setLoaded(true), []);
 
   return (
     <motion.div
@@ -51,17 +56,26 @@ export default function ContentCard({
       onClick={onClick}
     >
       <div className={`relative ${aspectClass} rounded-lg overflow-hidden bg-secondary mb-2`}>
+        {/* Blur placeholder */}
+        {blurSrc && !loaded && (
+          <img
+            src={blurSrc}
+            alt=""
+            aria-hidden
+            className="absolute inset-0 w-full h-full object-cover scale-110 blur-md"
+          />
+        )}
         {hdSrc ? (
           <img
             src={hdSrc}
             alt={title}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+            className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-110 ${loaded ? 'opacity-100' : 'opacity-0'}`}
             loading="lazy"
             referrerPolicy="no-referrer"
+            onLoad={onLoad}
             onError={(e) => {
               const img = e.target as HTMLImageElement;
               const originalSrc = (image || '').trim();
-              // If proxy failed, try original directly
               if (img.dataset.retried !== '2' && originalSrc) {
                 if (img.dataset.retried === '1') {
                   img.dataset.retried = '2';
@@ -69,11 +83,9 @@ export default function ContentCard({
                   return;
                 }
                 img.dataset.retried = '1';
-                // Try without proxy params
                 img.src = `https://images.weserv.nl/?url=${encodeURIComponent(originalSrc)}&default=1`;
                 return;
               }
-              // Final fallback: show title text
               img.style.display = 'none';
               const fallback = img.parentElement?.querySelector('[data-fallback]') as HTMLElement;
               if (fallback) fallback.style.display = 'flex';
