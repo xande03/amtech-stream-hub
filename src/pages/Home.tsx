@@ -269,6 +269,37 @@ export default function Home() {
         );
       })()}
 
+      {/* Recently Watched - all history items not in "Continue Watching" */}
+      {(() => {
+        const recentlyWatched = history.filter(h => !(h.progress && h.progress > 5 && h.progress < 95));
+        if (recentlyWatched.length === 0) return null;
+        return (
+          <ContentRow title="🕐 Assistidos Recentemente" onViewAll={() => navigate('/history')}>
+            {recentlyWatched.slice(0, 20).map((item) => (
+              <div key={`rw-${item.type}-${item.id}`} className="w-36 md:w-44 flex-shrink-0 relative group/rw">
+                <button
+                  onClick={(e) => { e.stopPropagation(); removeFromHistory(item.id, item.type); }}
+                  className="absolute top-1 right-1 z-10 p-1 rounded-full bg-background/80 backdrop-blur-sm opacity-0 group-hover/rw:opacity-100 transition-opacity"
+                  title="Remover"
+                >
+                  <X className="w-3.5 h-3.5 text-muted-foreground" />
+                </button>
+                <ContentCard
+                  title={item.name}
+                  image={item.icon}
+                  aspectRatio={item.type === 'live' ? 'square' : 'portrait'}
+                  onClick={() => {
+                    if (item.type === 'live') window.open(`/player/live/${item.id}`, '_blank');
+                    else if (item.type === 'movie') navigate(`/movies/${item.id}`);
+                    else navigate(`/series/${item.id}`);
+                  }}
+                />
+              </div>
+            ))}
+          </ContentRow>
+        );
+      })()}
+
       {/* Featured Highlights */}
       {featuredItems.length > 0 && (
         <div className="mb-2">
