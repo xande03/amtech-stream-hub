@@ -22,7 +22,13 @@ const LIVE_ATTEMPTS: StreamAttempt[] = [
 export default function PlayerPage() {
   const { type, id, ext } = useParams<{ type: string; id: string; ext?: string }>();
   const [searchParams] = useSearchParams();
-  const { accessCode } = useAuth();
+  const { accessCode: liveAccessCode } = useAuth();
+  // Capture access code at mount time so admin playlist changes don't interrupt playback
+  const stableAccessCodeRef = useRef(liveAccessCode);
+  if (!stableAccessCodeRef.current && liveAccessCode) {
+    stableAccessCodeRef.current = liveAccessCode;
+  }
+  const accessCode = stableAccessCodeRef.current;
   const { updateProgress, addToHistory, getResumeTime } = useWatchHistory();
   const [streamUrl, setStreamUrl] = useState<string | null>(null);
   const [resumeTime, setResumeTime] = useState<number>(0);
