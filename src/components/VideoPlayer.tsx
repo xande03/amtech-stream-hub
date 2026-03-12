@@ -52,7 +52,7 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
   const [showQualityMenu, setShowQualityMenu] = useState(false);
   const retryCountRef = useRef(0);
   const hasResumedRef = useRef(false);
-  const maxRetries = 5;
+  const maxRetries = 8;
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const statusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -127,35 +127,36 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
       const hls = new Hls({
         enableWorker: true,
         lowLatencyMode: isLive,
-        // Buffer: live keeps small buffer (2-10s segments from CDN), VOD can buffer ahead
-        maxBufferLength: isLive ? 8 : 60,
-        maxMaxBufferLength: isLive ? 15 : 120,
-        maxBufferSize: isLive ? 30 * 1000 * 1000 : 60 * 1000 * 1000, // 30MB live, 60MB VOD
-        maxBufferHole: isLive ? 0.3 : 0.5,
-        // Live sync: stay close to live edge (CDN delivers 2-10s segments)
-        liveSyncDurationCount: isLive ? 2 : 3,
-        liveMaxLatencyDurationCount: isLive ? 5 : 6,
+        // Buffer tuning for live: small & responsive; VOD: larger for smooth playback
+        maxBufferLength: isLive ? 10 : 60,
+        maxMaxBufferLength: isLive ? 20 : 120,
+        maxBufferSize: isLive ? 40 * 1000 * 1000 : 60 * 1000 * 1000,
+        maxBufferHole: isLive ? 0.5 : 0.5,
+        // Live sync: stay close to live edge
+        liveSyncDurationCount: isLive ? 3 : 3,
+        liveMaxLatencyDurationCount: isLive ? 8 : 6,
         liveDurationInfinity: isLive,
-        liveBackBufferLength: isLive ? 30 : 90, // Keep 30s rewind for live
-        // Adaptive bitrate: auto-switch quality based on bandwidth (SD/HD/FHD)
-        abrEwmaDefaultEstimate: 1000000, // 1Mbps initial estimate
-        abrEwmaFastLive: isLive ? 2.0 : 3.0,
-        abrEwmaSlowLive: isLive ? 6.0 : 9.0,
+        liveBackBufferLength: isLive ? 30 : 90,
+        // Adaptive bitrate
+        abrEwmaDefaultEstimate: 1500000, // 1.5Mbps initial estimate
+        abrEwmaFastLive: isLive ? 3.0 : 3.0,
+        abrEwmaSlowLive: isLive ? 9.0 : 9.0,
         abrBandWidthUpFactor: 0.7,
-        // Network: aggressive timeouts and retries for CDN failover
-        manifestLoadingTimeOut: 15000,
-        manifestLoadingMaxRetry: 8,
-        manifestLoadingRetryDelay: 1000,
-        levelLoadingTimeOut: 15000,
-        levelLoadingMaxRetry: 6,
-        levelLoadingRetryDelay: 1000,
-        fragLoadingTimeOut: 20000,
-        fragLoadingMaxRetry: 8,
+        // Network: generous timeouts for IPTV servers that can be slow
+        manifestLoadingTimeOut: 20000,
+        manifestLoadingMaxRetry: 10,
+        manifestLoadingRetryDelay: 1500,
+        manifestLoadingMaxRetryTimeout: 30000,
+        levelLoadingTimeOut: 20000,
+        levelLoadingMaxRetry: 8,
+        levelLoadingRetryDelay: 1500,
+        levelLoadingMaxRetryTimeout: 30000,
+        fragLoadingTimeOut: 25000,
+        fragLoadingMaxRetry: 10,
         fragLoadingRetryDelay: 1000,
+        fragLoadingMaxRetryTimeout: 30000,
         startFragPrefetch: true,
-        // Progressive loading for smoother playback
         progressive: !isLive,
-        // Backtrack when switching levels for seamless quality transitions
         backBufferLength: isLive ? 30 : 90,
       });
 
@@ -266,7 +267,7 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
           hlsRef.current = null;
           onStreamErrorRef.current();
         }
-      }, 12000);
+      }, 20000);
 
     } else if (isHls && video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = url;

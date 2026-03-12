@@ -11,7 +11,7 @@ interface StreamAttempt {
   proxy: boolean;
 }
 
-// Live channels: prioriza proxy para evitar bloqueios de CORS/mixed-content/certificado do provedor
+// Live channels: proxy first to avoid CORS/mixed-content, then direct fallback
 const LIVE_ATTEMPTS: StreamAttempt[] = [
   { ext: 'm3u8', proxy: true },
   { ext: 'ts', proxy: true },
@@ -146,9 +146,8 @@ export default function PlayerPage() {
       console.log(`[Live] Attempt ${nextIndex + 1}/${LIVE_ATTEMPTS.length}: ${LIVE_ATTEMPTS[nextIndex].ext} (proxy: ${LIVE_ATTEMPTS[nextIndex].proxy})`);
       setError(null);
       setLoading(true);
-      setStreamUrl(null); // Reset URL to force remount
-      // Small delay to allow cleanup before next attempt
-      setTimeout(() => tryNextAttempt(accessCode, type as 'live', id, nextIndex), 500);
+      setStreamUrl(null);
+      setTimeout(() => tryNextAttempt(accessCode, type as 'live', id, nextIndex), 800);
     }
   };
 
