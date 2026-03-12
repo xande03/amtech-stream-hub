@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getLiveStreams, getLiveCategories, getShortEpg, LiveStream, Category, EpgEntry } from '@/services/xtreamApi';
+import { useWatchHistory } from '@/hooks/useWatchHistory';
 import { Input } from '@/components/ui/input';
-import { Search, Tv, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Tv, Clock, ChevronLeft, ChevronRight, Play } from 'lucide-react';
 import { motion } from 'framer-motion';
 import DraggableScroll from '@/components/DraggableScroll';
 
@@ -26,6 +27,7 @@ interface ChannelEpg {
 
 export default function EpgGuide() {
   const { accessCode } = useAuth();
+  const { addToHistory } = useWatchHistory();
   const [streams, setStreams] = useState<LiveStream[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -231,12 +233,17 @@ export default function EpgGuide() {
                   transition={{ delay: Math.min(idx * 0.02, 0.4) }}
                   className="flex border-b border-border/50 hover:bg-muted/20 transition-colors"
                 >
-                  {/* Channel info */}
+                  {/* Channel info - clickable */}
                   <div
-                    className="flex-shrink-0 flex items-center gap-2 px-3 py-2 border-r border-border bg-card sticky left-0 z-[5]"
+                    onClick={() => {
+                      addToHistory({ id: stream.stream_id, type: 'live', name: stream.name, icon: stream.stream_icon });
+                      window.open(`/player/live/${stream.stream_id}`, '_blank');
+                    }}
+                    className="flex-shrink-0 flex items-center gap-2 px-3 py-2 border-r border-border bg-card sticky left-0 z-[5] cursor-pointer hover:bg-muted/40 transition-colors group/ch"
                     style={{ width: CHANNEL_COL }}
+                    title={`Assistir ${stream.name}`}
                   >
-                    <div className="w-8 h-8 rounded bg-secondary flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    <div className="w-8 h-8 rounded bg-secondary flex items-center justify-center flex-shrink-0 overflow-hidden relative">
                       {stream.stream_icon ? (
                         <img
                           src={stream.stream_icon}
@@ -248,8 +255,11 @@ export default function EpgGuide() {
                       ) : (
                         <Tv className="w-4 h-4 text-muted-foreground" />
                       )}
+                      <div className="absolute inset-0 bg-primary/60 flex items-center justify-center rounded opacity-0 group-hover/ch:opacity-100 transition-opacity">
+                        <Play className="w-4 h-4 text-white fill-white" />
+                      </div>
                     </div>
-                    <span className="text-xs font-medium text-foreground truncate">{stream.name}</span>
+                    <span className="text-xs font-medium text-foreground truncate group-hover/ch:text-primary transition-colors">{stream.name}</span>
                   </div>
 
                   {/* Programs timeline */}
@@ -270,15 +280,19 @@ export default function EpgGuide() {
                       return (
                         <div
                           key={entry.id || eIdx}
-                          className={`absolute top-1 bottom-1 rounded-md px-2 py-1 overflow-hidden cursor-default group transition-colors border ${
+                          onClick={() => {
+                            addToHistory({ id: stream.stream_id, type: 'live', name: stream.name, icon: stream.stream_icon });
+                            window.open(`/player/live/${stream.stream_id}`, '_blank');
+                          }}
+                          className={`absolute top-1 bottom-1 rounded-md px-2 py-1 overflow-hidden cursor-pointer group/ep transition-colors border ${
                             isNow
-                              ? 'bg-primary/20 border-primary/50 shadow-sm'
+                              ? 'bg-primary/20 border-primary/50 shadow-sm hover:bg-primary/30'
                               : isPast
-                                ? 'bg-muted/40 border-border/30'
+                                ? 'bg-muted/40 border-border/30 hover:bg-muted/60'
                                 : 'bg-secondary/60 border-border/40 hover:bg-secondary/90'
                           }`}
                           style={{ left: leftPx, width: widthPx }}
-                          title={`${entry.title}\n${formatTime(start)} - ${formatTime(end)}${entry.description ? '\n' + entry.description : ''}`}
+                          title={`▶ Assistir ${stream.name}\n${entry.title}\n${formatTime(start)} - ${formatTime(end)}${entry.description ? '\n' + entry.description : ''}`}
                         >
                           <p className={`text-[10px] font-semibold truncate leading-tight ${
                             isNow ? 'text-primary' : isPast ? 'text-muted-foreground/60' : 'text-foreground'
