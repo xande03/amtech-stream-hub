@@ -133,9 +133,26 @@ export default function LiveTV() {
               <span className="flex items-center gap-1">
                 <WifiOff className="w-3 h-3 text-destructive" /> {statusCounts.offline}
               </span>
-              {checkingStatus && <Loader2 className="w-3 h-3 animate-spin text-primary" />}
-            </div>
+          </div>
           )}
+          <button
+            onClick={() => {
+              const inCategory = selectedCategory === 'all' ? streams : streams.filter(s => s.category_id === selectedCategory);
+              // Clear existing status for this category to force re-check
+              const idsToReset = inCategory.map(s => s.stream_id);
+              setChannelStatus(prev => {
+                const next = { ...prev };
+                idsToReset.forEach(id => delete next[id]);
+                return next;
+              });
+              checkStatus(inCategory.slice(0, CHECK_BATCH_SIZE * 2));
+            }}
+            disabled={checkingStatus}
+            className="p-1.5 rounded-md bg-secondary hover:bg-secondary/80 transition-colors disabled:opacity-50"
+            title="Re-verificar status dos canais"
+          >
+            <Loader2 className={`w-4 h-4 text-primary ${checkingStatus ? 'animate-spin' : ''}`} />
+          </button>
           <div className="flex gap-1 bg-secondary rounded-lg p-0.5">
             <button onClick={() => setViewMode('grid')} className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>Grid</button>
             <button onClick={() => setViewMode('list')} className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${viewMode === 'list' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>Lista</button>
