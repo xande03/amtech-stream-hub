@@ -160,7 +160,7 @@ export default function SeriesDetail() {
                   <div className="w-28 flex-shrink-0">
                     <div className="aspect-video rounded-md overflow-hidden bg-secondary relative">
                       {ep.info?.movie_image ? (
-                        <img src={ep.info.movie_image} alt={ep.title} className="w-full h-full object-cover" />
+                        <img src={episodeThumbnail(ep.info.movie_image)} alt={ep.title} className="w-full h-full object-cover" onError={(e) => { const img = e.target as HTMLImageElement; if (!img.dataset.retried) { img.dataset.retried = '1'; img.src = ep.info.movie_image!; } }} />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
                           <Play className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />

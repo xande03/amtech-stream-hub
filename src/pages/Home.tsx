@@ -290,11 +290,11 @@ export default function Home() {
               >
                 <div className="relative aspect-video overflow-hidden bg-secondary">
                   <img
-                    src={item.backdrop || item.image}
+                    src={featuredImage(item.backdrop || item.image)}
                     alt={item.name}
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     loading="lazy"
-                    onError={(e) => { (e.target as HTMLImageElement).src = item.image; }}
+                    onError={(e) => { const img = e.target as HTMLImageElement; if (!img.dataset.retried) { img.dataset.retried = '1'; img.src = item.backdrop || item.image; return; } img.src = item.image; }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent" />
                   <div className="absolute bottom-3 left-3 right-3">
