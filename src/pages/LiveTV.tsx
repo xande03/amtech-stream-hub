@@ -60,16 +60,17 @@ export default function LiveTV() {
     }
   }, [accessCode]);
 
-  // Auto-check when category changes
+  // Auto-check when category changes or on initial load
   useEffect(() => {
     if (!streams.length || loading) return;
     const toCheck = selectedCategory === 'all'
       ? streams.slice(0, CHECK_BATCH_SIZE)
-      : streams.filter(s => s.category_id === selectedCategory).slice(0, CHECK_BATCH_SIZE * 2);
+      : streams.filter(s => s.category_id === selectedCategory);
     
     // Only check channels we haven't checked yet
     const unchecked = toCheck.filter(s => channelStatus[s.stream_id] === undefined);
     if (unchecked.length > 0) {
+      console.log(`Auto-checking ${unchecked.length} channels for category: ${selectedCategory}`);
       checkStatus(unchecked);
     }
   }, [selectedCategory, streams, loading]);
