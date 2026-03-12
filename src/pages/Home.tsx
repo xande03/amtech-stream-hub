@@ -354,7 +354,7 @@ export default function Home() {
       {topSeries.length > 0 && (
         <ContentRow title="🔥 Séries Recém Adicionadas" onViewAll={() => navigate('/series')}>
           {topSeries.slice(0, 20).map((s) => (
-            <div key={s.series_id} className="w-32 md:w-40 flex-shrink-0">
+            <div key={s.series_id} className="w-40 md:w-48 flex-shrink-0">
               <ContentCard
                 title={s.name}
                 image={s.cover}
