@@ -84,7 +84,6 @@ async function resolveProviderUrl(providerName: string, username: string, passwo
   const globalTimeout = setTimeout(() => globalController.abort(), 20000);
 
   try {
-    // Race all attempts - first valid response wins
     const result = await Promise.any(
       PROVIDER_SUFFIXES.map(async (suffix) => {
         const baseUrl = `http://${name}${suffix}`;
@@ -104,13 +103,13 @@ async function resolveProviderUrl(providerName: string, username: string, passwo
         throw new Error("not found");
       })
     );
+    clearTimeout(globalTimeout);
+    return result;
   } catch {
     // All attempts failed
-  } finally {
     clearTimeout(globalTimeout);
+    return null;
   }
-
-  return null;
 }
 
 Deno.serve(async (req) => {
