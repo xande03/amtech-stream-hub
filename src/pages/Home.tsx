@@ -152,11 +152,14 @@ export default function Home() {
 
   const currentHero = heroItems[heroIndex];
 
+  const continueWatching = history.filter(h => h.progress && h.progress > 5 && h.progress < 95);
+  const recentlyWatched = history.filter(h => !(h.progress && h.progress > 5 && h.progress < 95));
+
   return (
-    <div className="space-y-2">
-      {/* Hero Carousel */}
+    <div className="space-y-6">
+      {/* 1. Hero Carousel */}
       {currentHero && (
-        <div className="relative rounded-xl overflow-hidden h-56 md:h-80 lg:h-96 mb-6">
+        <div className="relative rounded-xl overflow-hidden h-56 md:h-80 lg:h-96">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentHero.id}
@@ -203,7 +206,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Hero navigation */}
           {heroItems.length > 1 && (
             <>
               <button
@@ -218,7 +220,6 @@ export default function Home() {
               >
                 <ChevronRight className="w-5 h-5 text-foreground" />
               </button>
-              {/* Dots */}
               <div className="absolute bottom-3 right-4 z-10 flex gap-1.5">
                 {heroItems.map((_, i) => (
                   <button
@@ -233,76 +234,68 @@ export default function Home() {
         </div>
       )}
 
-      {/* Continue Watching - only items with partial progress */}
-      {(() => {
-        const continueWatching = history.filter(h => h.progress && h.progress > 5 && h.progress < 95);
-        if (continueWatching.length === 0) return null;
-        return (
-          <ContentRow title="▶️ Continuar Assistindo">
-            {continueWatching.slice(0, 15).map((item) => (
-              <div key={`cw-${item.type}-${item.id}`} className="w-36 md:w-44 flex-shrink-0 relative group/cw">
-                <button
-                  onClick={(e) => { e.stopPropagation(); removeFromHistory(item.id, item.type); }}
-                  className="absolute top-1 right-1 z-10 p-1 rounded-full bg-background/80 backdrop-blur-sm opacity-0 group-hover/cw:opacity-100 transition-opacity"
-                  title="Remover"
-                >
-                  <X className="w-3.5 h-3.5 text-muted-foreground" />
-                </button>
-                <ContentCard
-                  title={item.name}
-                  image={item.icon}
-                  subtitle={item.episodeInfo}
-                  aspectRatio={item.type === 'live' ? 'square' : 'portrait'}
-                  onClick={() => {
-                    if (item.type === 'live') window.open(`/player/live/${item.id}`, '_blank');
-                    else if (item.type === 'movie') navigate(`/movies/${item.id}`);
-                    else navigate(`/series/${item.id}`);
-                  }}
-                />
-                <div className="w-full h-1.5 bg-secondary rounded-full mt-1.5 overflow-hidden">
-                  <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${item.progress}%` }} />
-                </div>
-                <p className="text-[10px] text-muted-foreground mt-0.5">{Math.round(item.progress || 0)}% assistido</p>
+      {/* 2. Continuar Assistindo */}
+      {continueWatching.length > 0 && (
+        <ContentRow title="▶️ Continuar Assistindo">
+          {continueWatching.slice(0, 15).map((item) => (
+            <div key={`cw-${item.type}-${item.id}`} className="w-36 md:w-44 flex-shrink-0 relative group/cw">
+              <button
+                onClick={(e) => { e.stopPropagation(); removeFromHistory(item.id, item.type); }}
+                className="absolute top-1 right-1 z-10 p-1 rounded-full bg-background/80 backdrop-blur-sm opacity-0 group-hover/cw:opacity-100 transition-opacity"
+                title="Remover"
+              >
+                <X className="w-3.5 h-3.5 text-muted-foreground" />
+              </button>
+              <ContentCard
+                title={item.name}
+                image={item.icon}
+                subtitle={item.episodeInfo}
+                aspectRatio={item.type === 'live' ? 'square' : 'portrait'}
+                onClick={() => {
+                  if (item.type === 'live') window.open(`/player/live/${item.id}`, '_blank');
+                  else if (item.type === 'movie') navigate(`/movies/${item.id}`);
+                  else navigate(`/series/${item.id}`);
+                }}
+              />
+              <div className="w-full h-1.5 bg-secondary rounded-full mt-1.5 overflow-hidden">
+                <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${item.progress}%` }} />
               </div>
-            ))}
-          </ContentRow>
-        );
-      })()}
+              <p className="text-[10px] text-muted-foreground mt-0.5">{Math.round(item.progress || 0)}% assistido</p>
+            </div>
+          ))}
+        </ContentRow>
+      )}
 
-      {/* Recently Watched - all history items not in "Continue Watching" */}
-      {(() => {
-        const recentlyWatched = history.filter(h => !(h.progress && h.progress > 5 && h.progress < 95));
-        if (recentlyWatched.length === 0) return null;
-        return (
-          <ContentRow title="🕐 Assistidos Recentemente" onViewAll={() => navigate('/history')}>
-            {recentlyWatched.slice(0, 20).map((item) => (
-              <div key={`rw-${item.type}-${item.id}`} className="w-36 md:w-44 flex-shrink-0 relative group/rw">
-                <button
-                  onClick={(e) => { e.stopPropagation(); removeFromHistory(item.id, item.type); }}
-                  className="absolute top-1 right-1 z-10 p-1 rounded-full bg-background/80 backdrop-blur-sm opacity-0 group-hover/rw:opacity-100 transition-opacity"
-                  title="Remover"
-                >
-                  <X className="w-3.5 h-3.5 text-muted-foreground" />
-                </button>
-                <ContentCard
-                  title={item.name}
-                  image={item.icon}
-                  aspectRatio={item.type === 'live' ? 'square' : 'portrait'}
-                  onClick={() => {
-                    if (item.type === 'live') window.open(`/player/live/${item.id}`, '_blank');
-                    else if (item.type === 'movie') navigate(`/movies/${item.id}`);
-                    else navigate(`/series/${item.id}`);
-                  }}
-                />
-              </div>
-            ))}
-          </ContentRow>
-        );
-      })()}
+      {/* 3. Assistidos Recentemente */}
+      {recentlyWatched.length > 0 && (
+        <ContentRow title="🕐 Assistidos Recentemente" onViewAll={() => navigate('/history')}>
+          {recentlyWatched.slice(0, 20).map((item) => (
+            <div key={`rw-${item.type}-${item.id}`} className="w-36 md:w-44 flex-shrink-0 relative group/rw">
+              <button
+                onClick={(e) => { e.stopPropagation(); removeFromHistory(item.id, item.type); }}
+                className="absolute top-1 right-1 z-10 p-1 rounded-full bg-background/80 backdrop-blur-sm opacity-0 group-hover/rw:opacity-100 transition-opacity"
+                title="Remover"
+              >
+                <X className="w-3.5 h-3.5 text-muted-foreground" />
+              </button>
+              <ContentCard
+                title={item.name}
+                image={item.icon}
+                aspectRatio={item.type === 'live' ? 'square' : 'portrait'}
+                onClick={() => {
+                  if (item.type === 'live') window.open(`/player/live/${item.id}`, '_blank');
+                  else if (item.type === 'movie') navigate(`/movies/${item.id}`);
+                  else navigate(`/series/${item.id}`);
+                }}
+              />
+            </div>
+          ))}
+        </ContentRow>
+      )}
 
-      {/* Featured Highlights */}
+      {/* 4. Destaques */}
       {featuredItems.length > 0 && (
-        <div className="mb-2">
+        <div>
           <h3 className="text-lg font-semibold text-foreground mb-3">⭐ Destaques</h3>
           <ContentRow title=" ">
             {featuredItems.map((item) => (
@@ -333,30 +326,29 @@ export default function Home() {
                       </span>
                     </div>
                   </div>
-                  {/* Play overlay */}
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <div className="w-12 h-12 rounded-full bg-primary/90 flex items-center justify-center shadow-lg">
                       <Play className="w-5 h-5 text-primary-foreground ml-0.5" />
                     </div>
                   </div>
                 </div>
-                <div className="p-2.5">
-                  {item.trailer && (
+                {item.trailer && (
+                  <div className="p-2.5">
                     <button
                       onClick={(e) => { e.stopPropagation(); window.open(`https://www.youtube.com/watch?v=${item.trailer}`, '_blank'); }}
                       className="flex items-center gap-1 text-xs text-primary font-medium hover:underline"
                     >
                       <ExternalLink className="w-3 h-3" /> Trailer
                     </button>
-                  )}
-                </div>
+                  </div>
+                )}
               </motion.div>
             ))}
           </ContentRow>
         </div>
       )}
 
-      {/* Top Movies */}
+      {/* 5. Filmes Recém Adicionados */}
       {topMovies.length > 0 && (
         <ContentRow title="🔥 Filmes Recém Adicionados" onViewAll={() => navigate('/movies')}>
           {topMovies.slice(0, 20).map((m) => (
@@ -375,7 +367,7 @@ export default function Home() {
         </ContentRow>
       )}
 
-      {/* Top Series */}
+      {/* 6. Séries Recém Adicionadas */}
       {topSeries.length > 0 && (
         <ContentRow title="🔥 Séries Recém Adicionadas" onViewAll={() => navigate('/series')}>
           {topSeries.slice(0, 20).map((s) => (
@@ -394,7 +386,7 @@ export default function Home() {
         </ContentRow>
       )}
 
-      {/* Popular Categories */}
+      {/* 7. Categorias Populares */}
       {(() => {
         const popularCats = [
           ...movieCategories.slice(0, 6).map(c => ({ ...c, type: 'movie' as const, icon: Film })),
@@ -409,7 +401,7 @@ export default function Home() {
           'from-accent/20 to-primary/10',
         ];
         return (
-          <div className="mb-2">
+          <div>
             <h3 className="text-lg font-semibold text-foreground mb-3">📂 Categorias Populares</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
               {popularCats.map((cat, i) => {
@@ -433,9 +425,9 @@ export default function Home() {
         );
       })()}
 
-      {/* Recent Movies */}
+      {/* 8. Filmes Recentes */}
       {recentMovies.length > 0 && (
-        <ContentRow title="Filmes Recentes" onViewAll={() => navigate('/movies')}>
+        <ContentRow title="🎬 Filmes Recentes" onViewAll={() => navigate('/movies')}>
           {recentMovies.map((m) => (
             <div key={m.stream_id} className="w-40 md:w-48 flex-shrink-0">
               <ContentCard
@@ -451,9 +443,9 @@ export default function Home() {
         </ContentRow>
       )}
 
-      {/* Recent Series */}
+      {/* 9. Séries Recentes */}
       {recentSeries.length > 0 && (
-        <ContentRow title="Séries Recentes" onViewAll={() => navigate('/series')}>
+        <ContentRow title="📺 Séries Recentes" onViewAll={() => navigate('/series')}>
           {recentSeries.map((s) => (
             <div key={s.series_id} className="w-40 md:w-48 flex-shrink-0">
               <ContentCard
