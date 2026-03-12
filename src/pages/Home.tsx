@@ -167,10 +167,10 @@ export default function Home() {
               className="absolute inset-0"
             >
               <img
-                src={currentHero.image}
+                src={heroImage(currentHero.image)}
                 alt={currentHero.name}
                 className="w-full h-full object-cover"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                onError={(e) => { const img = e.target as HTMLImageElement; if (!img.dataset.retried) { img.dataset.retried = '1'; img.src = currentHero.image; return; } img.style.display = 'none'; }}
               />
               <div className="absolute inset-0 bg-gradient-to-r from-background via-background/70 to-transparent" />
               <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
