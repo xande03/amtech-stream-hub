@@ -41,11 +41,11 @@ export function hdImage(
 
 /** Poster (portrait 2:3) — cards in grids */
 export const posterImage = (url?: string | null) =>
-  hdImage(url, { width: 400, height: 600, quality: 85 });
+  hdImage(url, { width: 500, height: 750, quality: 90 });
 
 /** Poster small — for row carousels */
 export const posterSmall = (url?: string | null) =>
-  hdImage(url, { width: 300, height: 450, quality: 80 });
+  hdImage(url, { width: 400, height: 600, quality: 85 });
 
 /** Backdrop / banner — wide hero images */
 export const backdropImage = (url?: string | null) =>
