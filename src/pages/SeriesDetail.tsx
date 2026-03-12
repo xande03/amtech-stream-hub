@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getSeriesInfo, SeriesInfo, Episode } from '@/services/xtreamApi';
+import { getSeriesInfo, getSeriesList, SeriesInfo, Series, Episode } from '@/services/xtreamApi';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
+import ContentCard from '@/components/ContentCard';
+import ContentRow from '@/components/ContentRow';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { Play, Heart, ArrowLeft, Star, CheckCircle2, RotateCcw } from 'lucide-react';
@@ -16,20 +18,22 @@ export default function SeriesDetail() {
   const { isFavorite, toggleFavorite } = useFavorites();
   const { addToHistory, history, getResumeTime } = useWatchHistory();
   const [seriesInfo, setSeriesInfo] = useState<SeriesInfo | null>(null);
+  const [allSeries, setAllSeries] = useState<Series[]>([]);
   const [selectedSeason, setSelectedSeason] = useState<string>('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!accessCode || !id) return;
     setLoading(true);
-    getSeriesInfo(accessCode, Number(id))
-      .then((data) => {
-        setSeriesInfo(data);
-        const seasons = Object.keys(data.episodes || {}).sort((a, b) => Number(a) - Number(b));
-        if (seasons.length > 0) setSelectedSeason(seasons[0]);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    Promise.all([
+      getSeriesInfo(accessCode, Number(id)),
+      getSeriesList(accessCode),
+    ]).then(([data, list]) => {
+      setSeriesInfo(data);
+      setAllSeries(list);
+      const seasons = Object.keys(data.episodes || {}).sort((a, b) => Number(a) - Number(b));
+      if (seasons.length > 0) setSelectedSeason(seasons[0]);
+    }).catch(() => {}).finally(() => setLoading(false));
   }, [accessCode, id]);
 
   const formatTime = (seconds: number) => {
@@ -60,6 +64,27 @@ export default function SeriesDetail() {
     });
     navigate(`/player/series/${episode.id}/${ext}?${params.toString()}`);
   };
+
+  const similarSeries = useMemo(() => {
+    if (!seriesInfo || allSeries.length === 0) return [];
+    const si = seriesInfo.info;
+    const genreStr = (si.genre || '').toLowerCase();
+    const genres = genreStr.split(',').map((g: string) => g.trim()).filter(Boolean);
+
+    return allSeries
+      .filter(s => s.series_id !== si.series_id)
+      .map(s => {
+        let score = 0;
+        if (s.category_id === si.category_id) score += 3;
+        const sGenre = (s.genre || '').toLowerCase();
+        genres.forEach(g => { if (sGenre.includes(g)) score += 2; });
+        return { series: s, score };
+      })
+      .filter(s => s.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 20)
+      .map(s => s.series);
+  }, [seriesInfo, allSeries]);
 
   if (loading) return <SeriesDetailSkeleton />;
   if (!seriesInfo) return <div className="text-center py-12 text-muted-foreground">Série não encontrada.<br /><button onClick={() => navigate('/series')} className="text-primary mt-4 underline">Voltar</button></div>;
@@ -165,6 +190,23 @@ export default function SeriesDetail() {
         </div>
         {currentEpisodes.length === 0 && <div className="text-center py-8 text-muted-foreground">Nenhum episódio encontrado nesta temporada.</div>}
       </motion.div>
+
+      {similarSeries.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mt-10">
+          <ContentRow title="Títulos Semelhantes">
+            {similarSeries.map(s => (
+              <div key={s.series_id} className="w-32 md:w-40 flex-shrink-0">
+                <ContentCard
+                  title={s.name}
+                  image={s.cover}
+                  rating={s.rating}
+                  onClick={() => navigate(`/series/${s.series_id}`)}
+                />
+              </div>
+            ))}
+          </ContentRow>
+        </motion.div>
+      )}
     </div>
   );
 }
