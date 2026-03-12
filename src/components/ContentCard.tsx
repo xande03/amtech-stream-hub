@@ -69,7 +69,7 @@ export default function ContentCard({
           <img
             src={hdSrc}
             alt={title}
-            className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-110 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+            className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-110 brightness-110 ${loaded ? 'opacity-100' : 'opacity-0'}`}
             loading="lazy"
             referrerPolicy="no-referrer"
             onLoad={onLoad}
