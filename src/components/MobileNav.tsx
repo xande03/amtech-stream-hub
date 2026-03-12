@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Home, Tv, Film, Clapperboard, Heart, Clock, MoreHorizontal, Settings, X, Sparkles } from 'lucide-react';
+import { Home, Tv, Film, Clapperboard, Heart, Clock, MoreHorizontal, Settings, X, Sparkles, CalendarClock } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import amtechIcon from '@/assets/amtech-icon.png';
