@@ -292,7 +292,7 @@ export default function Home() {
                   <img
                     src={featuredImage(item.backdrop || item.image)}
                     alt={item.name}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 brightness-110"
                     loading="lazy"
                     onError={(e) => { const img = e.target as HTMLImageElement; if (!img.dataset.retried) { img.dataset.retried = '1'; img.src = item.backdrop || item.image; return; } img.src = item.image; }}
                   />
@@ -315,15 +315,13 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
-                <div className="p-3">
-                  {item.genre && <p className="text-xs text-muted-foreground truncate mb-1">{item.genre}</p>}
-                  {item.plot && <p className="text-xs text-muted-foreground line-clamp-2">{item.plot}</p>}
+                <div className="p-2.5">
                   {item.trailer && (
                     <button
                       onClick={(e) => { e.stopPropagation(); window.open(`https://www.youtube.com/watch?v=${item.trailer}`, '_blank'); }}
-                      className="flex items-center gap-1 text-xs text-primary font-medium mt-2 hover:underline"
+                      className="flex items-center gap-1 text-xs text-primary font-medium hover:underline"
                     >
-                      <ExternalLink className="w-3 h-3" /> Assistir Trailer
+                      <ExternalLink className="w-3 h-3" /> Trailer
                     </button>
                   )}
                 </div>
