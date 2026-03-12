@@ -123,6 +123,59 @@ Deno.serve(async (req) => {
     
     const { action, access_code, category_id, vod_id, series_id, stream_type, stream_id, extension } = params;
 
+    // Direct connection test (no access code needed - used before saving)
+    if (action === "test_connection") {
+      const { server_url: testServer, username: testUser, password: testPass } = params;
+      if (!testServer || !testUser || !testPass) {
+        return new Response(
+          JSON.stringify({ error: "Servidor, usuário e senha são obrigatórios" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      let resolvedUrl: string | null;
+      if (isFullUrl(testServer)) {
+        let u = testServer.trim().replace(/\/+$/, "");
+        if (!/^https?:\/\//i.test(u)) u = `http://${u}`;
+        resolvedUrl = u;
+      } else {
+        resolvedUrl = await resolveProviderUrl(testServer, testUser, testPass);
+      }
+
+      if (!resolvedUrl) {
+        return new Response(
+          JSON.stringify({ error: `Não foi possível resolver o provedor "${testServer}". Tente a URL completa.` }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      try {
+        const testUrl = `${resolvedUrl}/player_api.php?username=${encodeURIComponent(testUser)}&password=${encodeURIComponent(testPass)}`;
+        const res = await fetch(testUrl);
+        if (!res.ok) {
+          return new Response(
+            JSON.stringify({ error: `Servidor respondeu com erro (${res.status})` }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        const data = await res.json();
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            resolved_url: resolvedUrl,
+            user_info: data.user_info || null,
+            server_info: data.server_info || null,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      } catch (err) {
+        return new Response(
+          JSON.stringify({ error: `Falha ao conectar: ${err.message}` }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     const validation = await getCredentials(access_code);
     if (!validation) {
       return new Response(
