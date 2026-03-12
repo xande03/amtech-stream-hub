@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getSeriesInfo, SeriesInfo, Episode } from '@/services/xtreamApi';
+import { getSeriesInfo, getSeriesList, SeriesInfo, Series, Episode } from '@/services/xtreamApi';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
+import ContentCard from '@/components/ContentCard';
+import ContentRow from '@/components/ContentRow';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { Play, Heart, ArrowLeft, Star, CheckCircle2, RotateCcw } from 'lucide-react';
