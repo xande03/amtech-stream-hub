@@ -84,6 +84,8 @@ export default function MovieDetail() {
   const releaseDate = movieInfo?.releaseDate || movieInfo?.releasedate || movie?.releaseDate || '';
   const cast = movieInfo?.cast || movie?.cast || '';
   const director = movieInfo?.director || movie?.director || '';
+  const youtubeTrailer = movieInfo?.youtube_trailer || info?.info?.youtube_trailer || '';
+  const trailerUrl = youtubeTrailer ? (youtubeTrailer.startsWith('http') ? youtubeTrailer : `https://www.youtube.com/watch?v=${youtubeTrailer}`) : '';
 
   return (
     <div>
