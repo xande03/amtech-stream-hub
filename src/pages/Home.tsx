@@ -148,10 +148,6 @@ export default function Home() {
   const recentMovies = useMemo(() => movies.slice(0, 20), [movies]);
   const recentSeries = useMemo(() => series.slice(0, 20), [series]);
 
-  if (loading) return <PageLoadingSkeleton />;
-
-  const currentHero = heroItems[heroIndex];
-
   // Enrich history items with cover from series list if icon is missing
   const enrichedHistory = useMemo(() => {
     return history.map(h => {
@@ -171,6 +167,10 @@ export default function Home() {
 
   const continueWatching = enrichedHistory.filter(h => h.progress && h.progress > 5 && h.progress < 95);
   const recentlyWatched = enrichedHistory.filter(h => !(h.progress && h.progress > 5 && h.progress < 95));
+
+  if (loading) return <PageLoadingSkeleton />;
+
+  const currentHero = heroItems[heroIndex];
 
   return (
     <div className="space-y-6">
