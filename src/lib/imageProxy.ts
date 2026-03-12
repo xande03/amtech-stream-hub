@@ -31,6 +31,7 @@ export function hdImage(
     q: String(quality),
     output: format,
     fit,
+    sharp: '1',
   });
 
   if (width) params.set('w', String(width));
