@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Trash2, Clock, Plus, Eye, EyeOff, Lock, Power, PowerOff,
-  Loader2, Save, Shield, ChevronDown, ChevronUp, Pencil, X
+  Loader2, Save, Shield, Pencil, X, CheckCircle, AlertCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -46,6 +46,8 @@ export default function SettingsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ ok: boolean; msg: string } | null>(null);
   const [form, setForm] = useState<PlaylistForm>(emptyForm);
 
   const loadPlaylists = useCallback(async () => {
@@ -74,6 +76,7 @@ export default function SettingsPage() {
     setForm(emptyForm);
     setShowForm(true);
     setShowPassword(false);
+    setTestResult(null);
   };
 
   const openEditForm = (pl: PlaylistConfig) => {
@@ -81,18 +84,48 @@ export default function SettingsPage() {
     setForm({
       server_url: pl.server_url,
       username: pl.username,
-      password: '', // Don't prefill password
+      password: '',
       playlist_name: pl.playlist_name,
       access_code: pl.access_code,
     });
     setShowForm(true);
     setShowPassword(false);
+    setTestResult(null);
   };
 
   const closeForm = () => {
     setShowForm(false);
     setEditingId(null);
     setForm(emptyForm);
+    setTestResult(null);
+  };
+
+  const handleTestConnection = async () => {
+    if (!form.server_url || !form.username || !form.password) {
+      toast.error('Preencha servidor, usuário e senha para testar');
+      return;
+    }
+    setTesting(true);
+    setTestResult(null);
+    try {
+      // Use a temporary access code to test - we'll call the proxy with a test action
+      const { data, error } = await supabase.functions.invoke('xtream-proxy', {
+        body: {
+          action: 'test_connection',
+          server_url: form.server_url.trim(),
+          username: form.username.trim(),
+          password: form.password.trim(),
+        },
+      });
+      if (error || data?.error) {
+        setTestResult({ ok: false, msg: data?.error || error?.message || 'Falha na conexão' });
+      } else {
+        setTestResult({ ok: true, msg: `Conectado! ${data?.user_info?.status === 'Active' ? 'Conta ativa' : 'Servidor respondeu'}` });
+      }
+    } catch (err: any) {
+      setTestResult({ ok: false, msg: err.message || 'Erro ao testar' });
+    }
+    setTesting(false);
   };
 
   const handleSave = async () => {
@@ -145,7 +178,7 @@ export default function SettingsPage() {
         if (data.error.includes('Senha')) { setIsUnlocked(false); setAuthError('Senha inválida'); }
         throw new Error(data.error);
       }
-      toast.success('Status atualizado');
+      toast.success('Playlist alterada! Recarregando dados...');
       loadPlaylists();
       refreshConfig();
     } catch (err: any) {
@@ -235,7 +268,7 @@ export default function SettingsPage() {
                           <div className={`w-2 h-2 rounded-full flex-shrink-0 ${pl.is_active ? 'bg-accent animate-pulse' : 'bg-muted-foreground/30'}`} />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-foreground truncate">{pl.playlist_name}</p>
-                            <p className="text-xs text-muted-foreground truncate">{pl.server_url}</p>
+                            <p className="text-xs text-muted-foreground truncate">{pl.server_url} • {pl.username}</p>
                           </div>
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${pl.is_active ? 'bg-accent/20 text-accent' : 'bg-secondary text-muted-foreground'}`}>
                             {pl.is_active ? 'ATIVA' : 'INATIVA'}
@@ -256,7 +289,6 @@ export default function SettingsPage() {
                     </div>
                   )}
 
-                  {/* Add/Edit form toggle */}
                   {!showForm && (
                     <Button variant="outline" onClick={openAddForm} className="w-full border-dashed border-border text-foreground hover:border-primary/50">
                       <Plus className="w-4 h-4 mr-2" /> Adicionar Playlist
@@ -279,36 +311,78 @@ export default function SettingsPage() {
                             <X className="w-4 h-4 text-muted-foreground" />
                           </button>
                         </div>
+
                         <div className="space-y-2">
                           <Label className="text-foreground text-sm">Nome da Playlist</Label>
                           <Input placeholder="Minha Playlist" value={form.playlist_name} onChange={e => setForm(f => ({ ...f, playlist_name: e.target.value }))} className="bg-secondary border-border text-foreground" />
                         </div>
+
                         <div className="space-y-2">
-                          <Label className="text-foreground text-sm">URL do Servidor ou Provedor *</Label>
-                          <Input placeholder="http://servidor.com:8080 ou nome do provedor" value={form.server_url} onChange={e => setForm(f => ({ ...f, server_url: e.target.value }))} className="bg-secondary border-border text-foreground" />
-                          <p className="text-[11px] text-muted-foreground">Insira a URL completa do servidor ou o nome do provedor</p>
+                          <Label className="text-foreground text-sm">Servidor (URL ou nome do provedor) *</Label>
+                          <Input 
+                            placeholder="http://servidor.com:8080 ou nome (ex: warez)" 
+                            value={form.server_url} 
+                            onChange={e => { setForm(f => ({ ...f, server_url: e.target.value })); setTestResult(null); }} 
+                            className="bg-secondary border-border text-foreground" 
+                          />
+                          <p className="text-[11px] text-muted-foreground">
+                            Use a URL completa (ex: http://servidor.com:8080) ou apenas o nome do provedor (ex: warez). O sistema tentará resolver automaticamente.
+                          </p>
                         </div>
+
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-2">
                             <Label className="text-foreground text-sm">Usuário *</Label>
-                            <Input placeholder="Usuário" value={form.username} onChange={e => setForm(f => ({ ...f, username: e.target.value }))} className="bg-secondary border-border text-foreground" />
+                            <Input 
+                              placeholder="Username" 
+                              value={form.username} 
+                              onChange={e => { setForm(f => ({ ...f, username: e.target.value })); setTestResult(null); }} 
+                              className="bg-secondary border-border text-foreground" 
+                            />
                           </div>
                           <div className="space-y-2">
                             <Label className="text-foreground text-sm">
-                              Senha {editingId ? '(deixe vazio para manter)' : '*'}
+                              Senha {editingId ? '(vazio = manter)' : '*'}
                             </Label>
                             <div className="relative">
-                              <Input type={showPassword ? 'text' : 'password'} placeholder={editingId ? '••••••' : 'Senha'} value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} className="bg-secondary border-border text-foreground pr-9" />
+                              <Input 
+                                type={showPassword ? 'text' : 'password'} 
+                                placeholder={editingId ? '••••••' : 'Password'} 
+                                value={form.password} 
+                                onChange={e => { setForm(f => ({ ...f, password: e.target.value })); setTestResult(null); }} 
+                                className="bg-secondary border-border text-foreground pr-9" 
+                              />
                               <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground">
                                 {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                               </button>
                             </div>
                           </div>
                         </div>
+
+                        {/* Test connection button */}
+                        <Button 
+                          variant="outline" 
+                          onClick={handleTestConnection} 
+                          disabled={testing || !form.server_url || !form.username || !form.password}
+                          className="w-full border-border text-foreground"
+                        >
+                          {testing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                          Testar Conexão
+                        </Button>
+
+                        {testResult && (
+                          <div className={`flex items-center gap-2 p-2.5 rounded-lg text-sm ${testResult.ok ? 'bg-accent/10 text-accent' : 'bg-destructive/10 text-destructive'}`}>
+                            {testResult.ok ? <CheckCircle className="w-4 h-4 flex-shrink-0" /> : <AlertCircle className="w-4 h-4 flex-shrink-0" />}
+                            <span>{testResult.msg}</span>
+                          </div>
+                        )}
+
                         <div className="space-y-2">
                           <Label className="text-foreground text-sm">Código de Acesso *</Label>
                           <Input placeholder="Ex: 123" value={form.access_code} onChange={e => setForm(f => ({ ...f, access_code: e.target.value }))} className="bg-secondary border-border text-foreground" />
+                          <p className="text-[11px] text-muted-foreground">Código que os usuários usarão para acessar esta playlist</p>
                         </div>
+
                         <Button onClick={handleSave} disabled={saving} className="w-full gradient-primary text-primary-foreground font-medium">
                           {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                           {editingId ? 'Atualizar Playlist' : 'Salvar Playlist'}
