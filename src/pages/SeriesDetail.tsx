@@ -25,14 +25,15 @@ export default function SeriesDetail() {
   useEffect(() => {
     if (!accessCode || !id) return;
     setLoading(true);
-    getSeriesInfo(accessCode, Number(id))
-      .then((data) => {
-        setSeriesInfo(data);
-        const seasons = Object.keys(data.episodes || {}).sort((a, b) => Number(a) - Number(b));
-        if (seasons.length > 0) setSelectedSeason(seasons[0]);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    Promise.all([
+      getSeriesInfo(accessCode, Number(id)),
+      getSeriesList(accessCode),
+    ]).then(([data, list]) => {
+      setSeriesInfo(data);
+      setAllSeries(list);
+      const seasons = Object.keys(data.episodes || {}).sort((a, b) => Number(a) - Number(b));
+      if (seasons.length > 0) setSelectedSeason(seasons[0]);
+    }).catch(() => {}).finally(() => setLoading(false));
   }, [accessCode, id]);
 
   const formatTime = (seconds: number) => {
