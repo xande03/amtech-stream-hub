@@ -190,6 +190,23 @@ export default function SeriesDetail() {
         </div>
         {currentEpisodes.length === 0 && <div className="text-center py-8 text-muted-foreground">Nenhum episódio encontrado nesta temporada.</div>}
       </motion.div>
+
+      {similarSeries.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mt-10">
+          <ContentRow title="Títulos Semelhantes">
+            {similarSeries.map(s => (
+              <div key={s.series_id} className="w-32 md:w-40 flex-shrink-0">
+                <ContentCard
+                  title={s.name}
+                  image={s.cover}
+                  rating={s.rating}
+                  onClick={() => navigate(`/series/${s.series_id}`)}
+                />
+              </div>
+            ))}
+          </ContentRow>
+        </motion.div>
+      )}
     </div>
   );
 }
