@@ -335,7 +335,7 @@ export default function Home() {
       {topMovies.length > 0 && (
         <ContentRow title="🔥 Filmes Recém Adicionados" onViewAll={() => navigate('/movies')}>
           {topMovies.slice(0, 20).map((m) => (
-            <div key={m.stream_id} className="w-32 md:w-40 flex-shrink-0">
+            <div key={m.stream_id} className="w-40 md:w-48 flex-shrink-0">
               <ContentCard
                 title={m.name}
                 image={m.stream_icon}
@@ -354,7 +354,7 @@ export default function Home() {
       {topSeries.length > 0 && (
         <ContentRow title="🔥 Séries Recém Adicionadas" onViewAll={() => navigate('/series')}>
           {topSeries.slice(0, 20).map((s) => (
-            <div key={s.series_id} className="w-32 md:w-40 flex-shrink-0">
+            <div key={s.series_id} className="w-40 md:w-48 flex-shrink-0">
               <ContentCard
                 title={s.name}
                 image={s.cover}
@@ -412,7 +412,7 @@ export default function Home() {
       {recentMovies.length > 0 && (
         <ContentRow title="Filmes Recentes" onViewAll={() => navigate('/movies')}>
           {recentMovies.map((m) => (
-            <div key={m.stream_id} className="w-32 md:w-40 flex-shrink-0">
+            <div key={m.stream_id} className="w-40 md:w-48 flex-shrink-0">
               <ContentCard
                 title={m.name}
                 image={m.stream_icon}
@@ -430,7 +430,7 @@ export default function Home() {
       {recentSeries.length > 0 && (
         <ContentRow title="Séries Recentes" onViewAll={() => navigate('/series')}>
           {recentSeries.map((s) => (
-            <div key={s.series_id} className="w-32 md:w-40 flex-shrink-0">
+            <div key={s.series_id} className="w-40 md:w-48 flex-shrink-0">
               <ContentCard
                 title={s.name}
                 image={s.cover}

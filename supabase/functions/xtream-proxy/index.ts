@@ -324,6 +324,36 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Check multiple channels online status
+    if (action === "check_channels") {
+      const streamIds: number[] = params.stream_ids || [];
+      if (!streamIds.length) {
+        return new Response(JSON.stringify({ results: {} }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Check up to 30 channels in parallel with short timeouts
+      const idsToCheck = streamIds.slice(0, 30);
+      const results: Record<number, boolean> = {};
+
+      await Promise.allSettled(
+        idsToCheck.map(async (id) => {
+          const url = `${base}/live/${encodeURIComponent(username)}/${encodeURIComponent(password)}/${id}.m3u8`;
+          try {
+            const res = await fetchWithTimeout(url, 4000);
+            results[id] = res.ok || res.status === 200 || res.status === 206 || res.status === 302;
+          } catch {
+            results[id] = false;
+          }
+        })
+      );
+
+      return new Response(JSON.stringify({ results }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Handle stream URL request
     if (action === "get_stream_url") {
       const ext = extension || (stream_type === "live" ? "m3u8" : "mp4");
