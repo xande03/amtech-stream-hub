@@ -218,6 +218,7 @@ export default function LiveTV() {
                   ) : (<Tv className="w-8 h-8 text-muted-foreground" />)}
                 </div>
                 <p className="text-sm text-foreground font-medium truncate">{ch.name}</p>
+                <ChannelEpgPanel streamId={ch.stream_id} compact />
               </motion.div>
             );
           })}
