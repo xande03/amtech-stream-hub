@@ -50,6 +50,8 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
   const [qualityLevels, setQualityLevels] = useState<QualityLevel[]>([]);
   const [currentQuality, setCurrentQuality] = useState(-1); // -1 = Auto
   const [showQualityMenu, setShowQualityMenu] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const retryCountRef = useRef(0);
   const hasResumedRef = useRef(false);
   const maxRetries = 8;
