@@ -256,52 +256,6 @@ Deno.serve(async (req) => {
       const isVod = stream_type === "movie" || stream_type === "series";
       const isHlsContent = ext === "m3u8" || upstreamUrl.includes(".m3u8");
 
-      // --- VOD chunked proxy (MP4/MKV) ---
-      // Stream bytes through the edge function to avoid mixed-content blocking.
-      // The browser sends Range headers automatically; we forward them upstream.
-      if (isVod && !isHlsContent) {
-        const upstreamHeaders = new Headers({
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-        });
-        const rangeHeader = req.headers.get("range");
-        if (rangeHeader) {
-          upstreamHeaders.set("Range", rangeHeader);
-        }
-
-        let upstreamRes: Response;
-        try {
-          upstreamRes = await fetch(upstreamUrl, { headers: upstreamHeaders, redirect: "follow" });
-        } catch {
-          // Try alternate protocol
-          const altUrl = upstreamUrl.startsWith("https://")
-            ? upstreamUrl.replace(/^https:\/\//, "http://")
-            : upstreamUrl.replace(/^http:\/\//, "https://");
-          upstreamRes = await fetch(altUrl, { headers: upstreamHeaders, redirect: "follow" });
-        }
-
-        if (!upstreamRes.ok && upstreamRes.status !== 206) {
-          return new Response(
-            JSON.stringify({ error: `Erro no proxy VOD (${upstreamRes.status})` }),
-            { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-
-        const respHeaders = new Headers(corsHeaders);
-        const ct = upstreamRes.headers.get("content-type") || "video/mp4";
-        respHeaders.set("Content-Type", ct);
-        respHeaders.set("Accept-Ranges", "bytes");
-        ["content-range", "content-length", "etag", "last-modified"].forEach((h) => {
-          const v = upstreamRes.headers.get(h);
-          if (v) respHeaders.set(h, v);
-        });
-        respHeaders.set("Cache-Control", "public, max-age=3600");
-
-        return new Response(upstreamRes.body, {
-          status: upstreamRes.status,
-          headers: respHeaders,
-        });
-      }
-
       // --- Live / HLS proxy (existing logic) ---
       const upstreamHeaders = new Headers();
       const range = req.headers.get("range");
@@ -416,11 +370,7 @@ Deno.serve(async (req) => {
     // Handle stream URL request — returns the direct URL for the client
     if (action === "get_stream_url") {
       const ext = extension || (stream_type === "live" ? "m3u8" : "mp4");
-      let url = buildStreamUrl(stream_type, stream_id, ext);
-      // Force HTTPS for VOD to avoid mixed-content blocking on HTTPS pages
-      if (stream_type === "movie" || stream_type === "series") {
-        url = url.replace(/^http:\/\//, "https://");
-      }
+      const url = buildStreamUrl(stream_type, stream_id, ext);
       return new Response(
         JSON.stringify({ url }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
