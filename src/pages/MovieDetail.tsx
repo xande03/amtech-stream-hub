@@ -148,6 +148,26 @@ export default function MovieDetail() {
               <Heart className={`w-4 h-4 mr-2 ${isFavorite(movie.stream_id, 'movie') ? 'fill-destructive text-destructive' : ''}`} />
               {isFavorite(movie.stream_id, 'movie') ? 'Favoritado' : 'Favoritar'}
             </Button>
+            <Button
+              variant="outline"
+              className="border-border text-foreground hover:bg-secondary"
+              disabled={isDownloaded(movie.stream_id, 'movie')}
+              onClick={async (e) => {
+                e.stopPropagation();
+                if (!accessCode || isDownloaded(movie.stream_id, 'movie')) return;
+                try {
+                  const url = await getStreamUrl(accessCode, 'movie', movie.stream_id, movie.container_extension || 'mp4');
+                  startDownload({ id: movie.stream_id, type: 'movie', name: movie.name, icon: movie.stream_icon || '', url });
+                } catch { /* ignore */ }
+              }}
+            >
+              {(() => {
+                const dl = getDownloadStatus(movie.stream_id, 'movie');
+                if (dl?.status === 'completed') return <><CheckCircle2 className="w-4 h-4 mr-2 text-emerald-500" /> Baixado</>;
+                if (dl?.status === 'downloading') return <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Baixando...</>;
+                return <><Download className="w-4 h-4 mr-2" /> Download</>;
+              })()}
+            </Button>
             {trailerValue && <YouTubeTrailer trailer={trailerValue} />}
           </div>
         </div>
