@@ -587,7 +587,7 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
           {qualityLevels.length > 1 && (
             <div className="relative">
               <button
-                onClick={() => setShowQualityMenu(v => !v)}
+                onClick={() => { setShowQualityMenu(v => !v); setShowSpeedMenu(false); }}
                 className="flex items-center gap-1 px-2 py-1.5 rounded-full bg-secondary/60 backdrop-blur-sm hover:bg-secondary transition-colors"
                 title="Qualidade"
               >
