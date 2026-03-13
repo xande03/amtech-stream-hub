@@ -24,6 +24,7 @@ const navItems = [
   { title: 'Séries', subtitle: 'Episódios', url: '/series', icon: Clapperboard, color: 'from-violet-500 to-purple-500' },
   { title: 'Favoritos', subtitle: 'Seus favoritos', url: '/favorites', icon: Heart, color: 'from-red-500 to-rose-400', badgeKey: 'favorites' as const },
   { title: 'Histórico', subtitle: 'Assistidos', url: '/history', icon: Clock, color: 'from-emerald-500 to-green-400', badgeKey: 'history' as const },
+  { title: 'Downloads', subtitle: 'Baixados', url: '/downloads', icon: Download, color: 'from-cyan-500 to-sky-400', badgeKey: 'downloads' as const },
   { title: 'Encontrar Filme', subtitle: 'IA Assistente', url: '/finder', icon: Sparkles, color: 'from-amber-500 to-orange-500' },
   { title: 'Configurações', subtitle: 'Ajustes', url: '/settings', icon: Settings, color: 'from-slate-500 to-gray-400' },
 ];
