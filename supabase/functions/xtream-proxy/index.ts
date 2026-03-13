@@ -344,6 +344,7 @@ Deno.serve(async (req) => {
           return new Response(chunk, { status: 206, headers });
         }
 
+        console.error(`VOD proxy error: upstream returned ${upstreamRes.status} for ${upstreamUrl.replace(/\/[^\/]+\/[^\/]+\/\d+/, '/***/***/ID')}`);
         return new Response(
           JSON.stringify({ error: `Erro no proxy VOD (${upstreamRes.status})` }),
           { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
