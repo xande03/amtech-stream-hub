@@ -21,6 +21,7 @@ export default function MovieDetail() {
   const navigate = useNavigate();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { addToHistory, history, getResumeTime } = useWatchHistory();
+  const { startDownload, isDownloaded, getDownloadStatus } = useDownloads();
   const [movie, setMovie] = useState<VodStream | null>(null);
   const [allMovies, setAllMovies] = useState<VodStream[]>([]);
   const [info, setInfo] = useState<any>(null);
