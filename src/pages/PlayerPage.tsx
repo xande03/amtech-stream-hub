@@ -105,18 +105,9 @@ export default function PlayerPage() {
 
     const streamType = type as 'live' | 'movie' | 'series';
 
-    if (ext) {
-      getStreamUrl(accessCode, streamType, id, ext)
-        .then(url => setStreamUrl(url))
-        .catch(err => setError(err.message))
-        .finally(() => setLoading(false));
-      return;
-    }
-
     if (!isLive) {
-      // VOD: use proxy redirect URL — the edge function redirects (302) to the actual
-      // HTTPS stream URL so the browser fetches directly from the IPTV server (correct IP)
-      // while avoiding mixed-content issues
+      // VOD: always use proxy URL — the edge function redirects (302) to the actual
+      // stream so the browser fetches directly from the IPTV server (correct IP)
       const proxyUrl = getProxyStreamUrl(accessCode, streamType, id, ext || 'mp4');
       setStreamUrl(proxyUrl);
       setLoading(false);

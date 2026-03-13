@@ -395,11 +395,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Handle stream URL request
+    // Handle stream URL request — returns the direct URL for the client
     if (action === "get_stream_url") {
       const ext = extension || (stream_type === "live" ? "m3u8" : "mp4");
-      let url = buildStreamUrl(stream_type, stream_id, ext);
-      url = url.replace(/^http:\/\//, "https://");
+      const url = buildStreamUrl(stream_type, stream_id, ext);
+      // Don't force HTTPS — some IPTV servers don't support it for video streams
       return new Response(
         JSON.stringify({ url }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
