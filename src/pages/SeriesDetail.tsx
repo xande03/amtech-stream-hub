@@ -12,6 +12,8 @@ import { Play, Heart, ArrowLeft, Star, CheckCircle2, RotateCcw, Download, Loader
 import { SeriesDetailSkeleton } from '@/components/LoadingSkeleton';
 import YouTubeTrailer from '@/components/YouTubeTrailer';
 import { backdropImage, posterImage, episodeThumbnail } from '@/lib/imageProxy';
+import { useDownloads } from '@/hooks/useDownloads';
+import { getStreamUrl } from '@/services/xtreamApi';
 
 export default function SeriesDetail() {
   const { id } = useParams<{ id: string }>();
