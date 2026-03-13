@@ -106,24 +106,11 @@ export default function PlayerPage() {
     const streamType = type as 'live' | 'movie' | 'series';
 
     if (!isLive) {
-      // VOD: try proxy first (avoids mixed-content), fall back to direct URL
-      const proxyUrl = getProxyStreamUrl(accessCode, streamType, id, ext || 'mp4');
-      // Test proxy with a small range request; if it fails (403), use direct URL
-      fetch(proxyUrl, { method: 'HEAD' })
-        .then(res => {
-          if (res.ok || res.status === 206) {
-            setStreamUrl(proxyUrl);
-          } else {
-            throw new Error('proxy failed');
-          }
-        })
-        .catch(() => {
-          // Proxy blocked by provider — fall back to direct URL
-          return getStreamUrl(accessCode, streamType, id, ext || 'mp4')
-            .then(url => setStreamUrl(url));
-        })
-        .catch(err => setError(err.message))
-        .finally(() => setLoading(false));
+      // VOD: use HLS via proxy to avoid both mixed-content and IP blocking issues
+      // The proxy rewrites the m3u8 playlist and proxies TS chunks, same as live
+      const proxyUrl = getProxyStreamUrl(accessCode, streamType, id, 'm3u8');
+      setStreamUrl(proxyUrl);
+      setLoading(false);
       return;
     }
 
