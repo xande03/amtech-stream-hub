@@ -114,10 +114,25 @@ export default function PlayerPage() {
     }
 
     if (!isLive) {
-      // Use proxy for VOD to avoid CORS/mixed-content and enable chunked streaming
-      const proxyUrl = getProxyStreamUrl(accessCode, streamType, id, 'mp4');
-      setStreamUrl(proxyUrl);
-      setLoading(false);
+      // VOD: try proxy first (handles CORS/mixed-content), fallback to direct URL
+      const proxyUrl = getProxyStreamUrl(accessCode, streamType, id, ext || 'mp4');
+      // Test proxy with a HEAD-like fetch; if it fails (403), fall back to direct
+      fetch(proxyUrl, { method: 'HEAD' })
+        .then(res => {
+          if (res.ok || res.status === 206) {
+            setStreamUrl(proxyUrl);
+          } else {
+            // Proxy blocked by upstream, use direct URL
+            return getStreamUrl(accessCode, streamType, id, ext || 'mp4').then(url => setStreamUrl(url));
+          }
+        })
+        .catch(() => {
+          // Proxy failed, use direct URL
+          getStreamUrl(accessCode, streamType, id, ext || 'mp4')
+            .then(url => setStreamUrl(url))
+            .catch(err => setError(err.message));
+        })
+        .finally(() => setLoading(false));
       return;
     }
 
