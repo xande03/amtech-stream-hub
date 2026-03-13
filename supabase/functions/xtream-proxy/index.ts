@@ -233,7 +233,7 @@ Deno.serve(async (req) => {
       }
     };
 
-    // Handle stream proxy request (binary passthrough + playlist rewrite)
+    // Handle stream proxy request (binary passthrough + playlist rewrite + VOD chunked)
     if (action === "proxy_stream") {
       const sourceUrl = typeof params.source_url === "string" ? params.source_url : "";
       const ext = extension || (stream_type === "live" ? "m3u8" : "mp4");
@@ -253,6 +253,100 @@ Deno.serve(async (req) => {
       }
 
       const upstreamUrl = sourceUrl || buildStreamUrl(stream_type, stream_id, ext);
+      const isVod = stream_type === "movie" || stream_type === "series";
+      const isHlsContent = ext === "m3u8" || upstreamUrl.includes(".m3u8");
+
+      // --- VOD chunked proxy (MP4/MKV) ---
+      if (isVod && !isHlsContent) {
+        const CHUNK_SIZE = 3 * 1024 * 1024; // 3MB per chunk
+        const range = req.headers.get("range");
+
+        // First, do a HEAD request to get total file size
+        let totalSize = 0;
+        try {
+          const headRes = await fetch(upstreamUrl, { method: "HEAD" });
+          const cl = headRes.headers.get("content-length");
+          if (cl) totalSize = parseInt(cl, 10);
+        } catch {
+          // HEAD failed, try GET with range anyway
+        }
+
+        // Parse requested range
+        let rangeStart = 0;
+        let rangeEnd = CHUNK_SIZE - 1;
+        if (range) {
+          const match = range.match(/bytes=(\d+)-(\d*)/);
+          if (match) {
+            rangeStart = parseInt(match[1], 10);
+            rangeEnd = match[2] ? parseInt(match[2], 10) : rangeStart + CHUNK_SIZE - 1;
+          }
+        }
+        // Cap chunk size
+        if (rangeEnd - rangeStart + 1 > CHUNK_SIZE) {
+          rangeEnd = rangeStart + CHUNK_SIZE - 1;
+        }
+        if (totalSize > 0 && rangeEnd >= totalSize) {
+          rangeEnd = totalSize - 1;
+        }
+
+        // Try Range request on upstream
+        const upstreamHeaders = new Headers();
+        upstreamHeaders.set("Range", `bytes=${rangeStart}-${rangeEnd}`);
+
+        const upstreamRes = await fetch(upstreamUrl, { headers: upstreamHeaders });
+
+        if (upstreamRes.status === 206) {
+          // Upstream supports Range — passthrough
+          const headers = new Headers(corsHeaders);
+          headers.set("Content-Type", upstreamRes.headers.get("content-type") || "video/mp4");
+          headers.set("Accept-Ranges", "bytes");
+          const cr = upstreamRes.headers.get("content-range");
+          if (cr) {
+            headers.set("Content-Range", cr);
+            // Extract total size from content-range if we didn't have it
+            const crMatch = cr.match(/\/(\d+)/);
+            if (crMatch && !totalSize) totalSize = parseInt(crMatch[1], 10);
+          } else if (totalSize > 0) {
+            headers.set("Content-Range", `bytes ${rangeStart}-${rangeEnd}/${totalSize}`);
+          }
+          const cl = upstreamRes.headers.get("content-length");
+          if (cl) headers.set("Content-Length", cl);
+          else headers.set("Content-Length", String(rangeEnd - rangeStart + 1));
+
+          return new Response(upstreamRes.body, { status: 206, headers });
+        }
+
+        // Upstream doesn't support Range (returned 200) — read and slice
+        if (upstreamRes.ok) {
+          // If no totalSize from HEAD, try content-length from this response
+          if (!totalSize) {
+            const cl = upstreamRes.headers.get("content-length");
+            if (cl) totalSize = parseInt(cl, 10);
+          }
+
+          // Read the body as array buffer, then slice the requested range
+          // For efficiency, if rangeStart is 0, just return first chunk
+          const fullBody = new Uint8Array(await upstreamRes.arrayBuffer());
+          if (!totalSize) totalSize = fullBody.length;
+          if (rangeEnd >= totalSize) rangeEnd = totalSize - 1;
+
+          const chunk = fullBody.slice(rangeStart, rangeEnd + 1);
+          const headers = new Headers(corsHeaders);
+          headers.set("Content-Type", "video/mp4");
+          headers.set("Accept-Ranges", "bytes");
+          headers.set("Content-Range", `bytes ${rangeStart}-${rangeEnd}/${totalSize}`);
+          headers.set("Content-Length", String(chunk.length));
+
+          return new Response(chunk, { status: 206, headers });
+        }
+
+        return new Response(
+          JSON.stringify({ error: `Erro no proxy VOD (${upstreamRes.status})` }),
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // --- Live / HLS proxy (existing logic) ---
       const upstreamHeaders = new Headers();
       const range = req.headers.get("range");
       if (range) upstreamHeaders.set("range", range);
