@@ -114,12 +114,12 @@ export default function PlayerPage() {
     }
 
     if (!isLive) {
-      // VOD: use direct URL (IPTV servers often validate requester IP, blocking server proxies)
-      // getStreamUrl returns HTTPS URLs which avoid mixed-content issues
-      getStreamUrl(accessCode, streamType, id, ext || 'mp4')
-        .then(url => setStreamUrl(url))
-        .catch(err => setError(err.message))
-        .finally(() => setLoading(false));
+      // VOD: use proxy redirect URL — the edge function redirects (302) to the actual
+      // HTTPS stream URL so the browser fetches directly from the IPTV server (correct IP)
+      // while avoiding mixed-content issues
+      const proxyUrl = getProxyStreamUrl(accessCode, streamType, id, ext || 'mp4');
+      setStreamUrl(proxyUrl);
+      setLoading(false);
       return;
     }
 
