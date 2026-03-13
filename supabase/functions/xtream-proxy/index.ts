@@ -252,7 +252,7 @@ Deno.serve(async (req) => {
         );
       }
 
-      const upstreamUrl = sourceUrl || buildStreamUrl(stream_type, stream_id, ext);
+      let upstreamUrl = sourceUrl || buildStreamUrl(stream_type, stream_id, ext);
       const isVod = stream_type === "movie" || stream_type === "series";
       const isHlsContent = ext === "m3u8" || upstreamUrl.includes(".m3u8");
 
