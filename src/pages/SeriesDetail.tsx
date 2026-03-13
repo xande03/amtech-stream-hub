@@ -21,6 +21,7 @@ export default function SeriesDetail() {
   const navigate = useNavigate();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { addToHistory, history, getResumeTime } = useWatchHistory();
+  const { startDownload, isDownloaded, getDownloadStatus } = useDownloads();
   const [seriesInfo, setSeriesInfo] = useState<SeriesInfo | null>(null);
   const [allSeries, setAllSeries] = useState<Series[]>([]);
   const [selectedSeason, setSelectedSeason] = useState<string>('');
