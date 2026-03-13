@@ -105,17 +105,9 @@ export default function PlayerPage() {
 
     const streamType = type as 'live' | 'movie' | 'series';
 
-    if (ext) {
-      getStreamUrl(accessCode, streamType, id, ext)
-        .then(url => setStreamUrl(url))
-        .catch(err => setError(err.message))
-        .finally(() => setLoading(false));
-      return;
-    }
-
     if (!isLive) {
-      // VOD: use direct URL (IPTV servers often validate requester IP, blocking server proxies)
-      // getStreamUrl returns HTTPS URLs which avoid mixed-content issues
+      // VOD: use direct HTTPS URL from the IPTV server
+      // The browser loads the video directly, avoiding IP-based blocks on proxy servers
       getStreamUrl(accessCode, streamType, id, ext || 'mp4')
         .then(url => setStreamUrl(url))
         .catch(err => setError(err.message))
