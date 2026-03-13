@@ -9,6 +9,7 @@ import { Search, Tv, Heart, Wifi, WifiOff, Loader2, RefreshCw } from 'lucide-rea
 import { motion } from 'framer-motion';
 import { LiveTVSkeleton } from '@/components/LoadingSkeleton';
 import DraggableScroll from '@/components/DraggableScroll';
+import ChannelEpgPanel from '@/components/ChannelEpgPanel';
 
 const PAGE_SIZE = 60;
 const CHECK_BATCH_SIZE = 50;
