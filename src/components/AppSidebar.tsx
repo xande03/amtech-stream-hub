@@ -25,7 +25,7 @@ const navItems = [
   { title: 'Favoritos', subtitle: 'Seus favoritos', url: '/favorites', icon: Heart, color: 'from-red-500 to-rose-400', badgeKey: 'favorites' as const },
   { title: 'Histórico', subtitle: 'Assistidos', url: '/history', icon: Clock, color: 'from-emerald-500 to-green-400', badgeKey: 'history' as const },
   { title: 'Encontrar Filme', subtitle: 'IA Assistente', url: '/finder', icon: Sparkles, color: 'from-amber-500 to-orange-500' },
-  { title: 'Guia EPG', subtitle: 'Programação', url: '/epg', icon: CalendarClock, color: 'from-cyan-500 to-teal-500' },
+  { title: 'Configurações', subtitle: 'Ajustes', url: '/settings', icon: Settings, color: 'from-slate-500 to-gray-400' },
   { title: 'Configurações', subtitle: 'Ajustes', url: '/settings', icon: Settings, color: 'from-slate-500 to-gray-400' },
 ];
 

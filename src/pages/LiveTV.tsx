@@ -246,6 +246,7 @@ export default function LiveTV() {
                       {isOnline ? 'Online' : 'Offline'}
                     </p>
                   )}
+                  <ChannelEpgPanel streamId={ch.stream_id} />
                 </div>
                 <button
                   onClick={(e) => { e.stopPropagation(); toggleFavorite({ id: ch.stream_id, type: 'live', name: ch.name, icon: ch.stream_icon }); }}

@@ -13,7 +13,6 @@ const items = [
   { path: '/favorites', icon: Heart, label: 'Favoritos', color: 'from-pink-500 to-rose-600', glow: 'shadow-pink-500/25' },
   { path: '/history', icon: Clock, label: 'Histórico', color: 'from-sky-500 to-blue-600', glow: 'shadow-sky-500/25' },
   { path: '/finder', icon: Sparkles, label: 'Encontrar', color: 'from-fuchsia-500 to-purple-600', glow: 'shadow-fuchsia-500/25' },
-  { path: '/epg', icon: CalendarClock, label: 'Guia EPG', color: 'from-cyan-500 to-teal-600', glow: 'shadow-cyan-500/25' },
   { path: '/settings', icon: Settings, label: 'Configurações', color: 'from-slate-400 to-slate-600', glow: 'shadow-slate-500/25' },
 ];
 
