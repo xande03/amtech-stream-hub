@@ -551,6 +551,38 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
           </span>
         )}
         <div className="flex gap-1 items-center">
+          {/* Speed selector (movies & series only) */}
+          {!isLive && (
+            <div className="relative">
+              <button
+                onClick={() => { setShowSpeedMenu(v => !v); setShowQualityMenu(false); }}
+                className="flex items-center gap-1 px-2 py-1.5 rounded-full bg-secondary/60 backdrop-blur-sm hover:bg-secondary transition-colors"
+                title="Velocidade"
+              >
+                <Gauge className="w-4 h-4 text-foreground" />
+                <span className="text-xs font-medium text-foreground hidden sm:inline">{playbackSpeed}x</span>
+              </button>
+              {showSpeedMenu && (
+                <div className="absolute top-full right-0 mt-1 bg-card/95 backdrop-blur-md border border-border rounded-lg shadow-lg overflow-hidden min-w-[100px] z-30 animate-fade-in">
+                  {[0.5, 0.75, 1, 1.25, 1.5, 2].map(speed => (
+                    <button
+                      key={speed}
+                      onClick={() => {
+                        const video = videoRef.current;
+                        if (video) video.playbackRate = speed;
+                        setPlaybackSpeed(speed);
+                        setShowSpeedMenu(false);
+                      }}
+                      className={`w-full px-4 py-2.5 text-left text-sm flex items-center justify-between hover:bg-secondary/60 transition-colors ${playbackSpeed === speed ? 'text-primary font-semibold' : 'text-foreground'}`}
+                    >
+                      <span>{speed}x</span>
+                      {playbackSpeed === speed && <span className="w-1.5 h-1.5 rounded-full bg-primary" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           {/* Quality selector */}
           {qualityLevels.length > 1 && (
             <div className="relative">
