@@ -256,122 +256,20 @@ Deno.serve(async (req) => {
       const isVod = stream_type === "movie" || stream_type === "series";
       const isHlsContent = ext === "m3u8" || upstreamUrl.includes(".m3u8");
 
-      // --- VOD chunked proxy (MP4/MKV) ---
+      // --- VOD redirect proxy (MP4/MKV) ---
+      // IPTV servers often validate requester IP, blocking server-side proxying.
+      // Instead, redirect the browser to the actual stream URL so the request
+      // comes from the user's IP. This also avoids mixed-content since we redirect to HTTPS.
       if (isVod && !isHlsContent) {
-        const CHUNK_SIZE = 3 * 1024 * 1024; // 3MB per chunk
-        const range = req.headers.get("range");
-
-        const commonHeaders: Record<string, string> = {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-          "Accept": "*/*",
-        };
-
-        // Try both HTTPS and HTTP URLs (some servers only work with one)
-        const urls = [upstreamUrl];
-        if (upstreamUrl.startsWith("http://")) {
-          urls.unshift(upstreamUrl.replace(/^http:\/\//, "https://"));
-        } else if (upstreamUrl.startsWith("https://")) {
-          urls.push(upstreamUrl.replace(/^https:\/\//, "http://"));
+        let redirectUrl = upstreamUrl;
+        // Prefer HTTPS to avoid mixed-content blocking
+        if (redirectUrl.startsWith("http://")) {
+          redirectUrl = redirectUrl.replace(/^http:\/\//, "https://");
         }
-
-        let totalSize = 0;
-        let upstreamRes: Response | null = null;
-
-        for (const tryUrl of urls) {
-          // Try HEAD to get total size
-          try {
-            const headRes = await fetch(tryUrl, { method: "HEAD", headers: commonHeaders, redirect: "follow" });
-            if (headRes.ok) {
-              const cl = headRes.headers.get("content-length");
-              if (cl) totalSize = parseInt(cl, 10);
-            }
-          } catch {
-            // HEAD failed, continue
-          }
-
-          // Parse requested range
-          let rangeStart = 0;
-          let rangeEnd = CHUNK_SIZE - 1;
-          if (range) {
-            const match = range.match(/bytes=(\d+)-(\d*)/);
-            if (match) {
-              rangeStart = parseInt(match[1], 10);
-              rangeEnd = match[2] ? parseInt(match[2], 10) : rangeStart + CHUNK_SIZE - 1;
-            }
-          }
-          if (rangeEnd - rangeStart + 1 > CHUNK_SIZE) {
-            rangeEnd = rangeStart + CHUNK_SIZE - 1;
-          }
-          if (totalSize > 0 && rangeEnd >= totalSize) {
-            rangeEnd = totalSize - 1;
-          }
-
-          // Try with Range header first
-          const rangeHeaders = { ...commonHeaders, "Range": `bytes=${rangeStart}-${rangeEnd}` };
-          try {
-            upstreamRes = await fetch(tryUrl, { headers: rangeHeaders, redirect: "follow" });
-          } catch {
-            continue;
-          }
-
-          if (upstreamRes.status === 206) {
-            // Upstream supports Range — passthrough
-            const headers = new Headers(corsHeaders);
-            headers.set("Content-Type", upstreamRes.headers.get("content-type") || "video/mp4");
-            headers.set("Accept-Ranges", "bytes");
-            const cr = upstreamRes.headers.get("content-range");
-            if (cr) {
-              headers.set("Content-Range", cr);
-              const crMatch = cr.match(/\/(\d+)/);
-              if (crMatch && !totalSize) totalSize = parseInt(crMatch[1], 10);
-            } else if (totalSize > 0) {
-              headers.set("Content-Range", `bytes ${rangeStart}-${rangeEnd}/${totalSize}`);
-            }
-            const cl = upstreamRes.headers.get("content-length");
-            if (cl) headers.set("Content-Length", cl);
-            else headers.set("Content-Length", String(rangeEnd - rangeStart + 1));
-            return new Response(upstreamRes.body, { status: 206, headers });
-          }
-
-          if (upstreamRes.ok) {
-            // 200 OK — stream body through, browser handles it
-            const headers = new Headers(corsHeaders);
-            headers.set("Content-Type", upstreamRes.headers.get("content-type") || "video/mp4");
-            const cl = upstreamRes.headers.get("content-length");
-            if (cl) headers.set("Content-Length", cl);
-            headers.set("Accept-Ranges", "bytes");
-            return new Response(upstreamRes.body, { status: 200, headers });
-          }
-
-          // If 403/404, try without Range (some servers block Range)
-          if (upstreamRes.status === 403 || upstreamRes.status === 404) {
-            try { await upstreamRes.text(); } catch {} // consume body
-            try {
-              upstreamRes = await fetch(tryUrl, { headers: commonHeaders, redirect: "follow" });
-            } catch {
-              continue;
-            }
-            if (upstreamRes.ok) {
-              const headers = new Headers(corsHeaders);
-              headers.set("Content-Type", upstreamRes.headers.get("content-type") || "video/mp4");
-              const cl = upstreamRes.headers.get("content-length");
-              if (cl) headers.set("Content-Length", cl);
-              headers.set("Accept-Ranges", "bytes");
-              return new Response(upstreamRes.body, { status: 200, headers });
-            }
-          }
-
-          // Consume body before trying next URL
-          try { await upstreamRes.text(); } catch {}
-          console.log(`VOD proxy: ${tryUrl.replace(/\/[^\/]+\/[^\/]+\/\d+/, '/***/***/ID')} returned ${upstreamRes.status}, trying next...`);
-        }
-
-        const lastStatus = upstreamRes?.status || 'unknown';
-        console.error(`VOD proxy: all attempts failed (last status: ${lastStatus})`);
-        return new Response(
-          JSON.stringify({ error: `Erro no proxy VOD (${lastStatus})` }),
-          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        const headers = new Headers(corsHeaders);
+        headers.set("Location", redirectUrl);
+        headers.set("Cache-Control", "no-cache");
+        return new Response(null, { status: 302, headers });
       }
 
       // --- Live / HLS proxy (existing logic) ---
