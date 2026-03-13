@@ -303,9 +303,13 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
   }, [loadSource]);
 
   useEffect(() => {
-    const onChange = () => setIsFullscreen(!!document.fullscreenElement);
+    const onChange = () => setIsFullscreen(!!(document.fullscreenElement || (document as any).webkitFullscreenElement));
     document.addEventListener('fullscreenchange', onChange);
-    return () => document.removeEventListener('fullscreenchange', onChange);
+    document.addEventListener('webkitfullscreenchange', onChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', onChange);
+      document.removeEventListener('webkitfullscreenchange', onChange);
+    };
   }, []);
 
   // PiP events
@@ -411,10 +415,26 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
     return () => video.removeEventListener('ended', handleEnded);
   }, [onNextEpisode]);
 
-  const toggleFullscreen = () => {
-    if (containerRef.current) {
-      if (document.fullscreenElement) document.exitFullscreen();
-      else containerRef.current.requestFullscreen().catch(() => {});
+  const toggleFullscreen = async () => {
+    const container = containerRef.current;
+    const video = videoRef.current;
+    if (!container && !video) return;
+
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else if ((document as any).webkitFullscreenElement) {
+        await (document as any).webkitExitFullscreen();
+      } else if (container?.requestFullscreen) {
+        await container.requestFullscreen();
+      } else if ((container as any)?.webkitRequestFullscreen) {
+        (container as any).webkitRequestFullscreen();
+      } else if ((video as any)?.webkitEnterFullscreen) {
+        // iOS Safari: only supports fullscreen on the video element itself
+        (video as any).webkitEnterFullscreen();
+      }
+    } catch (e) {
+      console.warn('Fullscreen not supported', e);
     }
   };
 
@@ -427,10 +447,19 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
     const video = videoRef.current;
     if (!video) return;
     try {
-      if (document.pictureInPictureElement) await document.exitPictureInPicture();
-      else if (document.pictureInPictureEnabled) await video.requestPictureInPicture();
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+      } else if (document.pictureInPictureEnabled) {
+        await video.requestPictureInPicture();
+      } else if ((video as any).webkitSupportsPresentationMode?.('picture-in-picture')) {
+        // Safari fallback
+        (video as any).webkitSetPresentationMode('picture-in-picture');
+      }
     } catch (e) { console.warn('PiP not supported', e); }
   };
+
+  const isPipSupported = document.pictureInPictureEnabled || 
+    (videoRef.current && (videoRef.current as any).webkitSupportsPresentationMode?.('picture-in-picture'));
 
   const retry = () => { retryCountRef.current = 0; loadSource(); };
 
@@ -568,8 +597,8 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
               <Cast className="w-5 h-5 text-foreground" />
             </button>
           )}
-          {document.pictureInPictureEnabled && (
-            <button onClick={togglePip} className={`p-2 rounded-full backdrop-blur-sm hover:bg-secondary transition-colors ${isPip ? 'bg-primary/60' : 'bg-secondary/60'}`}>
+          {isPipSupported && (
+            <button onClick={togglePip} className={`p-2 rounded-full backdrop-blur-sm hover:bg-secondary transition-colors ${isPip ? 'bg-primary/60' : 'bg-secondary/60'}`} title="Picture in Picture">
               <PictureInPicture2 className="w-5 h-5 text-foreground" />
             </button>
           )}
