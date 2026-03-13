@@ -9,6 +9,7 @@ import { Search, Tv, Heart, Wifi, WifiOff, Loader2, RefreshCw } from 'lucide-rea
 import { motion } from 'framer-motion';
 import { LiveTVSkeleton } from '@/components/LoadingSkeleton';
 import DraggableScroll from '@/components/DraggableScroll';
+import ChannelEpgPanel from '@/components/ChannelEpgPanel';
 
 const PAGE_SIZE = 60;
 const CHECK_BATCH_SIZE = 50;
@@ -217,6 +218,7 @@ export default function LiveTV() {
                   ) : (<Tv className="w-8 h-8 text-muted-foreground" />)}
                 </div>
                 <p className="text-sm text-foreground font-medium truncate">{ch.name}</p>
+                <ChannelEpgPanel streamId={ch.stream_id} compact />
               </motion.div>
             );
           })}
@@ -244,6 +246,7 @@ export default function LiveTV() {
                       {isOnline ? 'Online' : 'Offline'}
                     </p>
                   )}
+                  <ChannelEpgPanel streamId={ch.stream_id} />
                 </div>
                 <button
                   onClick={(e) => { e.stopPropagation(); toggleFavorite({ id: ch.stream_id, type: 'live', name: ch.name, icon: ch.stream_icon }); }}
