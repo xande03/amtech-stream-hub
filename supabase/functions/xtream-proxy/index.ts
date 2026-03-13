@@ -261,10 +261,14 @@ Deno.serve(async (req) => {
         const CHUNK_SIZE = 3 * 1024 * 1024; // 3MB per chunk
         const range = req.headers.get("range");
 
+        const commonHeaders: Record<string, string> = {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        };
+
         // First, do a HEAD request to get total file size
         let totalSize = 0;
         try {
-          const headRes = await fetch(upstreamUrl, { method: "HEAD" });
+          const headRes = await fetch(upstreamUrl, { method: "HEAD", headers: commonHeaders, redirect: "follow" });
           const cl = headRes.headers.get("content-length");
           if (cl) totalSize = parseInt(cl, 10);
         } catch {
@@ -290,10 +294,10 @@ Deno.serve(async (req) => {
         }
 
         // Try Range request on upstream
-        const upstreamHeaders = new Headers();
+        const upstreamHeaders = new Headers(commonHeaders);
         upstreamHeaders.set("Range", `bytes=${rangeStart}-${rangeEnd}`);
 
-        const upstreamRes = await fetch(upstreamUrl, { headers: upstreamHeaders });
+        const upstreamRes = await fetch(upstreamUrl, { headers: upstreamHeaders, redirect: "follow" });
 
         if (upstreamRes.status === 206) {
           // Upstream supports Range — passthrough
