@@ -258,6 +258,10 @@ Deno.serve(async (req) => {
 
       // --- VOD chunked proxy (MP4/MKV) ---
       if (isVod && !isHlsContent) {
+        // Some IPTV servers require HTTPS for direct file access
+        if (upstreamUrl.startsWith("http://")) {
+          upstreamUrl = upstreamUrl.replace(/^http:\/\//, "https://");
+        }
         const CHUNK_SIZE = 3 * 1024 * 1024; // 3MB per chunk
         const range = req.headers.get("range");
 
