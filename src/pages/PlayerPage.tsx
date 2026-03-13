@@ -114,24 +114,11 @@ export default function PlayerPage() {
     }
 
     if (!isLive) {
-      // VOD: try proxy first (handles CORS/mixed-content), fallback to direct URL
-      const proxyUrl = getProxyStreamUrl(accessCode, streamType, id, ext || 'mp4');
-      // Test proxy with a HEAD-like fetch; if it fails (403), fall back to direct
-      fetch(proxyUrl, { method: 'HEAD' })
-        .then(res => {
-          if (res.ok || res.status === 206) {
-            setStreamUrl(proxyUrl);
-          } else {
-            // Proxy blocked by upstream, use direct URL
-            return getStreamUrl(accessCode, streamType, id, ext || 'mp4').then(url => setStreamUrl(url));
-          }
-        })
-        .catch(() => {
-          // Proxy failed, use direct URL
-          getStreamUrl(accessCode, streamType, id, ext || 'mp4')
-            .then(url => setStreamUrl(url))
-            .catch(err => setError(err.message));
-        })
+      // VOD: use direct URL (IPTV servers often validate requester IP, blocking server proxies)
+      // getStreamUrl returns HTTPS URLs which avoid mixed-content issues
+      getStreamUrl(accessCode, streamType, id, ext || 'mp4')
+        .then(url => setStreamUrl(url))
+        .catch(err => setError(err.message))
         .finally(() => setLoading(false));
       return;
     }
