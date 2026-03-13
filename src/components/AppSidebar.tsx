@@ -36,10 +36,12 @@ export default function AppSidebar() {
   const { playlistName } = useAuth();
   const { favorites } = useFavorites();
   const { history } = useWatchHistory();
+  const { downloads } = useDownloads();
 
   const badgeCounts = {
     favorites: favorites.length,
     history: history.length,
+    downloads: downloads.length,
   };
 
   return (
