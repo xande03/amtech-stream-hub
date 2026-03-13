@@ -411,10 +411,26 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
     return () => video.removeEventListener('ended', handleEnded);
   }, [onNextEpisode]);
 
-  const toggleFullscreen = () => {
-    if (containerRef.current) {
-      if (document.fullscreenElement) document.exitFullscreen();
-      else containerRef.current.requestFullscreen().catch(() => {});
+  const toggleFullscreen = async () => {
+    const container = containerRef.current;
+    const video = videoRef.current;
+    if (!container && !video) return;
+
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else if ((document as any).webkitFullscreenElement) {
+        await (document as any).webkitExitFullscreen();
+      } else if (container?.requestFullscreen) {
+        await container.requestFullscreen();
+      } else if ((container as any)?.webkitRequestFullscreen) {
+        (container as any).webkitRequestFullscreen();
+      } else if ((video as any)?.webkitEnterFullscreen) {
+        // iOS Safari: only supports fullscreen on the video element itself
+        (video as any).webkitEnterFullscreen();
+      }
+    } catch (e) {
+      console.warn('Fullscreen not supported', e);
     }
   };
 
