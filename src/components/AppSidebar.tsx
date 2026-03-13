@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import amtechIcon from '@/assets/amtech-icon.png';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
+import { useDownloads } from '@/hooks/useDownloads';
 import {
   Sidebar,
   SidebarContent,
