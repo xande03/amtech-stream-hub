@@ -683,9 +683,9 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
         </div>
       )}
 
-      {/* Click overlay to close quality menu */}
-      {showQualityMenu && (
-        <div className="absolute inset-0 z-15" onClick={() => setShowQualityMenu(false)} />
+      {/* Click overlay to close menus */}
+      {(showQualityMenu || showSpeedMenu) && (
+        <div className="absolute inset-0 z-15" onClick={() => { setShowQualityMenu(false); setShowSpeedMenu(false); }} />
       )}
 
       <video
