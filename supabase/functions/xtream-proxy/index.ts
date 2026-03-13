@@ -258,16 +258,28 @@ Deno.serve(async (req) => {
 
       // --- VOD redirect proxy (MP4/MKV) ---
       // IPTV servers often validate requester IP, blocking server-side proxying.
-      // Instead, redirect the browser to the actual stream URL so the request
-      // comes from the user's IP. This also avoids mixed-content since we redirect to HTTPS.
+      // Redirect the browser to the actual stream URL so the request comes from the user's IP.
       if (isVod && !isHlsContent) {
-        let redirectUrl = upstreamUrl;
-        // Prefer HTTPS to avoid mixed-content blocking
-        if (redirectUrl.startsWith("http://")) {
-          redirectUrl = redirectUrl.replace(/^http:\/\//, "https://");
-        }
+        // Keep the original URL (HTTP) — the <video> element will follow the redirect.
+        // Note: Browsers may block HTTP video on HTTPS pages (mixed content).
+        // If that happens, try HTTPS first, then fall back to HTTP.
+        const httpsUrl = upstreamUrl.replace(/^http:\/\//, "https://");
+        const httpUrl = upstreamUrl.startsWith("https://") ? upstreamUrl.replace(/^https:\/\//, "http://") : upstreamUrl;
+        
+        // Try HTTPS first — check if the server responds
+        try {
+          const testRes = await fetch(httpsUrl, { method: "HEAD", redirect: "follow" });
+          if (testRes.ok || testRes.status === 206 || testRes.status === 302) {
+            const headers = new Headers(corsHeaders);
+            headers.set("Location", httpsUrl);
+            headers.set("Cache-Control", "no-cache");
+            return new Response(null, { status: 302, headers });
+          }
+        } catch {}
+        
+        // HTTPS failed, use HTTP (may cause mixed-content on HTTPS pages)
         const headers = new Headers(corsHeaders);
-        headers.set("Location", redirectUrl);
+        headers.set("Location", httpUrl);
         headers.set("Cache-Control", "no-cache");
         return new Response(null, { status: 302, headers });
       }
