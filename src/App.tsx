@@ -17,6 +17,7 @@ import PlayerPage from "@/pages/PlayerPage";
 import Favorites from "@/pages/Favorites";
 import MovieFinder from "@/pages/MovieFinder";
 import History from "@/pages/History";
+import Downloads from "@/pages/Downloads";
 
 import SettingsPage from "@/pages/SettingsPage";
 import AdminPage from "@/pages/AdminPage";
