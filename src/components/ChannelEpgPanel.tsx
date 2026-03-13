@@ -135,7 +135,7 @@ export default function ChannelEpgPanel({ streamId, compact = false }: Props) {
                   {formatTime(entry.start_timestamp || entry.start)}
                 </span>
                 <span className={`truncate ${now ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
-                  {entry.title}
+                  {decodeBase64(entry.title)}
                 </span>
                 {now && (
                   <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-destructive animate-pulse mt-1" />
