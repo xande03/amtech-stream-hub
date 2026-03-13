@@ -370,11 +370,7 @@ Deno.serve(async (req) => {
     // Handle stream URL request — returns the direct URL for the client
     if (action === "get_stream_url") {
       const ext = extension || (stream_type === "live" ? "m3u8" : "mp4");
-      let url = buildStreamUrl(stream_type, stream_id, ext);
-      // Force HTTPS for VOD to avoid mixed-content blocking on HTTPS pages
-      if (stream_type === "movie" || stream_type === "series") {
-        url = url.replace(/^http:\/\//, "https://");
-      }
+      const url = buildStreamUrl(stream_type, stream_id, ext);
       return new Response(
         JSON.stringify({ url }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
