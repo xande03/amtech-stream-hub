@@ -12,6 +12,8 @@ import { Play, Heart, ArrowLeft, Star, Clock, Calendar, RotateCcw, Download, Che
 import { DetailSkeleton } from '@/components/LoadingSkeleton';
 import YouTubeTrailer from '@/components/YouTubeTrailer';
 import { backdropImage, posterImage } from '@/lib/imageProxy';
+import { useDownloads } from '@/hooks/useDownloads';
+import { getStreamUrl } from '@/services/xtreamApi';
 
 export default function MovieDetail() {
   const { id } = useParams<{ id: string }>();
