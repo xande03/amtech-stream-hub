@@ -443,10 +443,19 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
     const video = videoRef.current;
     if (!video) return;
     try {
-      if (document.pictureInPictureElement) await document.exitPictureInPicture();
-      else if (document.pictureInPictureEnabled) await video.requestPictureInPicture();
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+      } else if (document.pictureInPictureEnabled) {
+        await video.requestPictureInPicture();
+      } else if ((video as any).webkitSupportsPresentationMode?.('picture-in-picture')) {
+        // Safari fallback
+        (video as any).webkitSetPresentationMode('picture-in-picture');
+      }
     } catch (e) { console.warn('PiP not supported', e); }
   };
+
+  const isPipSupported = document.pictureInPictureEnabled || 
+    (videoRef.current && (videoRef.current as any).webkitSupportsPresentationMode?.('picture-in-picture'));
 
   const retry = () => { retryCountRef.current = 0; loadSource(); };
 
