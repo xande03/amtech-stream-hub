@@ -256,32 +256,50 @@ Deno.serve(async (req) => {
       const isVod = stream_type === "movie" || stream_type === "series";
       const isHlsContent = ext === "m3u8" || upstreamUrl.includes(".m3u8");
 
-      // --- VOD redirect proxy (MP4/MKV) ---
-      // IPTV servers often validate requester IP, blocking server-side proxying.
-      // Redirect the browser to the actual stream URL so the request comes from the user's IP.
+      // --- VOD chunked proxy (MP4/MKV) ---
+      // Stream bytes through the edge function to avoid mixed-content blocking.
+      // The browser sends Range headers automatically; we forward them upstream.
       if (isVod && !isHlsContent) {
-        // Keep the original URL (HTTP) — the <video> element will follow the redirect.
-        // Note: Browsers may block HTTP video on HTTPS pages (mixed content).
-        // If that happens, try HTTPS first, then fall back to HTTP.
-        const httpsUrl = upstreamUrl.replace(/^http:\/\//, "https://");
-        const httpUrl = upstreamUrl.startsWith("https://") ? upstreamUrl.replace(/^https:\/\//, "http://") : upstreamUrl;
-        
-        // Try HTTPS first — check if the server responds
+        const upstreamHeaders = new Headers({
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        });
+        const rangeHeader = req.headers.get("range");
+        if (rangeHeader) {
+          upstreamHeaders.set("Range", rangeHeader);
+        }
+
+        let upstreamRes: Response;
         try {
-          const testRes = await fetch(httpsUrl, { method: "HEAD", redirect: "follow" });
-          if (testRes.ok || testRes.status === 206 || testRes.status === 302) {
-            const headers = new Headers(corsHeaders);
-            headers.set("Location", httpsUrl);
-            headers.set("Cache-Control", "no-cache");
-            return new Response(null, { status: 302, headers });
-          }
-        } catch {}
-        
-        // HTTPS failed, use HTTP (may cause mixed-content on HTTPS pages)
-        const headers = new Headers(corsHeaders);
-        headers.set("Location", httpUrl);
-        headers.set("Cache-Control", "no-cache");
-        return new Response(null, { status: 302, headers });
+          upstreamRes = await fetch(upstreamUrl, { headers: upstreamHeaders, redirect: "follow" });
+        } catch {
+          // Try alternate protocol
+          const altUrl = upstreamUrl.startsWith("https://")
+            ? upstreamUrl.replace(/^https:\/\//, "http://")
+            : upstreamUrl.replace(/^http:\/\//, "https://");
+          upstreamRes = await fetch(altUrl, { headers: upstreamHeaders, redirect: "follow" });
+        }
+
+        if (!upstreamRes.ok && upstreamRes.status !== 206) {
+          return new Response(
+            JSON.stringify({ error: `Erro no proxy VOD (${upstreamRes.status})` }),
+            { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        const respHeaders = new Headers(corsHeaders);
+        const ct = upstreamRes.headers.get("content-type") || "video/mp4";
+        respHeaders.set("Content-Type", ct);
+        respHeaders.set("Accept-Ranges", "bytes");
+        ["content-range", "content-length", "etag", "last-modified"].forEach((h) => {
+          const v = upstreamRes.headers.get(h);
+          if (v) respHeaders.set(h, v);
+        });
+        respHeaders.set("Cache-Control", "public, max-age=3600");
+
+        return new Response(upstreamRes.body, {
+          status: upstreamRes.status,
+          headers: respHeaders,
+        });
       }
 
       // --- Live / HLS proxy (existing logic) ---
