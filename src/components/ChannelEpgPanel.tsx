@@ -82,7 +82,7 @@ export default function ChannelEpgPanel({ streamId, compact = false }: Props) {
           <Loader2 className="w-3 h-3 animate-spin" />
         ) : currentProgram ? (
           <span className="truncate text-left">
-            <span className="text-primary font-medium">Agora:</span> {currentProgram.title}
+            <span className="text-primary font-medium">Agora:</span> {decodeBase64(currentProgram.title)}
           </span>
         ) : loaded ? (
           <span className="italic">Sem programação</span>
