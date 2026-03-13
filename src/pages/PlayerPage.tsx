@@ -114,10 +114,12 @@ export default function PlayerPage() {
     }
 
     if (!isLive) {
-      // Use proxy for VOD to avoid CORS/mixed-content and enable chunked streaming
-      const proxyUrl = getProxyStreamUrl(accessCode, streamType, id, 'mp4');
-      setStreamUrl(proxyUrl);
-      setLoading(false);
+      // VOD: use direct URL (IPTV servers often validate requester IP, blocking server proxies)
+      // getStreamUrl returns HTTPS URLs which avoid mixed-content issues
+      getStreamUrl(accessCode, streamType, id, ext || 'mp4')
+        .then(url => setStreamUrl(url))
+        .catch(err => setError(err.message))
+        .finally(() => setLoading(false));
       return;
     }
 
