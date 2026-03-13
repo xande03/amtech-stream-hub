@@ -233,7 +233,7 @@ Deno.serve(async (req) => {
       }
     };
 
-    // Handle stream proxy request (binary passthrough + playlist rewrite + VOD chunked)
+    // Handle stream proxy request (binary passthrough + playlist rewrite)
     if (action === "proxy_stream") {
       const sourceUrl = typeof params.source_url === "string" ? params.source_url : "";
       const ext = extension || (stream_type === "live" ? "m3u8" : "mp4");
@@ -252,11 +252,7 @@ Deno.serve(async (req) => {
         );
       }
 
-      let upstreamUrl = sourceUrl || buildStreamUrl(stream_type, stream_id, ext);
-      const isVod = stream_type === "movie" || stream_type === "series";
-      const isHlsContent = ext === "m3u8" || upstreamUrl.includes(".m3u8");
-
-      // --- Live / HLS proxy (existing logic) ---
+      const upstreamUrl = sourceUrl || buildStreamUrl(stream_type, stream_id, ext);
       const upstreamHeaders = new Headers();
       const range = req.headers.get("range");
       if (range) upstreamHeaders.set("range", range);
@@ -367,10 +363,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Handle stream URL request — returns the direct URL for the client
+    // Handle stream URL request
     if (action === "get_stream_url") {
       const ext = extension || (stream_type === "live" ? "m3u8" : "mp4");
-      const url = buildStreamUrl(stream_type, stream_id, ext);
+      let url = buildStreamUrl(stream_type, stream_id, ext);
+      url = url.replace(/^http:\/\//, "https://");
       return new Response(
         JSON.stringify({ url }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
