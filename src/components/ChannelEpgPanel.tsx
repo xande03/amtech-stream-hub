@@ -3,20 +3,42 @@ import { getShortEpg, EpgEntry } from '@/services/xtreamApi';
 import { useAuth } from '@/contexts/AuthContext';
 import { Clock, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 
+function decodeBase64(str: string): string {
+  try {
+    // Check if it looks like base64 (only valid base64 chars and reasonable length)
+    if (/^[A-Za-z0-9+/=]+$/.test(str) && str.length > 8) {
+      return decodeURIComponent(escape(atob(str)));
+    }
+  } catch {}
+  return str;
+}
+
+function parseTimestamp(ts: string | number): Date | null {
+  if (!ts) return null;
+  if (typeof ts === 'number' && ts > 0) return new Date(ts * 1000);
+  if (typeof ts === 'string') {
+    // Try parsing directly
+    const d = new Date(ts);
+    if (!isNaN(d.getTime())) return d;
+    // Try YYYY-MM-DD HH:MM:SS format
+    const match = ts.match(/(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2}):?(\d{2})?/);
+    if (match) return new Date(`${match[1]}-${match[2]}-${match[3]}T${match[4]}:${match[5]}:${match[6] || '00'}`);
+  }
+  return null;
+}
+
 function formatTime(ts: string | number): string {
-  const date = typeof ts === 'number' ? new Date(ts * 1000) : new Date(ts);
+  const date = parseTimestamp(ts);
+  if (!date) return '--:--';
   return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
 
 function isNow(entry: EpgEntry): boolean {
   const now = Date.now();
-  const start = typeof entry.start_timestamp === 'number'
-    ? entry.start_timestamp * 1000
-    : new Date(entry.start_timestamp || entry.start).getTime();
-  const end = typeof entry.stop_timestamp === 'number'
-    ? entry.stop_timestamp * 1000
-    : new Date(entry.stop_timestamp || entry.end).getTime();
-  return now >= start && now < end;
+  const start = parseTimestamp(entry.start_timestamp || entry.start);
+  const end = parseTimestamp(entry.stop_timestamp || entry.end);
+  if (!start || !end) return false;
+  return now >= start.getTime() && now < end.getTime();
 }
 
 interface Props {
