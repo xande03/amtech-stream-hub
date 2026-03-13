@@ -1,0 +1,128 @@
+import { useState, useEffect } from 'react';
+import { getShortEpg, EpgEntry } from '@/services/xtreamApi';
+import { useAuth } from '@/contexts/AuthContext';
+import { Clock, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+
+function formatTime(ts: string | number): string {
+  const date = typeof ts === 'number' ? new Date(ts * 1000) : new Date(ts);
+  return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+
+function isNow(entry: EpgEntry): boolean {
+  const now = Date.now();
+  const start = typeof entry.start_timestamp === 'number'
+    ? entry.start_timestamp * 1000
+    : new Date(entry.start_timestamp || entry.start).getTime();
+  const end = typeof entry.stop_timestamp === 'number'
+    ? entry.stop_timestamp * 1000
+    : new Date(entry.stop_timestamp || entry.end).getTime();
+  return now >= start && now < end;
+}
+
+interface Props {
+  streamId: number;
+  compact?: boolean;
+}
+
+export default function ChannelEpgPanel({ streamId, compact = false }: Props) {
+  const { accessCode } = useAuth();
+  const [entries, setEntries] = useState<EpgEntry[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  const loadEpg = () => {
+    if (loaded || !accessCode) return;
+    setLoading(true);
+    getShortEpg(accessCode, streamId, 8)
+      .then(setEntries)
+      .catch(() => setEntries([]))
+      .finally(() => { setLoading(false); setLoaded(true); });
+  };
+
+  // Load on expand
+  useEffect(() => {
+    if (expanded) loadEpg();
+  }, [expanded]);
+
+  const currentProgram = entries.find(isNow);
+  const upcomingPrograms = entries.filter(e => !isNow(e));
+
+  if (compact) {
+    // Just show "now playing" text inline
+    return (
+      <button
+        onClick={(e) => { e.stopPropagation(); setExpanded(v => !v); }}
+        className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors w-full"
+      >
+        <Clock className="w-3 h-3 flex-shrink-0" />
+        {loading ? (
+          <Loader2 className="w-3 h-3 animate-spin" />
+        ) : currentProgram ? (
+          <span className="truncate text-left">
+            <span className="text-primary font-medium">Agora:</span> {currentProgram.title}
+          </span>
+        ) : loaded ? (
+          <span className="italic">Sem programação</span>
+        ) : (
+          <span>Ver programação</span>
+        )}
+        {loaded && entries.length > 0 && (
+          expanded ? <ChevronUp className="w-3 h-3 flex-shrink-0 ml-auto" /> : <ChevronDown className="w-3 h-3 flex-shrink-0 ml-auto" />
+        )}
+      </button>
+    );
+  }
+
+  return (
+    <div onClick={e => e.stopPropagation()}>
+      <button
+        onClick={() => setExpanded(v => !v)}
+        className="flex items-center gap-1.5 w-full text-left px-1 py-1 rounded-md hover:bg-secondary/60 transition-colors"
+      >
+        <Clock className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+        {loading ? (
+          <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
+        ) : currentProgram ? (
+          <span className="text-xs truncate">
+            <span className="text-primary font-semibold">Agora:</span>{' '}
+            <span className="text-foreground">{currentProgram.title}</span>
+          </span>
+        ) : loaded ? (
+          <span className="text-xs text-muted-foreground italic">Sem programação</span>
+        ) : (
+          <span className="text-xs text-muted-foreground">Ver programação</span>
+        )}
+        {loaded && entries.length > 0 && (
+          expanded ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground ml-auto flex-shrink-0" /> : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground ml-auto flex-shrink-0" />
+        )}
+      </button>
+
+      {expanded && loaded && entries.length > 0 && (
+        <div className="mt-1 space-y-0.5 max-h-40 overflow-y-auto">
+          {entries.map((entry, i) => {
+            const now = isNow(entry);
+            return (
+              <div
+                key={entry.id || i}
+                className={`flex items-start gap-2 px-2 py-1.5 rounded-md text-xs ${
+                  now ? 'bg-primary/10 border border-primary/30' : 'hover:bg-secondary/40'
+                }`}
+              >
+                <span className={`font-mono flex-shrink-0 ${now ? 'text-primary font-bold' : 'text-muted-foreground'}`}>
+                  {formatTime(entry.start_timestamp || entry.start)}
+                </span>
+                <span className={`truncate ${now ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                  {entry.title}
+                </span>
+                {now && (
+                  <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-destructive animate-pulse mt-1" />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
