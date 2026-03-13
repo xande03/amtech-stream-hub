@@ -597,8 +597,8 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
               <Cast className="w-5 h-5 text-foreground" />
             </button>
           )}
-          {document.pictureInPictureEnabled && (
-            <button onClick={togglePip} className={`p-2 rounded-full backdrop-blur-sm hover:bg-secondary transition-colors ${isPip ? 'bg-primary/60' : 'bg-secondary/60'}`}>
+          {isPipSupported && (
+            <button onClick={togglePip} className={`p-2 rounded-full backdrop-blur-sm hover:bg-secondary transition-colors ${isPip ? 'bg-primary/60' : 'bg-secondary/60'}`} title="Picture in Picture">
               <PictureInPicture2 className="w-5 h-5 text-foreground" />
             </button>
           )}
