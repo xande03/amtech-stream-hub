@@ -108,7 +108,7 @@ export default function ChannelEpgPanel({ streamId, compact = false }: Props) {
         ) : currentProgram ? (
           <span className="text-xs truncate">
             <span className="text-primary font-semibold">Agora:</span>{' '}
-            <span className="text-foreground">{currentProgram.title}</span>
+            <span className="text-foreground">{decodeBase64(currentProgram.title)}</span>
           </span>
         ) : loaded ? (
           <span className="text-xs text-muted-foreground italic">Sem programação</span>
