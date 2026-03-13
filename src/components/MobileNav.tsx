@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Home, Tv, Film, Clapperboard, Heart, Clock, MoreHorizontal, Settings, X, Sparkles } from 'lucide-react';
+import { Home, Tv, Film, Clapperboard, Heart, Clock, MoreHorizontal, Settings, X, Sparkles, Download } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import amtechIcon from '@/assets/amtech-icon.png';
@@ -12,6 +12,7 @@ const items = [
   { path: '/series', icon: Clapperboard, label: 'Séries', color: 'from-emerald-500 to-teal-600', glow: 'shadow-emerald-500/25' },
   { path: '/favorites', icon: Heart, label: 'Favoritos', color: 'from-pink-500 to-rose-600', glow: 'shadow-pink-500/25' },
   { path: '/history', icon: Clock, label: 'Histórico', color: 'from-sky-500 to-blue-600', glow: 'shadow-sky-500/25' },
+  { path: '/downloads', icon: Download, label: 'Downloads', color: 'from-cyan-500 to-sky-600', glow: 'shadow-cyan-500/25' },
   { path: '/finder', icon: Sparkles, label: 'Encontrar', color: 'from-fuchsia-500 to-purple-600', glow: 'shadow-fuchsia-500/25' },
   { path: '/settings', icon: Settings, label: 'Configurações', color: 'from-slate-400 to-slate-600', glow: 'shadow-slate-500/25' },
 ];

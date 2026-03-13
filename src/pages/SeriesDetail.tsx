@@ -8,10 +8,12 @@ import ContentCard from '@/components/ContentCard';
 import ContentRow from '@/components/ContentRow';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { Play, Heart, ArrowLeft, Star, CheckCircle2, RotateCcw } from 'lucide-react';
+import { Play, Heart, ArrowLeft, Star, CheckCircle2, RotateCcw, Download, Loader2 } from 'lucide-react';
 import { SeriesDetailSkeleton } from '@/components/LoadingSkeleton';
 import YouTubeTrailer from '@/components/YouTubeTrailer';
 import { backdropImage, posterImage, episodeThumbnail } from '@/lib/imageProxy';
+import { useDownloads } from '@/hooks/useDownloads';
+import { getStreamUrl } from '@/services/xtreamApi';
 
 export default function SeriesDetail() {
   const { id } = useParams<{ id: string }>();
@@ -19,6 +21,7 @@ export default function SeriesDetail() {
   const navigate = useNavigate();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { addToHistory, history, getResumeTime } = useWatchHistory();
+  const { startDownload, isDownloaded, getDownloadStatus } = useDownloads();
   const [seriesInfo, setSeriesInfo] = useState<SeriesInfo | null>(null);
   const [allSeries, setAllSeries] = useState<Series[]>([]);
   const [selectedSeason, setSelectedSeason] = useState<string>('');
@@ -196,6 +199,39 @@ export default function SeriesDetail() {
                     })()}
                     {ep.info?.plot && <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{ep.info.plot}</p>}
                   </div>
+
+                  {/* Download button */}
+                  <button
+                    className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 self-center"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      if (!accessCode || !seriesInfo) return;
+                      const epInfo = `S${ep.season}E${ep.episode_num}`;
+                      if (isDownloaded(ep.id, 'series', epInfo)) return;
+                      try {
+                        const ext = ep.container_extension || 'mp4';
+                        const url = await getStreamUrl(accessCode, 'series', ep.id, ext);
+                        startDownload({
+                          id: ep.id,
+                          type: 'series',
+                          name: seriesInfo.info.name,
+                          icon: seriesInfo.info.cover || '',
+                          url,
+                          episodeInfo: epInfo,
+                          episodeTitle: ep.title,
+                          seriesId: seriesInfo.info.series_id,
+                        });
+                      } catch { /* ignore */ }
+                    }}
+                  >
+                    {(() => {
+                      const epInfo = `S${ep.season}E${ep.episode_num}`;
+                      const dl = getDownloadStatus(ep.id, 'series', epInfo);
+                      if (dl?.status === 'completed') return <CheckCircle2 className="w-5 h-5 text-emerald-500" />;
+                      if (dl?.status === 'downloading') return <Loader2 className="w-5 h-5 animate-spin text-primary" />;
+                      return <Download className="w-5 h-5" />;
+                    })()}
+                  </button>
                 </div>
               </motion.div>
             );

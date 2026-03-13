@@ -17,6 +17,7 @@ import PlayerPage from "@/pages/PlayerPage";
 import Favorites from "@/pages/Favorites";
 import MovieFinder from "@/pages/MovieFinder";
 import History from "@/pages/History";
+import Downloads from "@/pages/Downloads";
 
 import SettingsPage from "@/pages/SettingsPage";
 import AdminPage from "@/pages/AdminPage";
@@ -49,6 +50,7 @@ function AppRoutes() {
       <Route path="/favorites" element={<AppLayout><Favorites /></AppLayout>} />
       <Route path="/finder" element={<AppLayout><MovieFinder /></AppLayout>} />
       <Route path="/history" element={<AppLayout><History /></AppLayout>} />
+      <Route path="/downloads" element={<AppLayout><Downloads /></AppLayout>} />
       
       <Route path="/settings" element={<AppLayout><SettingsPage /></AppLayout>} />
       <Route path="*" element={<NotFound />} />

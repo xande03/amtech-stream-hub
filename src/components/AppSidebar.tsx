@@ -1,9 +1,10 @@
-import { Home, Tv, Film, Clapperboard, Heart, Clock, Settings, Sparkles } from 'lucide-react';
+import { Home, Tv, Film, Clapperboard, Heart, Clock, Settings, Sparkles, Download } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
 import amtechIcon from '@/assets/amtech-icon.png';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
+import { useDownloads } from '@/hooks/useDownloads';
 import {
   Sidebar,
   SidebarContent,
@@ -24,6 +25,7 @@ const navItems = [
   { title: 'Séries', subtitle: 'Episódios', url: '/series', icon: Clapperboard, color: 'from-violet-500 to-purple-500' },
   { title: 'Favoritos', subtitle: 'Seus favoritos', url: '/favorites', icon: Heart, color: 'from-red-500 to-rose-400', badgeKey: 'favorites' as const },
   { title: 'Histórico', subtitle: 'Assistidos', url: '/history', icon: Clock, color: 'from-emerald-500 to-green-400', badgeKey: 'history' as const },
+  { title: 'Downloads', subtitle: 'Baixados', url: '/downloads', icon: Download, color: 'from-cyan-500 to-sky-400', badgeKey: 'downloads' as const },
   { title: 'Encontrar Filme', subtitle: 'IA Assistente', url: '/finder', icon: Sparkles, color: 'from-amber-500 to-orange-500' },
   { title: 'Configurações', subtitle: 'Ajustes', url: '/settings', icon: Settings, color: 'from-slate-500 to-gray-400' },
 ];
@@ -34,10 +36,12 @@ export default function AppSidebar() {
   const { playlistName } = useAuth();
   const { favorites } = useFavorites();
   const { history } = useWatchHistory();
+  const { downloads } = useDownloads();
 
   const badgeCounts = {
     favorites: favorites.length,
     history: history.length,
+    downloads: downloads.length,
   };
 
   return (
