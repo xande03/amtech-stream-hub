@@ -106,10 +106,24 @@ export default function PlayerPage() {
     const streamType = type as 'live' | 'movie' | 'series';
 
     if (!isLive) {
-      // VOD: use proxy to avoid mixed-content (HTTP→HTTPS) blocking
+      // VOD: try proxy first (avoids mixed-content), fall back to direct URL
       const proxyUrl = getProxyStreamUrl(accessCode, streamType, id, ext || 'mp4');
-      setStreamUrl(proxyUrl);
-      setLoading(false);
+      // Test proxy with a small range request; if it fails (403), use direct URL
+      fetch(proxyUrl, { method: 'HEAD' })
+        .then(res => {
+          if (res.ok || res.status === 206) {
+            setStreamUrl(proxyUrl);
+          } else {
+            throw new Error('proxy failed');
+          }
+        })
+        .catch(() => {
+          // Proxy blocked by provider — fall back to direct URL
+          return getStreamUrl(accessCode, streamType, id, ext || 'mp4')
+            .then(url => setStreamUrl(url));
+        })
+        .catch(err => setError(err.message))
+        .finally(() => setLoading(false));
       return;
     }
 
