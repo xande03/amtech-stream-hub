@@ -106,14 +106,10 @@ export default function PlayerPage() {
     const streamType = type as 'live' | 'movie' | 'series';
 
     if (!isLive) {
-      // VOD: get direct stream URL — browser loads it directly from user's IP
-      // IPTV providers often block datacenter IPs, so proxy doesn't work for VOD
+      // VOD: load directly from user's browser (IPTV providers block datacenter IPs)
+      // Edge function returns HTTPS URL to avoid mixed-content blocking
       getStreamUrl(accessCode, streamType, id, ext || 'mp4')
-        .then(url => {
-          // Ensure HTTPS to avoid mixed-content blocking on HTTPS pages
-          const secureUrl = url.replace(/^http:\/\//, 'https://');
-          setStreamUrl(secureUrl);
-        })
+        .then(url => setStreamUrl(url))
         .catch(err => setError(err.message))
         .finally(() => setLoading(false));
       return;
