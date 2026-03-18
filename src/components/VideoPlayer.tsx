@@ -58,6 +58,12 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const statusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Double-tap seek state
+  const [doubleTapSide, setDoubleTapSide] = useState<'left' | 'right' | null>(null);
+  const [doubleTapCount, setDoubleTapCount] = useState(0);
+  const lastTapRef = useRef<{ time: number; x: number }>({ time: 0, x: 0 });
+  const doubleTapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const onStreamErrorRef = useRef(onStreamError);
   onStreamErrorRef.current = onStreamError;
   const onProgressRef = useRef(onProgress);
@@ -465,6 +471,45 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
 
   const retry = () => { retryCountRef.current = 0; loadSource(); };
 
+  // Double-tap to seek ±10s
+  const handleDoubleTap = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    if (isLive) return;
+    const touch = e.changedTouches[0];
+    if (!touch || !containerRef.current) return;
+    const now = Date.now();
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = touch.clientX - rect.left;
+    const side = x < rect.width / 2 ? 'left' : 'right';
+    const prev = lastTapRef.current;
+    const delta = now - prev.time;
+    const sameSide = side === (prev.x < rect.width / 2 ? 'left' : 'right');
+
+    lastTapRef.current = { time: now, x };
+
+    if (delta < 350 && sameSide) {
+      // Double tap detected
+      e.preventDefault();
+      const video = videoRef.current;
+      if (!video) return;
+      if (side === 'left') {
+        video.currentTime = Math.max(0, video.currentTime - 10);
+      } else {
+        video.currentTime = Math.min(video.duration || 0, video.currentTime + 10);
+      }
+      // Visual feedback
+      setDoubleTapSide(side);
+      setDoubleTapCount(c => {
+        if (doubleTapTimerRef.current) clearTimeout(doubleTapTimerRef.current);
+        const next = c + 1;
+        doubleTapTimerRef.current = setTimeout(() => {
+          setDoubleTapSide(null);
+          setDoubleTapCount(0);
+        }, 600);
+        return next;
+      });
+    }
+  }, [isLive]);
+
   // Remote Playback API (Cast/Airplay)
   useEffect(() => {
     const video = videoRef.current;
@@ -515,7 +560,7 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
     : qualityLevels.find(l => l.index === currentQuality)?.label || 'Auto';
 
   return (
-    <div ref={containerRef} className="relative bg-background w-full h-full">
+    <div ref={containerRef} className="relative bg-background w-full h-full" onTouchEnd={handleDoubleTap}>
       {/* Top bar */}
       <div className="absolute top-0 left-0 right-0 z-10 flex items-center gap-3 p-3 md:p-4 bg-gradient-to-b from-background/80 to-transparent">
         <button onClick={() => {
@@ -686,6 +731,26 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
       {/* Click overlay to close menus */}
       {(showQualityMenu || showSpeedMenu) && (
         <div className="absolute inset-0 z-15" onClick={() => { setShowQualityMenu(false); setShowSpeedMenu(false); }} />
+      )}
+
+      {/* Double-tap seek feedback overlay */}
+      {doubleTapSide && (
+        <div
+          className={`absolute top-0 bottom-0 z-20 flex items-center justify-center pointer-events-none animate-fade-in ${
+            doubleTapSide === 'left' ? 'left-0 w-1/2' : 'right-0 w-1/2'
+          }`}
+        >
+          <div className="flex flex-col items-center gap-1 bg-background/40 backdrop-blur-sm rounded-full px-6 py-4">
+            {doubleTapSide === 'left' ? (
+              <RotateCcw className="w-8 h-8 text-foreground animate-spin" style={{ animationDuration: '0.5s', animationIterationCount: 1 }} />
+            ) : (
+              <SkipForward className="w-8 h-8 text-foreground" />
+            )}
+            <span className="text-foreground text-sm font-semibold">
+              {doubleTapCount * 10}s
+            </span>
+          </div>
+        </div>
       )}
 
       <video
