@@ -560,7 +560,7 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
     : qualityLevels.find(l => l.index === currentQuality)?.label || 'Auto';
 
   return (
-    <div ref={containerRef} className="relative bg-background w-full h-full">
+    <div ref={containerRef} className="relative bg-background w-full h-full" onTouchEnd={handleDoubleTap}>
       {/* Top bar */}
       <div className="absolute top-0 left-0 right-0 z-10 flex items-center gap-3 p-3 md:p-4 bg-gradient-to-b from-background/80 to-transparent">
         <button onClick={() => {
