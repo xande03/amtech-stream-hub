@@ -471,6 +471,45 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
 
   const retry = () => { retryCountRef.current = 0; loadSource(); };
 
+  // Double-tap to seek ±10s
+  const handleDoubleTap = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    if (isLive) return;
+    const touch = e.changedTouches[0];
+    if (!touch || !containerRef.current) return;
+    const now = Date.now();
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = touch.clientX - rect.left;
+    const side = x < rect.width / 2 ? 'left' : 'right';
+    const prev = lastTapRef.current;
+    const delta = now - prev.time;
+    const sameSide = side === (prev.x < rect.width / 2 ? 'left' : 'right');
+
+    lastTapRef.current = { time: now, x };
+
+    if (delta < 350 && sameSide) {
+      // Double tap detected
+      e.preventDefault();
+      const video = videoRef.current;
+      if (!video) return;
+      if (side === 'left') {
+        video.currentTime = Math.max(0, video.currentTime - 10);
+      } else {
+        video.currentTime = Math.min(video.duration || 0, video.currentTime + 10);
+      }
+      // Visual feedback
+      setDoubleTapSide(side);
+      setDoubleTapCount(c => {
+        if (doubleTapTimerRef.current) clearTimeout(doubleTapTimerRef.current);
+        const next = c + 1;
+        doubleTapTimerRef.current = setTimeout(() => {
+          setDoubleTapSide(null);
+          setDoubleTapCount(0);
+        }, 600);
+        return next;
+      });
+    }
+  }, [isLive]);
+
   // Remote Playback API (Cast/Airplay)
   useEffect(() => {
     const video = videoRef.current;
