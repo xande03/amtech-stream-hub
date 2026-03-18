@@ -733,6 +733,26 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
         <div className="absolute inset-0 z-15" onClick={() => { setShowQualityMenu(false); setShowSpeedMenu(false); }} />
       )}
 
+      {/* Double-tap seek feedback overlay */}
+      {doubleTapSide && (
+        <div
+          className={`absolute top-0 bottom-0 z-20 flex items-center justify-center pointer-events-none animate-fade-in ${
+            doubleTapSide === 'left' ? 'left-0 w-1/2' : 'right-0 w-1/2'
+          }`}
+        >
+          <div className="flex flex-col items-center gap-1 bg-background/40 backdrop-blur-sm rounded-full px-6 py-4">
+            {doubleTapSide === 'left' ? (
+              <RotateCcw className="w-8 h-8 text-foreground animate-spin" style={{ animationDuration: '0.5s', animationIterationCount: 1 }} />
+            ) : (
+              <SkipForward className="w-8 h-8 text-foreground" />
+            )}
+            <span className="text-foreground text-sm font-semibold">
+              {doubleTapCount * 10}s
+            </span>
+          </div>
+        </div>
+      )}
+
       <video
         ref={videoRef}
         className="w-full h-full object-contain"
