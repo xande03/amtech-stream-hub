@@ -58,6 +58,12 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const statusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Double-tap seek state
+  const [doubleTapSide, setDoubleTapSide] = useState<'left' | 'right' | null>(null);
+  const [doubleTapCount, setDoubleTapCount] = useState(0);
+  const lastTapRef = useRef<{ time: number; x: number }>({ time: 0, x: 0 });
+  const doubleTapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const onStreamErrorRef = useRef(onStreamError);
   onStreamErrorRef.current = onStreamError;
   const onProgressRef = useRef(onProgress);
