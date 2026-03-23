@@ -155,6 +155,34 @@ export default function SeriesDetail() {
                 <Heart className={`w-5 h-5 ${isFavorite(info.series_id, 'series') ? 'fill-primary text-primary' : 'text-foreground'}`} />
               </button>
 
+              <button 
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  if (!accessCode || !seriesInfo || currentEpisodes.length === 0) return;
+                  const firstUnwatched = currentEpisodes.find(ep => getEpisodeProgress(ep.id) < 90) || currentEpisodes[0];
+                  if (!firstUnwatched) return;
+                  const epInfo = `S${firstUnwatched.season}E${firstUnwatched.episode_num}`;
+                  if (isDownloaded(firstUnwatched.id, 'series', epInfo)) return;
+                  try {
+                    const ext = firstUnwatched.container_extension || 'mp4';
+                    const url = await getStreamUrl(accessCode, 'series', firstUnwatched.id, ext);
+                    startDownload({
+                      id: firstUnwatched.id,
+                      type: 'series',
+                      name: seriesInfo.info.name,
+                      icon: seriesInfo.info.cover || '',
+                      url,
+                      episodeInfo: epInfo,
+                      episodeTitle: firstUnwatched.title,
+                      seriesId: seriesInfo.info.series_id,
+                    });
+                  } catch { /* ignore */ }
+                }}
+                className="flex-shrink-0 p-3.5 md:p-4 rounded-full border border-border bg-background transition-colors hover:bg-secondary flex items-center justify-center"
+              >
+                <Download className="w-5 h-5 text-foreground" />
+              </button>
+
               {info.youtube_trailer && (
                 <div className="flex-shrink-0">
                   <YouTubeTrailer trailer={info.youtube_trailer} buttonClassName="rounded-full px-5 py-5 border-border text-foreground hover:bg-secondary font-medium" />

@@ -155,14 +155,12 @@ export default function MovieDetail() {
               </Button>
             )}
 
-            <div className="flex items-center justify-center md:justify-start gap-4 py-2">
+            <div className="flex items-center justify-start gap-2 py-2 w-full overflow-x-auto no-scrollbar pl-1 pr-4 md:pl-0">
               <button 
                 onClick={() => toggleFavorite({ id: movie.stream_id, type: 'movie', name: movie.name, icon: movie.stream_icon })} 
-                className="flex flex-col items-center gap-2 group"
+                className={`flex-shrink-0 p-3.5 md:p-4 rounded-full border border-border bg-background transition-colors hover:bg-secondary flex items-center justify-center ${isFavorite(movie.stream_id, 'movie') ? 'border-primary/50' : ''}`}
               >
-                <div className={`p-4 rounded-full border border-border bg-background transition-colors group-hover:bg-secondary ${isFavorite(movie.stream_id, 'movie') ? 'border-primary/50' : ''}`}>
-                  <Heart className={`w-5 h-5 ${isFavorite(movie.stream_id, 'movie') ? 'fill-primary text-primary' : 'text-foreground'}`} />
-                </div>
+                <Heart className={`w-5 h-5 ${isFavorite(movie.stream_id, 'movie') ? 'fill-primary text-primary' : 'text-foreground'}`} />
               </button>
 
               <button 
@@ -175,27 +173,23 @@ export default function MovieDetail() {
                   } catch { /* ignore */ }
                 }}
                 disabled={isDownloaded(movie.stream_id, 'movie')}
-                className="flex flex-col items-center gap-2 group"
+                className="flex-shrink-0 p-3.5 md:p-4 rounded-full border border-border bg-background transition-colors hover:bg-secondary flex items-center justify-center disabled:opacity-50"
               >
-                <div className="p-4 rounded-full border border-border bg-background transition-colors group-hover:bg-secondary disabled:opacity-50">
-                  {(() => {
-                    const dl = getDownloadStatus(movie.stream_id, 'movie');
-                    if (dl?.status === 'completed') return <CheckCircle2 className="w-5 h-5 text-primary" />;
-                    if (dl?.status === 'downloading') return <Loader2 className="w-5 h-5 animate-spin" />;
-                    return <Download className="w-5 h-5 text-foreground" />;
-                  })()}
-                </div>
+                {(() => {
+                  const dl = getDownloadStatus(movie.stream_id, 'movie');
+                  if (dl?.status === 'completed') return <CheckCircle2 className="w-5 h-5 text-primary" />;
+                  if (dl?.status === 'downloading') return <Loader2 className="w-5 h-5 animate-spin" />;
+                  return <Download className="w-5 h-5 text-foreground" />;
+                })()}
               </button>
 
               {trailerValue && (
-                <div className="flex flex-col items-center gap-2 group">
-                  <div className="p-4 rounded-full border border-border bg-background transition-colors group-hover:bg-secondary">
-                    <YouTubeTrailer trailer={trailerValue} className="w-5 h-5 text-foreground" />
-                  </div>
+                <div className="flex-shrink-0">
+                  <YouTubeTrailer trailer={trailerValue} buttonClassName="rounded-full px-5 py-5 border-border text-foreground hover:bg-secondary font-medium" />
                 </div>
               )}
               
-              <Button variant="outline" className="rounded-full px-6 py-6 border-border text-foreground hover:bg-secondary ml-2 font-medium">
+              <Button variant="outline" className="flex-shrink-0 rounded-full px-5 py-5 border-border text-foreground hover:bg-secondary font-medium h-auto">
                 Outras fontes
               </Button>
             </div>
