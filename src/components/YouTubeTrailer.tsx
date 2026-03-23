@@ -13,9 +13,10 @@ function extractYouTubeId(input: string): string | null {
 
 interface YouTubeTrailerProps {
   trailer: string;
+  buttonClassName?: string;
 }
 
-export default function YouTubeTrailer({ trailer }: YouTubeTrailerProps) {
+export default function YouTubeTrailer({ trailer, buttonClassName }: YouTubeTrailerProps) {
   const [open, setOpen] = useState(false);
   const videoId = extractYouTubeId(trailer);
 
@@ -26,7 +27,7 @@ export default function YouTubeTrailer({ trailer }: YouTubeTrailerProps) {
       <Button
         variant="outline"
         onClick={() => setOpen(!open)}
-        className="border-border text-foreground hover:bg-secondary"
+        className={buttonClassName || "border-border text-foreground hover:bg-secondary"}
       >
         {open ? <X className="w-4 h-4 mr-2" /> : <Youtube className="w-4 h-4 mr-2 text-destructive" />}
         {open ? 'Fechar Trailer' : 'Trailer'}

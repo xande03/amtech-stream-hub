@@ -102,37 +102,75 @@ export default function SeriesDetail() {
   const backdrop = info.backdrop_path?.[0] || '';
 
   return (
-    <div>
+    <div className="pb-24">
       {/* Backdrop banner */}
-      {backdrop && (
-        <div className="relative -mx-4 -mt-4 md:-mx-6 md:-mt-6 mb-6 h-48 md:h-72 overflow-hidden rounded-b-2xl">
-          <img src={backdropImage(backdrop)} alt="" className="w-full h-full object-cover" onError={(e) => { const img = e.target as HTMLImageElement; if (!img.dataset.retried) { img.dataset.retried = '1'; img.src = backdrop; return; } img.style.display = 'none'; }} />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+      <div className="relative -mx-4 -mt-4 md:-mx-6 md:-mt-6 mb-6 md:h-96 md:aspect-auto aspect-[3/4] overflow-hidden">
+        <img src={backdrop ? backdropImage(backdrop) : posterImage(info.cover || '')} alt="" className="w-full h-full object-cover md:object-cover" onError={(e) => { const img = e.target as HTMLImageElement; if (!img.dataset.retried) { img.dataset.retried = '1'; img.src = backdrop || info.cover || ''; return; } img.style.display = 'none'; }} />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
+        
+        {/* Fixed back button overlay */}
+        <button onClick={() => navigate(-1)} className="absolute top-4 left-4 p-2 bg-black/40 backdrop-blur-md rounded-full text-white transition-colors">
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+      </div>
+
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center md:items-start md:flex-row gap-6 mb-8 md:px-4">
+        {/* Desktop Poster */}
+        <div className="hidden md:block w-64 flex-shrink-0">
+          <div className="aspect-[2/3] rounded-xl overflow-hidden bg-secondary shadow-lg">
+            {info.cover ? <img src={posterImage(info.cover)} alt={info.name} className="w-full h-full object-cover" onError={(e) => { const img = e.target as HTMLImageElement; if (!img.dataset.retried) { img.dataset.retried = '1'; img.src = info.cover; } }} /> : <div className="w-full h-full flex items-center justify-center text-muted-foreground">Sem capa</div>}
+          </div>
         </div>
-      )}
-      <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4 transition-colors"><ArrowLeft className="w-4 h-4" /> Voltar</button>
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <div className="flex flex-col md:flex-row gap-6 mb-8">
-          <div className="w-full md:w-56 flex-shrink-0">
-            <div className="aspect-[2/3] rounded-xl overflow-hidden bg-secondary">
-              {info.cover ? <img src={posterImage(info.cover)} alt={info.name} className="w-full h-full object-cover" onError={(e) => { const img = e.target as HTMLImageElement; if (!img.dataset.retried) { img.dataset.retried = '1'; img.src = info.cover; } }} /> : <div className="w-full h-full flex items-center justify-center text-muted-foreground">Sem capa</div>}
+
+        <div className="flex-1 w-full space-y-5 text-center md:text-left">
+          <h1 className="text-3xl md:text-4xl font-black text-foreground uppercase tracking-wide">{info.name}</h1>
+          
+          <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-sm font-medium text-muted-foreground">
+            {info.rating && <span className="flex items-center gap-1.5 bg-secondary/50 px-3 py-1 rounded-full"><Star className="w-4 h-4 fill-primary text-primary" /> {info.rating}</span>}
+            {info.releaseDate && <span className="px-3 py-1 rounded-full bg-secondary/50">{info.releaseDate.split('-')[0]}</span>}
+          </div>
+
+          {info.genre && (
+            <div className="font-medium text-foreground text-sm overflow-hidden text-ellipsis whitespace-nowrap px-4 md:px-0">
+              {info.genre.split(',').map(g => g.trim()).join(', ')}
+            </div>
+          )}
+
+          <div className="pt-2 px-4 md:px-0 flex flex-col gap-4">
+            <Button 
+              onClick={() => {
+                const firstUnwatched = currentEpisodes.find(ep => getEpisodeProgress(ep.id) < 90) || currentEpisodes[0];
+                if (firstUnwatched) handlePlayEpisode(firstUnwatched);
+              }} 
+              className="w-full py-6 text-base rounded-full bg-white hover:bg-white/90 text-black font-bold shadow-lg"
+            >
+              <Play className="w-5 h-5 mr-3 fill-black text-black" /> Reproduzir série
+            </Button>
+
+            <div className="flex items-center justify-start gap-2 py-2 w-full overflow-x-auto no-scrollbar pl-1 pr-4 md:pl-0">
+              <button 
+                onClick={() => toggleFavorite({ id: info.series_id, type: 'series', name: info.name, icon: info.cover })} 
+                className={`flex-shrink-0 p-3.5 md:p-4 rounded-full border border-border bg-background transition-colors hover:bg-secondary flex items-center justify-center ${isFavorite(info.series_id, 'series') ? 'border-primary/50' : ''}`}
+              >
+                <Heart className={`w-5 h-5 ${isFavorite(info.series_id, 'series') ? 'fill-primary text-primary' : 'text-foreground'}`} />
+              </button>
+
+              {info.youtube_trailer && (
+                <div className="flex-shrink-0">
+                  <YouTubeTrailer trailer={info.youtube_trailer} buttonClassName="rounded-full px-5 py-5 border-border text-foreground hover:bg-secondary font-medium" />
+                </div>
+              )}
+              
+              <Button variant="outline" className="flex-shrink-0 rounded-full px-5 py-5 border-border text-foreground hover:bg-secondary font-medium h-auto">
+                Outras fontes
+              </Button>
             </div>
           </div>
-          <div className="flex-1 space-y-3">
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground">{info.name}</h1>
-            <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
-              {info.rating && <span className="flex items-center gap-1"><Star className="w-4 h-4 text-primary" /> {info.rating}</span>}
-              {info.releaseDate && <span>{info.releaseDate}</span>}
-              {info.genre && <span>{info.genre}</span>}
-            </div>
-            {info.plot && <p className="text-muted-foreground text-sm leading-relaxed">{info.plot}</p>}
-            {info.cast && <p className="text-sm text-muted-foreground"><span className="text-foreground font-medium">Elenco:</span> {info.cast}</p>}
-            {info.director && <p className="text-sm text-muted-foreground"><span className="text-foreground font-medium">Diretor:</span> {info.director}</p>}
-            <Button variant="outline" onClick={() => toggleFavorite({ id: info.series_id, type: 'series', name: info.name, icon: info.cover })} className="border-border text-foreground hover:bg-secondary">
-              <Heart className={`w-4 h-4 mr-2 ${isFavorite(info.series_id, 'series') ? 'fill-destructive text-destructive' : ''}`} />
-              {isFavorite(info.series_id, 'series') ? 'Favoritado' : 'Favoritar'}
-            </Button>
-            {info.youtube_trailer && <YouTubeTrailer trailer={info.youtube_trailer} />}
+
+          <div className="px-4 md:px-0 text-left space-y-3 mt-4">
+            {info.plot && <p className="text-muted-foreground text-sm/relaxed select-text">{info.plot}</p>}
+            {info.cast && <p className="text-sm text-muted-foreground mt-4"><span className="text-foreground font-semibold">Elenco:</span> {info.cast}</p>}
+            {info.director && <p className="text-sm text-muted-foreground"><span className="text-foreground font-semibold">Diretor:</span> {info.director}</p>}
           </div>
         </div>
 
