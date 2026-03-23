@@ -94,18 +94,28 @@ export default function MovieDetail() {
   const backdrop = movieInfo?.backdrop_path?.[0] || info?.info?.backdrop_path?.[0] || '';
 
   return (
-    <div>
-      {/* Backdrop banner */}
-      {backdrop && (
-        <div className="relative -mx-4 -mt-4 md:-mx-6 md:-mt-6 mb-6 h-48 md:h-72 overflow-hidden rounded-b-2xl">
-          <img src={backdropImage(backdrop)} alt="" className="w-full h-full object-cover" onError={(e) => { const img = e.target as HTMLImageElement; if (!img.dataset.retried) { img.dataset.retried = '1'; img.src = backdrop; return; } img.style.display = 'none'; }} />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-        </div>
-      )}
-      <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4 transition-colors"><ArrowLeft className="w-4 h-4" /> Voltar</button>
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col md:flex-row gap-6">
-        <div className="w-full md:w-64 flex-shrink-0">
-          <div className="aspect-[2/3] rounded-xl overflow-hidden bg-secondary relative">
+    <div className="pb-24">
+      {/* Backdrop banner (Mobile: Full width poster-style, Desktop: classic backdrop) */}
+      <div className="relative -mx-4 -mt-4 md:-mx-6 md:-mt-6 mb-6 md:h-96 md:aspect-auto aspect-[3/4] overflow-hidden">
+        {/* On mobile, use poster if backdrop is missing, else backdrop. We'll use backdrop or poster */}
+        <img 
+          src={backdrop ? backdropImage(backdrop) : posterImage(movie.stream_icon || '')} 
+          alt="" 
+          className="w-full h-full object-cover md:object-cover" 
+          onError={(e) => { const img = e.target as HTMLImageElement; if (!img.dataset.retried) { img.dataset.retried = '1'; img.src = backdrop || movie.stream_icon || ''; return; } img.style.display = 'none'; }} 
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
+        
+        {/* Fixed back button overlay */}
+        <button onClick={() => navigate(-1)} className="absolute top-4 left-4 p-2 bg-black/40 backdrop-blur-md rounded-full text-white transition-colors">
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+      </div>
+
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center md:items-start md:flex-row gap-6 md:px-4">
+        {/* Desktop Poster (hidden on mobile as it's the backdrop) */}
+        <div className="hidden md:block w-64 flex-shrink-0">
+          <div className="aspect-[2/3] rounded-xl overflow-hidden bg-secondary relative shadow-lg">
             {movie.stream_icon ? <img src={posterImage(movie.stream_icon)} alt={movie.name} className="w-full h-full object-cover" onError={(e) => { const img = e.target as HTMLImageElement; if (!img.dataset.retried) { img.dataset.retried = '1'; img.src = movie.stream_icon; } }} /> : <div className="w-full h-full flex items-center justify-center text-muted-foreground">Sem capa</div>}
             {(() => {
               const movieProgress = history.find(h => String(h.id) === String(movie.stream_id) && h.type === 'movie');
@@ -117,58 +127,84 @@ export default function MovieDetail() {
               );
             })()}
           </div>
-          {(() => {
-            const movieProgress = history.find(h => String(h.id) === String(movie.stream_id) && h.type === 'movie');
-            if (!movieProgress?.progress || movieProgress.progress <= 0) return null;
-            return <p className="text-xs text-muted-foreground mt-1.5">{Math.round(movieProgress.progress)}% assistido</p>;
-          })()}
         </div>
-        <div className="flex-1 space-y-4">
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">{movie.name}</h1>
-          <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
-            {movie.rating && <span className="flex items-center gap-1"><Star className="w-4 h-4 text-primary" /> {movie.rating}</span>}
-            {duration && <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {duration}</span>}
-            {releaseDate && <span className="flex items-center gap-1"><Calendar className="w-4 h-4" /> {releaseDate}</span>}
+
+        <div className="flex-1 w-full space-y-5 text-center md:text-left">
+          <h1 className="text-3xl md:text-4xl font-black text-foreground uppercase tracking-wide">{movie.name}</h1>
+          
+          <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-sm font-medium text-muted-foreground">
+            {movie.rating && <span className="flex items-center gap-1.5 bg-secondary/50 px-3 py-1 rounded-full"><Star className="w-4 h-4 fill-primary text-primary" /> {movie.rating}</span>}
+            {releaseDate && <span className="px-3 py-1 rounded-full bg-secondary/50">{releaseDate.split('-')[0]}</span>}
+            {duration && <span className="flex items-center gap-1.5 px-3 py-1"><Clock className="w-4 h-4" /> {duration}</span>}
           </div>
-          {genre && <div className="flex flex-wrap gap-2">{genre.split(',').map((g: string) => <span key={g.trim()} className="px-2 py-1 rounded-full bg-secondary text-xs text-foreground">{g.trim()}</span>)}</div>}
-          {plot && <p className="text-muted-foreground text-sm leading-relaxed">{plot}</p>}
-          {cast && <p className="text-sm text-muted-foreground"><span className="text-foreground font-medium">Elenco:</span> {cast}</p>}
-          {director && <p className="text-sm text-muted-foreground"><span className="text-foreground font-medium">Diretor:</span> {director}</p>}
-          <div className="flex flex-wrap gap-3 pt-2">
+
+          {genre && (
+            <div className="font-medium text-foreground text-sm overflow-hidden text-ellipsis whitespace-nowrap px-4 md:px-0">
+              {genre.split(',').map(g => g.trim()).join(', ')}
+            </div>
+          )}
+
+          <div className="pt-2 px-4 md:px-0 flex flex-col gap-4">
             {resumeTime > 0 ? (
-              <Button onClick={handlePlay} className="gradient-primary text-primary-foreground font-medium px-6">
-                <RotateCcw className="w-4 h-4 mr-2" /> Retomar de {formatTime(resumeTime)}
+              <Button onClick={handlePlay} className="w-full py-6 text-base rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-lg shadow-primary/25">
+                <RotateCcw className="w-5 h-5 mr-2" /> Continuar Assistindo ({formatTime(resumeTime)})
               </Button>
             ) : (
-              <Button onClick={handlePlay} className="gradient-primary text-primary-foreground font-medium px-8">
-                <Play className="w-4 h-4 mr-2" /> Assistir
+              <Button onClick={handlePlay} className="w-full py-6 text-base rounded-full bg-white hover:bg-white/90 text-black font-bold shadow-lg">
+                <Play className="w-5 h-5 mr-3 fill-black text-black" /> Reproduzir filme
               </Button>
             )}
-            <Button variant="outline" onClick={() => toggleFavorite({ id: movie.stream_id, type: 'movie', name: movie.name, icon: movie.stream_icon })} className="border-border text-foreground hover:bg-secondary">
-              <Heart className={`w-4 h-4 mr-2 ${isFavorite(movie.stream_id, 'movie') ? 'fill-destructive text-destructive' : ''}`} />
-              {isFavorite(movie.stream_id, 'movie') ? 'Favoritado' : 'Favoritar'}
-            </Button>
-            <Button
-              variant="outline"
-              className="border-border text-foreground hover:bg-secondary"
-              disabled={isDownloaded(movie.stream_id, 'movie')}
-              onClick={async (e) => {
-                e.stopPropagation();
-                if (!accessCode || isDownloaded(movie.stream_id, 'movie')) return;
-                try {
-                  const url = await getStreamUrl(accessCode, 'movie', movie.stream_id, movie.container_extension || 'mp4');
-                  startDownload({ id: movie.stream_id, type: 'movie', name: movie.name, icon: movie.stream_icon || '', url });
-                } catch { /* ignore */ }
-              }}
-            >
-              {(() => {
-                const dl = getDownloadStatus(movie.stream_id, 'movie');
-                if (dl?.status === 'completed') return <><CheckCircle2 className="w-4 h-4 mr-2 text-emerald-500" /> Baixado</>;
-                if (dl?.status === 'downloading') return <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Baixando...</>;
-                return <><Download className="w-4 h-4 mr-2" /> Download</>;
-              })()}
-            </Button>
-            {trailerValue && <YouTubeTrailer trailer={trailerValue} />}
+
+            <div className="flex items-center justify-center md:justify-start gap-4 py-2">
+              <button 
+                onClick={() => toggleFavorite({ id: movie.stream_id, type: 'movie', name: movie.name, icon: movie.stream_icon })} 
+                className="flex flex-col items-center gap-2 group"
+              >
+                <div className={`p-4 rounded-full border border-border bg-background transition-colors group-hover:bg-secondary ${isFavorite(movie.stream_id, 'movie') ? 'border-primary/50' : ''}`}>
+                  <Heart className={`w-5 h-5 ${isFavorite(movie.stream_id, 'movie') ? 'fill-primary text-primary' : 'text-foreground'}`} />
+                </div>
+              </button>
+
+              <button 
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  if (!accessCode || isDownloaded(movie.stream_id, 'movie')) return;
+                  try {
+                    const url = await getStreamUrl(accessCode, 'movie', movie.stream_id, movie.container_extension || 'mp4');
+                    startDownload({ id: movie.stream_id, type: 'movie', name: movie.name, icon: movie.stream_icon || '', url });
+                  } catch { /* ignore */ }
+                }}
+                disabled={isDownloaded(movie.stream_id, 'movie')}
+                className="flex flex-col items-center gap-2 group"
+              >
+                <div className="p-4 rounded-full border border-border bg-background transition-colors group-hover:bg-secondary disabled:opacity-50">
+                  {(() => {
+                    const dl = getDownloadStatus(movie.stream_id, 'movie');
+                    if (dl?.status === 'completed') return <CheckCircle2 className="w-5 h-5 text-primary" />;
+                    if (dl?.status === 'downloading') return <Loader2 className="w-5 h-5 animate-spin" />;
+                    return <Download className="w-5 h-5 text-foreground" />;
+                  })()}
+                </div>
+              </button>
+
+              {trailerValue && (
+                <div className="flex flex-col items-center gap-2 group">
+                  <div className="p-4 rounded-full border border-border bg-background transition-colors group-hover:bg-secondary">
+                    <YouTubeTrailer trailer={trailerValue} className="w-5 h-5 text-foreground" />
+                  </div>
+                </div>
+              )}
+              
+              <Button variant="outline" className="rounded-full px-6 py-6 border-border text-foreground hover:bg-secondary ml-2 font-medium">
+                Outras fontes
+              </Button>
+            </div>
+          </div>
+
+          <div className="px-4 md:px-0 text-left space-y-3 mt-4">
+            {plot && <p className="text-muted-foreground text-sm/relaxed select-text">{plot}</p>}
+            {cast && <p className="text-sm text-muted-foreground mt-4"><span className="text-foreground font-semibold">Elenco:</span> {cast}</p>}
+            {director && <p className="text-sm text-muted-foreground"><span className="text-foreground font-semibold">Diretor:</span> {director}</p>}
           </div>
         </div>
       </motion.div>

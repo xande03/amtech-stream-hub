@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import Hls from 'hls.js';
-import { ArrowLeft, Maximize, Minimize, Volume2, VolumeX, RotateCcw, PictureInPicture2, SkipForward, Cast, Wifi, WifiOff, Loader2, Settings, Gauge } from 'lucide-react';
+import { ArrowLeft, Maximize, Minimize, Volume2, VolumeX, RotateCcw, PictureInPicture2, SkipForward, Cast, Airplay, Wifi, WifiOff, Loader2, Settings, Gauge } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface QualityLevel {
@@ -52,6 +52,7 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
   const [showQualityMenu, setShowQualityMenu] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
+  const [airplayAvailable, setAirplayAvailable] = useState(false);
   const retryCountRef = useRef(0);
   const hasResumedRef = useRef(false);
   const maxRetries = 8;
@@ -73,7 +74,7 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
   useEffect(() => {
     const lockLandscape = async () => {
       try {
-        const orientation = screen.orientation;
+        const orientation = screen.orientation as any;
         if (orientation?.lock) await orientation.lock('landscape');
       } catch {}
     };
@@ -93,7 +94,7 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
 
     return () => {
       clearTimeout(timer);
-      try { screen.orientation?.unlock?.(); } catch {}
+      try { (screen.orientation as any)?.unlock?.(); } catch {}
     };
   }, []);
 
@@ -535,6 +536,29 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
     };
   }, []);
 
+  // Airplay availability check
+  useEffect(() => {
+    if ((window as any).WebKitPlaybackTargetAvailabilityEvent) {
+      const video = videoRef.current;
+      if (!video) return;
+      const handleAvailability = (e: any) => {
+        setAirplayAvailable(e.availability === 'available');
+      };
+      video.addEventListener('webkitplaybacktargetavailabilitychanged', handleAvailability);
+      return () => video.removeEventListener('webkitplaybacktargetavailabilitychanged', handleAvailability);
+    } else if ((window as any).WebKitPlaybackTargetAvailabilityEvent) {
+       // Safari
+       setAirplayAvailable(true);
+    }
+  }, []);
+
+  const toggleAirplay = () => {
+    const video = videoRef.current;
+    if (video && (video as any).webkitShowPlaybackTargetPicker) {
+      (video as any).webkitShowPlaybackTargetPicker();
+    }
+  };
+
   const toggleCast = async () => {
     const video = videoRef.current;
     if (!video) return;
@@ -672,8 +696,13 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
             {muted ? <VolumeX className="w-5 h-5 text-foreground" /> : <Volume2 className="w-5 h-5 text-foreground" />}
           </button>
           {castAvailable && (
-            <button onClick={toggleCast} className={`p-2 rounded-full backdrop-blur-sm hover:bg-secondary transition-colors ${isCasting ? 'bg-primary/60' : 'bg-secondary/60'}`} title="Espelhar para TV">
+            <button onClick={toggleCast} className={`p-2 rounded-full backdrop-blur-sm hover:bg-secondary transition-colors ${isCasting ? 'bg-primary/60' : 'bg-secondary/60'}`} title="Transmitir (Chromecast)">
               <Cast className="w-5 h-5 text-foreground" />
+            </button>
+          )}
+          {airplayAvailable && (
+            <button onClick={toggleAirplay} className="p-2 rounded-full backdrop-blur-sm bg-secondary/60 hover:bg-secondary transition-colors" title="Espelhar (AirPlay)">
+              <Airplay className="w-5 h-5 text-foreground" />
             </button>
           )}
           {isPipSupported && (
@@ -758,6 +787,7 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
         className="w-full h-full object-contain"
         controls
         playsInline
+        x-webkit-airplay="allow"
         disablePictureInPicture={false}
         muted={muted}
         onTimeUpdate={handleTimeUpdate}
