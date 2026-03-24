@@ -8,10 +8,11 @@ import ContentCard from '@/components/ContentCard';
 import ContentRow from '@/components/ContentRow';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { Play, Heart, ArrowLeft, Star, CheckCircle2, RotateCcw, Download, Loader2, Youtube, X } from 'lucide-react';
+import { Play, Heart, ArrowLeft, Star, CheckCircle2, RotateCcw, Download, Loader2, Youtube, X, Cast } from 'lucide-react';
 import { SeriesDetailSkeleton } from '@/components/LoadingSkeleton';
 import { backdropImage, posterImage, episodeThumbnail } from '@/lib/imageProxy';
 import { useDownloads } from '@/hooks/useDownloads';
+import { useChromecast } from '@/hooks/useChromecast';
 import { getStreamUrl } from '@/services/xtreamApi';
 
 function extractYouTubeId(input: string): string | null {
@@ -28,6 +29,7 @@ export default function SeriesDetail() {
   const { isFavorite, toggleFavorite } = useFavorites();
   const { addToHistory, history, getResumeTime } = useWatchHistory();
   const { startDownload, isDownloaded, getDownloadStatus } = useDownloads();
+  const { castMedia } = useChromecast();
   const [seriesInfo, setSeriesInfo] = useState<SeriesInfo | null>(null);
   const [allSeries, setAllSeries] = useState<Series[]>([]);
   const [selectedSeason, setSelectedSeason] = useState<string>('');
@@ -219,8 +221,22 @@ export default function SeriesDetail() {
                 </Button>
               )}
               
-              <Button variant="outline" className="flex-shrink-0 rounded-full px-5 py-5 border-border text-foreground hover:bg-secondary font-medium h-auto">
-                Outras fontes
+              <Button 
+                variant="outline"
+                onClick={async () => {
+                  if (!accessCode || !seriesInfo || currentEpisodes.length === 0) return;
+                  const firstUnwatched = currentEpisodes.find(ep => getEpisodeProgress(ep.id) < 90) || currentEpisodes[0];
+                  if (!firstUnwatched) return;
+                  try {
+                    const ext = firstUnwatched.container_extension || 'mp4';
+                    const url = await getStreamUrl(accessCode, 'series', firstUnwatched.id, ext);
+                    castMedia(url, `${seriesInfo.info.name} - S${firstUnwatched.season}E${firstUnwatched.episode_num}`, seriesInfo.info.cover || '');
+                  } catch (e) { console.error('Error starting cast', e); }
+                }}
+                className="flex-shrink-0 rounded-full px-5 py-5 border-border text-foreground hover:bg-secondary font-medium h-auto"
+              >
+                <Cast className="w-5 h-5 mr-2" />
+                Chromecast
               </Button>
             </div>
           </div>
@@ -327,6 +343,23 @@ export default function SeriesDetail() {
                       if (dl?.status === 'downloading') return <Loader2 className="w-5 h-5 animate-spin text-primary" />;
                       return <Download className="w-5 h-5" />;
                     })()}
+                  </button>
+
+                  {/* Cast button for individual episode */}
+                  <button
+                    className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 self-center hidden sm:block"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      if (!accessCode || !seriesInfo) return;
+                      try {
+                        const ext = ep.container_extension || 'mp4';
+                        const url = await getStreamUrl(accessCode, 'series', ep.id, ext);
+                        castMedia(url, `${seriesInfo.info.name} - S${ep.season}E${ep.episode_num}`, seriesInfo.info.cover || '');
+                      } catch (err) { console.error('Cast error:', err); }
+                    }}
+                    title="Espelhar episódio"
+                  >
+                    <Cast className="w-5 h-5" />
                   </button>
                 </div>
               </motion.div>

@@ -8,10 +8,11 @@ import ContentCard from '@/components/ContentCard';
 import ContentRow from '@/components/ContentRow';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { Play, Heart, ArrowLeft, Star, Clock, Calendar, RotateCcw, Download, CheckCircle2, Loader2, Youtube, X } from 'lucide-react';
+import { Play, Heart, ArrowLeft, Star, Clock, Calendar, RotateCcw, Download, CheckCircle2, Loader2, Youtube, X, Cast } from 'lucide-react';
 import { DetailSkeleton } from '@/components/LoadingSkeleton';
 import { backdropImage, posterImage } from '@/lib/imageProxy';
 import { useDownloads } from '@/hooks/useDownloads';
+import { useChromecast } from '@/hooks/useChromecast';
 import { getStreamUrl } from '@/services/xtreamApi';
 
 function extractYouTubeId(input: string): string | null {
@@ -28,6 +29,7 @@ export default function MovieDetail() {
   const { isFavorite, toggleFavorite } = useFavorites();
   const { addToHistory, history, getResumeTime } = useWatchHistory();
   const { startDownload, isDownloaded, getDownloadStatus } = useDownloads();
+  const { castMedia } = useChromecast();
   const [movie, setMovie] = useState<VodStream | null>(null);
   const [allMovies, setAllMovies] = useState<VodStream[]>([]);
   const [info, setInfo] = useState<any>(null);
@@ -213,8 +215,20 @@ export default function MovieDetail() {
                 </Button>
               )}
               
-              <Button variant="outline" className="flex-shrink-0 rounded-full px-5 py-5 border-border text-foreground hover:bg-secondary font-medium h-auto">
-                Outras fontes
+              <Button 
+                variant="outline"
+                onClick={async () => {
+                  if (!accessCode || !movie) return;
+                  try {
+                    const ext = movie.container_extension || 'mp4';
+                    const url = await getStreamUrl(accessCode, 'movie', movie.stream_id, ext);
+                    castMedia(url, movie.name, movie.stream_icon || '');
+                  } catch (e) { console.error('Error starting cast', e); }
+                }}
+                className="flex-shrink-0 rounded-full px-5 py-5 border-border text-foreground hover:bg-secondary font-medium h-auto"
+              >
+                <Cast className="w-5 h-5 mr-2" />
+                Chromecast
               </Button>
             </div>
           </div>
