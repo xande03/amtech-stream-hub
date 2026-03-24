@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Heart } from 'lucide-react';
+import { Heart, Trash2 } from 'lucide-react';
 import { posterImage, posterSmall, iconImage, hdImage } from '@/lib/imageProxy';
 
 interface ContentCardProps {
@@ -11,6 +11,7 @@ interface ContentCardProps {
   isFavorite?: boolean;
   isNew?: boolean;
   onFavoriteToggle?: () => void;
+  onRemove?: () => void;
   onClick?: () => void;
   aspectRatio?: 'portrait' | 'landscape' | 'square';
   hdSize?: 'small' | 'normal';
@@ -24,6 +25,7 @@ export default function ContentCard({
   isFavorite,
   isNew,
   onFavoriteToggle,
+  onRemove,
   onClick,
   aspectRatio = 'portrait',
   hdSize = 'normal',
@@ -113,6 +115,18 @@ export default function ContentCard({
             <Heart
               className={`w-4 h-4 ${isFavorite ? 'fill-destructive text-destructive' : 'text-foreground'}`}
             />
+          </button>
+        )}
+
+        {onRemove && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove();
+            }}
+            className="absolute top-2 left-2 p-1.5 rounded-full bg-background/60 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-background/80"
+          >
+            <Trash2 className="w-4 h-4 text-destructive" />
           </button>
         )}
 

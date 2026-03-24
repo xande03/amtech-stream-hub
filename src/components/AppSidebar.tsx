@@ -1,5 +1,6 @@
-import { Home, Tv, Film, Clapperboard, Heart, Clock, Settings, Sparkles, Download } from 'lucide-react';
+import { Home, Tv, Film, Clapperboard, Heart, Clock, Settings, Sparkles, Download, Moon, Sun } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
+import { useTheme } from "next-themes";
 import { useAuth } from '@/contexts/AuthContext';
 import amtechIcon from '@/assets/amtech-icon.png';
 import { useFavorites } from '@/hooks/useFavorites';
@@ -37,6 +38,7 @@ export default function AppSidebar() {
   const { favorites } = useFavorites();
   const { history } = useWatchHistory();
   const { downloads } = useDownloads();
+  const { theme, setTheme } = useTheme();
 
   const badgeCounts = {
     favorites: favorites.length,
@@ -115,12 +117,21 @@ export default function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-3">
+      <SidebarFooter className="p-3 gap-2">
         {!collapsed && playlistName && (
           <div className="px-3 py-2 rounded-lg bg-sidebar-accent/40">
             <p className="text-[11px] text-muted-foreground truncate">📡 {playlistName}</p>
           </div>
         )}
+        <div className={`flex ${collapsed ? 'justify-center' : 'justify-end'}`}>
+          <button
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className={`flex items-center justify-center rounded-lg hover:bg-sidebar-accent transition-colors ${collapsed ? 'p-2 w-9 h-9' : 'p-2'}`}
+            title="Alternar Tema"
+          >
+            {theme === 'dark' ? <Sun className={`text-sidebar-foreground ${collapsed ? 'w-[18px] h-[18px]' : 'w-5 h-5'}`} /> : <Moon className={`text-sidebar-foreground ${collapsed ? 'w-[18px] h-[18px]' : 'w-5 h-5'}`} />}
+          </button>
+        </div>
       </SidebarFooter>
     </Sidebar>
   );

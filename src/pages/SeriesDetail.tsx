@@ -8,12 +8,18 @@ import ContentCard from '@/components/ContentCard';
 import ContentRow from '@/components/ContentRow';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { Play, Heart, ArrowLeft, Star, CheckCircle2, RotateCcw, Download, Loader2 } from 'lucide-react';
+import { Play, Heart, ArrowLeft, Star, CheckCircle2, RotateCcw, Download, Loader2, Youtube, X } from 'lucide-react';
 import { SeriesDetailSkeleton } from '@/components/LoadingSkeleton';
-import YouTubeTrailer from '@/components/YouTubeTrailer';
 import { backdropImage, posterImage, episodeThumbnail } from '@/lib/imageProxy';
 import { useDownloads } from '@/hooks/useDownloads';
 import { getStreamUrl } from '@/services/xtreamApi';
+
+function extractYouTubeId(input: string): string | null {
+  if (!input) return null;
+  if (/^[\w-]{11}$/.test(input)) return input;
+  const match = input.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/))([^\s&?#]+)/);
+  return match?.[1] || null;
+}
 
 export default function SeriesDetail() {
   const { id } = useParams<{ id: string }>();
@@ -26,6 +32,7 @@ export default function SeriesDetail() {
   const [allSeries, setAllSeries] = useState<Series[]>([]);
   const [selectedSeason, setSelectedSeason] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const [showTrailer, setShowTrailer] = useState(false);
 
   useEffect(() => {
     if (!accessCode || !id) return;
@@ -100,18 +107,40 @@ export default function SeriesDetail() {
   const currentEpisodes = episodes[selectedSeason] || [];
 
   const backdrop = info.backdrop_path?.[0] || '';
+  const videoId = extractYouTubeId(info.youtube_trailer || '');
 
   return (
     <div className="pb-24">
       {/* Backdrop banner */}
-      <div className="relative -mx-4 -mt-4 md:-mx-6 md:-mt-6 mb-6 md:h-96 md:aspect-auto aspect-[3/4] overflow-hidden">
-        <img src={backdrop ? backdropImage(backdrop) : posterImage(info.cover || '')} alt="" className="w-full h-full object-cover md:object-cover" onError={(e) => { const img = e.target as HTMLImageElement; if (!img.dataset.retried) { img.dataset.retried = '1'; img.src = backdrop || info.cover || ''; return; } img.style.display = 'none'; }} />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
-        
-        {/* Fixed back button overlay */}
-        <button onClick={() => navigate(-1)} className="absolute top-4 left-4 p-2 bg-black/40 backdrop-blur-md rounded-full text-white transition-colors">
-          <ArrowLeft className="w-5 h-5" />
-        </button>
+      <div className="relative -mx-4 -mt-4 md:-mx-6 md:-mt-6 mb-6 md:h-96 md:aspect-auto aspect-[3/4] overflow-hidden bg-black flex items-center justify-center">
+        {showTrailer && videoId ? (
+          <div className="absolute inset-0 z-20 bg-black flex items-center justify-center">
+            <iframe
+              src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`}
+              title="Trailer"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="w-full h-full border-0 absolute inset-0"
+            />
+            <button onClick={() => setShowTrailer(false)} className="absolute top-4 right-4 p-2 bg-black/60 backdrop-blur-md rounded-full text-white z-30 transition-colors hover:bg-black/80">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        ) : (
+          <>
+            <img 
+              src={backdrop ? backdropImage(backdrop) : posterImage(info.cover || '')} 
+              alt="" 
+              className="w-full h-full object-cover md:object-cover" 
+              onError={(e) => { const img = e.target as HTMLImageElement; if (!img.dataset.retried) { img.dataset.retried = '1'; img.src = backdrop || info.cover || ''; return; } img.style.display = 'none'; }} 
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
+            
+            <button onClick={() => navigate(-1)} className="absolute top-4 left-4 p-2 bg-black/40 backdrop-blur-md rounded-full text-white transition-colors z-20">
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          </>
+        )}
       </div>
 
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center md:items-start md:flex-row gap-6 mb-8 md:px-4">
@@ -183,10 +212,11 @@ export default function SeriesDetail() {
                 <Download className="w-5 h-5 text-foreground" />
               </button>
 
-              {info.youtube_trailer && (
-                <div className="flex-shrink-0">
-                  <YouTubeTrailer trailer={info.youtube_trailer} buttonClassName="rounded-full px-5 py-5 border-border text-foreground hover:bg-secondary font-medium" />
-                </div>
+              {info.youtube_trailer && videoId && (
+                <Button variant="outline" onClick={() => { setShowTrailer(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="flex-shrink-0 rounded-full px-5 py-5 border-border text-foreground hover:bg-secondary font-medium h-auto">
+                  <Youtube className="w-5 h-5 mr-2 text-destructive" />
+                  Trailer
+                </Button>
               )}
               
               <Button variant="outline" className="flex-shrink-0 rounded-full px-5 py-5 border-border text-foreground hover:bg-secondary font-medium h-auto">

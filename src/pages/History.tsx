@@ -6,7 +6,7 @@ import { Clock, Trash2 } from 'lucide-react';
 
 export default function History() {
   const navigate = useNavigate();
-  const { history, clearHistory } = useWatchHistory();
+  const { history, clearHistory, removeFromHistory } = useWatchHistory();
 
   const liveItems = history.filter(h => h.type === 'live');
   const movieItems = history.filter(h => h.type === 'movie');
@@ -46,6 +46,7 @@ export default function History() {
                   image={item.icon}
                   aspectRatio="square"
                   onClick={() => window.open(`/player/live/${item.id}`, '_blank')}
+                  onRemove={() => removeFromHistory(item.id, item.type)}
                 />
                 {item.progress !== undefined && item.progress > 0 && (
                   <div className="w-full h-1 bg-secondary rounded-full mt-1 overflow-hidden">
@@ -68,6 +69,7 @@ export default function History() {
                   title={item.name}
                   image={item.icon}
                   onClick={() => navigate(`/movies/${item.id}`)}
+                  onRemove={() => removeFromHistory(item.id, item.type)}
                 />
                 {item.progress !== undefined && item.progress > 0 && (
                   <div className="w-full h-1 bg-secondary rounded-full mt-1 overflow-hidden">
@@ -91,6 +93,7 @@ export default function History() {
                   image={item.icon}
                   subtitle={item.episodeInfo}
                   onClick={() => navigate(`/series/${item.id}`)}
+                  onRemove={() => removeFromHistory(item.id, item.type)}
                 />
                 {item.progress !== undefined && item.progress > 0 && (
                   <div className="w-full h-1 bg-secondary rounded-full mt-1 overflow-hidden">

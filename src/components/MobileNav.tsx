@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Home, Tv, Film, Clapperboard, Heart, Clock, MoreHorizontal, Settings, X, Sparkles, Download } from 'lucide-react';
+import { Home, Tv, Film, Clapperboard, Heart, Clock, MoreHorizontal, Settings, X, Sparkles, Download, Moon, Sun } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTheme } from "next-themes";
 import amtechIcon from '@/assets/amtech-icon.png';
 import GlobalSearch from '@/components/GlobalSearch';
 
@@ -21,6 +22,7 @@ export default function MobileNav() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { theme, setTheme } = useTheme();
 
   const handleNavigate = (path: string) => {
     navigate(path);
@@ -70,12 +72,20 @@ export default function MobileNav() {
                   <img src={amtechIcon} alt="Xerife Player" className="w-8 h-8 rounded-lg" />
                   <span className="text-foreground font-bold text-base">Menu</span>
                 </div>
-                <button
-                  onClick={() => setOpen(false)}
-                  className="p-2 rounded-full hover:bg-muted transition-colors"
-                >
-                  <X className="w-5 h-5 text-muted-foreground" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                    className="p-2 rounded-full hover:bg-muted transition-colors"
+                  >
+                    {theme === 'dark' ? <Sun className="w-5 h-5 text-muted-foreground" /> : <Moon className="w-5 h-5 text-muted-foreground" />}
+                  </button>
+                  <button
+                    onClick={() => setOpen(false)}
+                    className="p-2 rounded-full hover:bg-muted transition-colors"
+                  >
+                    <X className="w-5 h-5 text-muted-foreground" />
+                  </button>
+                </div>
               </div>
 
               {/* Navigation items */}
