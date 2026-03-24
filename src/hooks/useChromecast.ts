@@ -9,6 +9,13 @@ export function useChromecast() {
       // If already initialized
       if (window.cast?.framework) {
         const context = window.cast.framework.CastContext.getInstance();
+        try {
+          context.setOptions({
+            receiverApplicationId: window.chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
+            autoJoinPolicy: window.chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
+          });
+        } catch (e) { /* ignore if already set */ }
+        
         context.requestSession()
           .then(() => resolve(context.getCurrentSession()))
           .catch(reject);

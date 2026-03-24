@@ -6,11 +6,14 @@ import { useTheme } from "next-themes";
 import amtechIcon from '@/assets/amtech-icon.png';
 import GlobalSearch from '@/components/GlobalSearch';
 
-const items = [
-  { path: '/', icon: Home, label: 'Início', color: 'from-indigo-500 to-violet-600', glow: 'shadow-indigo-500/25' },
-  { path: '/live', icon: Tv, label: 'TV ao Vivo', color: 'from-rose-500 to-pink-600', glow: 'shadow-rose-500/25' },
-  { path: '/movies', icon: Film, label: 'Filmes', color: 'from-amber-500 to-orange-600', glow: 'shadow-amber-500/25' },
-  { path: '/series', icon: Clapperboard, label: 'Séries', color: 'from-emerald-500 to-teal-600', glow: 'shadow-emerald-500/25' },
+const mainItems = [
+  { path: '/', icon: Home, label: 'Início' },
+  { path: '/live', icon: Tv, label: 'TV ao vivo' },
+  { path: '/series', icon: Clapperboard, label: 'Séries' },
+  { path: '/movies', icon: Film, label: 'Filmes' },
+];
+
+const secondaryItems = [
   { path: '/favorites', icon: Heart, label: 'Favoritos', color: 'from-pink-500 to-rose-600', glow: 'shadow-pink-500/25' },
   { path: '/history', icon: Clock, label: 'Histórico', color: 'from-sky-500 to-blue-600', glow: 'shadow-sky-500/25' },
   { path: '/downloads', icon: Download, label: 'Downloads', color: 'from-cyan-500 to-sky-600', glow: 'shadow-cyan-500/25' },
@@ -31,15 +34,52 @@ export default function MobileNav() {
 
   return (
     <>
-      {/* Floating buttons - top right on mobile */}
+      {/* Search button - top right on mobile */}
       <div className="fixed top-3 right-3 z-40 md:hidden flex items-center gap-2">
         <GlobalSearch />
-        <button
-          onClick={() => setOpen(true)}
-          className="p-2.5 rounded-full bg-secondary/80 backdrop-blur-md border border-border/50 shadow-lg hover:bg-secondary transition-colors"
-        >
-          <MoreHorizontal className="w-5 h-5 text-foreground" />
-        </button>
+      </div>
+
+      {/* Footer Navigation Bar - Pill style */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 md:hidden w-[95%] max-w-md">
+        <div className="bg-black/80 backdrop-blur-xl border border-white/10 rounded-[2.5rem] px-2 py-2 flex items-center justify-around shadow-2xl overflow-hidden">
+          {mainItems.map((item) => {
+            const active = item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path);
+            return (
+              <button
+                key={item.path}
+                onClick={() => handleNavigate(item.path)}
+                className={`relative flex flex-col items-center gap-1 py-2 px-4 transition-all duration-300 group ${active ? 'text-[#ff5c35] scale-105' : 'text-white/60 hover:text-white'}`}
+              >
+                {active && (
+                  <motion.div
+                    layoutId="activeNavHighlight"
+                    className="absolute inset-0 bg-white/5 rounded-[2rem] -z-10"
+                    transition={{ type: 'spring', bounce: 0.25, duration: 0.5 }}
+                  />
+                )}
+                <item.icon className={`w-6 h-6 transition-colors ${active ? 'text-[#ff5c35]' : 'text-white/70 group-hover:text-white'}`} />
+                <span className={`text-[10px] font-bold transition-colors ${active ? 'text-[#ff5c35]' : 'text-white/60'}`}>
+                  {item.label}
+                </span>
+                {active && (
+                  <motion.div 
+                    layoutId="activeUnderline"
+                    className="absolute -bottom-1 w-1 h-1 bg-[#ff5c35] rounded-full" 
+                  />
+                )}
+              </button>
+            );
+          })}
+          
+          {/* More button to open drawer */}
+          <button
+            onClick={() => setOpen(true)}
+            className="flex flex-col items-center gap-1 py-2 px-4 text-white/60 hover:text-white transition-all group"
+          >
+            <MoreHorizontal className="w-6 h-6 text-white/70 group-hover:text-white" />
+            <span className="text-[10px] font-bold text-white/60 group-hover:text-white">Mais</span>
+          </button>
+        </div>
       </div>
 
       {/* Overlay + Drawer */}
@@ -59,57 +99,57 @@ export default function MobileNav() {
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-              className="fixed bottom-0 left-0 right-0 z-50 md:hidden rounded-t-2xl bg-card border-t border-border shadow-2xl"
+              className="fixed bottom-0 left-0 right-0 z-50 md:hidden rounded-t-3xl bg-[#121212] border-t border-white/5 shadow-2xl"
             >
               {/* Handle bar */}
               <div className="flex justify-center pt-3 pb-1">
-                <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+                <div className="w-12 h-1.5 rounded-full bg-white/10" />
               </div>
 
               {/* Header */}
-              <div className="flex items-center justify-between px-5 pb-3 pt-1">
+              <div className="flex items-center justify-between px-6 pb-4 pt-2">
                 <div className="flex items-center gap-3">
-                  <img src={amtechIcon} alt="Xerife Player" className="w-8 h-8 rounded-lg" />
-                  <span className="text-foreground font-bold text-base">Menu</span>
+                  <img src={amtechIcon} alt="Xerife Player" className="w-8 h-8 rounded-xl shadow-lg" />
+                  <span className="text-white font-black text-lg tracking-tight">Ferramentas</span>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
                   <button
                     onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                    className="p-2 rounded-full hover:bg-muted transition-colors"
+                    className="p-2.5 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
                   >
-                    {theme === 'dark' ? <Sun className="w-5 h-5 text-muted-foreground" /> : <Moon className="w-5 h-5 text-muted-foreground" />}
+                    {theme === 'dark' ? <Sun className="w-5 h-5 text-yellow-500" /> : <Moon className="w-5 h-5 text-indigo-400" />}
                   </button>
                   <button
                     onClick={() => setOpen(false)}
-                    className="p-2 rounded-full hover:bg-muted transition-colors"
+                    className="p-2.5 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
                   >
-                    <X className="w-5 h-5 text-muted-foreground" />
+                    <X className="w-5 h-5 text-white/70" />
                   </button>
                 </div>
               </div>
 
-              {/* Navigation items */}
-              <div className="px-3 pb-6 grid grid-cols-3 gap-2.5">
-                {items.map(({ path, icon: Icon, label, color, glow }, i) => {
+              {/* Navigation items (Secondary) */}
+              <div className="px-4 pb-10 grid grid-cols-3 gap-3">
+                {secondaryItems.map(({ path, icon: Icon, label, color, glow }, i) => {
                   const active = path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
                   return (
                     <motion.button
                       key={path}
-                      initial={{ opacity: 0, scale: 0.85 }}
+                      initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: i * 0.04, type: 'spring', stiffness: 400, damping: 25 }}
+                      transition={{ delay: i * 0.05, type: 'spring', stiffness: 300, damping: 20 }}
                       onClick={() => handleNavigate(path)}
-                      className={`group relative flex flex-col items-center gap-2.5 py-5 px-2 rounded-2xl transition-all duration-200 ${
+                      className={`group relative flex flex-col items-center gap-3 py-5 px-2 rounded-2xl transition-all duration-300 ${
                         active
                           ? `bg-gradient-to-br ${color} shadow-lg ${glow}`
-                          : 'bg-muted/30 border border-border/40 hover:bg-muted/60 hover:border-border/70 hover:shadow-md'
+                          : 'bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10'
                       }`}
                     >
-                      <Icon className={`w-6 h-6 transition-colors ${
-                        active ? 'text-white' : 'text-muted-foreground group-hover:text-foreground'
+                      <Icon className={`w-6 h-6 transition-all duration-300 ${
+                        active ? 'text-white scale-110' : 'text-white/50 group-hover:text-white'
                       }`} />
-                      <span className={`text-[11px] font-semibold leading-tight text-center transition-colors ${
-                        active ? 'text-white' : 'text-muted-foreground group-hover:text-foreground'
+                      <span className={`text-[12px] font-bold leading-tight text-center transition-colors ${
+                        active ? 'text-white' : 'text-white/50 group-hover:text-white'
                       }`}>
                         {label}
                       </span>
@@ -119,7 +159,7 @@ export default function MobileNav() {
               </div>
 
               {/* Safe area padding */}
-              <div className="safe-area-bottom" />
+              <div className="h-6" />
             </motion.div>
           </>
         )}

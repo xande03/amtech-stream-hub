@@ -39,6 +39,7 @@ export default function SeriesDetail() {
   useEffect(() => {
     if (!accessCode || !id) return;
     setLoading(true);
+    setShowTrailer(false); // Reset trailer when series changes
     Promise.all([
       getSeriesInfo(accessCode, Number(id)),
       getSeriesList(accessCode),
@@ -124,8 +125,12 @@ export default function SeriesDetail() {
               allowFullScreen
               className="w-full h-full border-0 absolute inset-0"
             />
-            <button onClick={() => setShowTrailer(false)} className="absolute top-4 right-4 p-2 bg-black/60 backdrop-blur-md rounded-full text-white z-30 transition-colors hover:bg-black/80">
-              <X className="w-5 h-5" />
+            <button 
+              onClick={() => setShowTrailer(false)} 
+              className="absolute top-6 right-6 p-2.5 bg-black/80 backdrop-blur-md rounded-full text-white z-50 transition-all hover:bg-black hover:scale-110 shadow-xl border border-white/20"
+              title="Fechar Trailer"
+            >
+              <X className="w-6 h-6" />
             </button>
           </div>
         ) : (
