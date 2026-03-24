@@ -75,13 +75,13 @@ export default function HighlightCarousel({ items }: HighlightCarouselProps) {
                 return (
                   <motion.div
                     key={item.id}
-                    initial={{ scale: 0.8, opacity: 0.5, x: (i - index) * 280 }}
+                    initial={{ scale: 0.85, opacity: 0, x: (i - index) * 180 }}
                     animate={{ 
                       scale: isActive ? 1.1 : 0.85, 
-                      opacity: isActive ? 1 : 0.6,
-                      x: (i - index) * (isActive ? 0 : (i < index ? -220 : 220)),
+                      opacity: isActive ? 1 : 0.4,
+                      x: (i - index) * (isActive ? 0 : (i < index ? -180 : 180)),
                       zIndex: isActive ? 20 : 10,
-                      filter: isActive ? 'blur(0px)' : 'blur(1px)'
+                      filter: isActive ? 'blur(0px)' : 'blur(1.5px)'
                     }}
                     transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                     onClick={() => isActive && navigate(item.type === 'movie' ? `/movies/${item.id}` : `/series/${item.id}`)}

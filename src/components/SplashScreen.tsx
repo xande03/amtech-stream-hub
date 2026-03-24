@@ -110,7 +110,7 @@ export default function SplashScreen({ onFinish, minDuration = 2800 }: SplashScr
               transition={{ duration: 0.6, delay: 0.8, ease: 'easeOut' }}
               className="text-center"
             >
-              <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tight">
+              <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight">
                 XERIFE
               </h1>
               <motion.p

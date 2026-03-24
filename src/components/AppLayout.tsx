@@ -18,9 +18,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <div className="flex-1 flex flex-col min-w-0">
           {/* Mobile Header */}
           <header className="h-16 flex md:hidden items-center justify-between px-4 sticky top-0 z-40 bg-background/80 backdrop-blur-md">
-            <SidebarTrigger className="text-foreground">
-              <Menu className="w-6 h-6" />
-            </SidebarTrigger>
+            <div className="w-10 md:hidden" /> {/* Spacer instead of sidebar trigger */}
             <h1 className="text-xl font-black uppercase tracking-tight text-foreground">
               {location.pathname === '/' ? 'Xerife Player' : 
                location.pathname.startsWith('/live') ? 'TV ao Vivo' :
