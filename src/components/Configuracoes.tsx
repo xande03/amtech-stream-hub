@@ -1,31 +1,32 @@
+```typescript
 import React, { useState } from 'react';
 
-interface CorOpcao {
+interface Cor {
   nome: string;
   valor: string;
 }
 
-const opcoesCores: CorOpcao[] = [
-  { nome: 'Verde', valor: 'verde' },
-  { nome: 'Azul', valor: 'azul' },
-  { nome: 'Vermelho', valor: 'vermelho' },
-  { nome: 'Laranja', valor: 'laranja' }
+const cores: Cor[] = [
+  { nome: 'Verde', valor: 'green' },
+  { nome: 'Azul', valor: 'blue' },
+  { nome: 'Vermelho', valor: 'red' },
+  { nome: 'Laranja', valor: 'orange' },
 ];
 
-export function Configuracoes() {
-  const [corBotao, setCorBotao] = useState('verde');
-  const [corIndicador, setCorIndicador] = useState('azul');
-  const [corModulo, setCorModulo] = useState('vermelho');
+const Configuracoes = () => {
+  const [corBotao, setCorBotao] = useState('green');
+  const [corIndicador, setCorIndicador] = useState('green');
+  const [corModulo, setCorModulo] = useState('green');
 
-  const handleMudarCorBotao = (cor: string) => {
+  const handleCorBotao = (cor: string) => {
     setCorBotao(cor);
   };
 
-  const handleMudarCorIndicador = (cor: string) => {
+  const handleCorIndicador = (cor: string) => {
     setCorIndicador(cor);
   };
 
-  const handleMudarCorModulo = (cor: string) => {
+  const handleCorModulo = (cor: string) => {
     setCorModulo(cor);
   };
 
@@ -33,29 +34,41 @@ export function Configuracoes() {
     <div>
       <h2>Configurações</h2>
       <div>
-        <label>Cor dos botões:</label>
-        <select value={corBotao} onChange={(e) => handleMudarCorBotao(e.target.value)}>
-          {opcoesCores.map((opcao) => (
-            <option key={opcao.valor} value={opcao.valor}>{opcao.nome}</option>
+        <label>Cor do botão:</label>
+        <select value={corBotao} onChange={(e) => handleCorBotao(e.target.value)}>
+          {cores.map((cor) => (
+            <option key={cor.valor} value={cor.valor}>
+              {cor.nome}
+            </option>
           ))}
         </select>
       </div>
       <div>
-        <label>Cor dos indicadores:</label>
-        <select value={corIndicador} onChange={(e) => handleMudarCorIndicador(e.target.value)}>
-          {opcoesCores.map((opcao) => (
-            <option key={opcao.valor} value={opcao.valor}>{opcao.nome}</option>
+        <label>Cor do indicador:</label>
+        <select value={corIndicador} onChange={(e) => handleCorIndicador(e.target.value)}>
+          {cores.map((cor) => (
+            <option key={cor.valor} value={cor.valor}>
+              {cor.nome}
+            </option>
           ))}
         </select>
       </div>
       <div>
-        <label>Cor dos módulos:</label>
-        <select value={corModulo} onChange={(e) => handleMudarCorModulo(e.target.value)}>
-          {opcoesCores.map((opcao) => (
-            <option key={opcao.valor} value={opcao.valor}>{opcao.nome}</option>
+        <label>Cor do módulo:</label>
+        <select value={corModulo} onChange={(e) => handleCorModulo(e.target.value)}>
+          {cores.map((cor) => (
+            <option key={cor.valor} value={cor.valor}>
+              {cor.nome}
+            </option>
           ))}
         </select>
       </div>
+      <button style={{ backgroundColor: corBotao }}>Botão</button>
+      <div style={{ backgroundColor: corIndicador, width: 20, height: 20 }}></div>
+      <div style={{ backgroundColor: corModulo, width: 50, height: 50 }}></div>
     </div>
   );
-}
+};
+
+export default Configuracoes;
+```
