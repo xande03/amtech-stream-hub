@@ -19,6 +19,14 @@ import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
 import DraggableScroll from '@/components/DraggableScroll';
 import { MoviesLoadingSkeleton } from '@/components/LoadingSkeleton';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { LayoutGrid, Filter } from 'lucide-react';
 
 const PAGE_SIZE = 60;
 
@@ -41,7 +49,16 @@ export default function Movies() {
     Promise.all([
       getVodStreams(accessCode).catch(() => []),
       getVodCategories(accessCode).catch(() => []),
-    ]).then(([m, c]) => { setMovies(m); setCategories(c); }).finally(() => setLoading(false));
+    ]).then(([m, c]) => { 
+      // Sort movies by 'added' timestamp descending (Newest first)
+      const sortedMovies = [...m].sort((a, b) => {
+        const addedA = Number(a.added) || 0;
+        const addedB = Number(b.added) || 0;
+        return addedB - addedA;
+      });
+      setMovies(sortedMovies); 
+      setCategories(c); 
+    }).finally(() => setLoading(false));
   }, [accessCode]);
 
   useEffect(() => { setVisibleCount(PAGE_SIZE); }, [selectedCategory, search]);
@@ -73,21 +90,42 @@ export default function Movies() {
           <Input placeholder="Buscar filmes..." value={search} onChange={e => setSearch(e.target.value)} className="pl-12 h-12 text-base bg-secondary border-border text-foreground rounded-xl" />
         </div>
 
-        {platformCategories.length > 0 && (
-          <DraggableScroll>
-            <span className="text-xs text-muted-foreground self-center mr-1 whitespace-nowrap">Plataformas:</span>
-            {platformCategories.map(cat => (
-              <button key={cat.category_id} onClick={() => setSelectedCategory(cat.category_id)} className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-colors ${selectedCategory === cat.category_id ? 'gradient-primary text-primary-foreground' : 'bg-accent text-accent-foreground hover:bg-accent/80'}`}>{cat.category_name}</button>
-            ))}
-          </DraggableScroll>
-        )}
+        <div className="flex flex-wrap gap-3 items-center">
+          <div className="flex-1 min-w-[200px]">
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-full h-12 bg-secondary border-border text-foreground rounded-xl px-4 focus:ring-primary/20">
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-muted-foreground" />
+                  <SelectValue placeholder="Selecione uma categoria" />
+                </div>
+              </SelectTrigger>
+              <SelectContent className="bg-popover border-border max-h-[400px]">
+                <SelectItem value="all">Todas as Categorias</SelectItem>
+                {categories.map(cat => (
+                  <SelectItem key={cat.category_id} value={cat.category_id}>
+                    {cat.category_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-        <DraggableScroll>
-          <button onClick={() => setSelectedCategory('all')} className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors ${selectedCategory === 'all' ? 'gradient-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'}`}>Todos</button>
-          {otherCategories.map(cat => (
-            <button key={cat.category_id} onClick={() => setSelectedCategory(cat.category_id)} className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors ${selectedCategory === cat.category_id ? 'gradient-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'}`}>{cat.category_name}</button>
-          ))}
-        </DraggableScroll>
+          <div className="flex gap-2 pb-1 overflow-x-auto no-scrollbar">
+            {platformCategories.slice(0, 5).map(cat => (
+              <button 
+                key={cat.category_id} 
+                onClick={() => setSelectedCategory(cat.category_id)} 
+                className={`px-4 py-2.5 rounded-xl text-xs whitespace-nowrap transition-all border ${
+                  selectedCategory === cat.category_id 
+                    ? 'bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/20' 
+                    : 'bg-secondary/50 border-border text-muted-foreground hover:bg-secondary hover:text-foreground'
+                }`}
+              >
+                {cat.category_name}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {recentlyWatched.length > 0 && selectedCategory === 'all' && !search && (
