@@ -305,6 +305,13 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
   useEffect(() => {
     loadSource();
     return () => {
+      // Stop playback completely on unmount to prevent audio leaking
+      const video = videoRef.current;
+      if (video) {
+        video.pause();
+        video.removeAttribute('src');
+        video.load();
+      }
       if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
       if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
       if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
