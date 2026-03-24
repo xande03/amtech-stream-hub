@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, Trash2 } from 'lucide-react';
+import { Heart, Trash2, Star } from 'lucide-react';
 import { posterImage, posterSmall, iconImage, hdImage } from '@/lib/imageProxy';
 
 interface ContentCardProps {
@@ -137,8 +137,9 @@ export default function ContentCard({
         )}
 
         {rating && (
-          <div className="absolute bottom-2 left-2 px-1.5 py-0.5 rounded bg-primary/80 text-primary-foreground text-xs font-medium">
-            ★ {rating}
+          <div className="absolute top-2 left-2 px-2 py-1 rounded-lg bg-black/60 backdrop-blur-md text-white text-xs font-black flex items-center gap-1 shadow-lg border border-white/10">
+            <Star className="w-3.5 h-3.5 fill-yellow-500 text-yellow-500" />
+            <span>{rating}</span>
           </div>
         )}
       </div>

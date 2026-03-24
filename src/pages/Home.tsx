@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Tv, Info, ChevronLeft, ChevronRight, X, Film, Clapperboard, Star, ExternalLink } from 'lucide-react';
 import { PageLoadingSkeleton } from '@/components/LoadingSkeleton';
 import { heroImage, featuredImage, backdropImage } from '@/lib/imageProxy';
+import HighlightCarousel from '@/components/HighlightCarousel';
 
 function parseRating(r?: string | number): number {
   if (!r) return 0;
@@ -36,7 +37,6 @@ export default function Home() {
   const [movieCategories, setMovieCategories] = useState<Category[]>([]);
   const [seriesCategories, setSeriesCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [heroIndex, setHeroIndex] = useState(0);
 
   useEffect(() => {
     if (!accessCode) return;
@@ -89,14 +89,7 @@ export default function Home() {
     return combined.sort((a, b) => b.added - a.added).slice(0, 8);
   }, [topMovies, topSeries]);
 
-  // Auto-rotate hero
-  useEffect(() => {
-    if (heroItems.length <= 1) return;
-    const timer = setInterval(() => {
-      setHeroIndex(i => (i + 1) % heroItems.length);
-    }, 6000);
-    return () => clearInterval(timer);
-  }, [heroItems.length]);
+
 
   // Featured highlights - deduplicated, recent + high-rated
   const featuredItems = useMemo(() => {
@@ -170,86 +163,12 @@ export default function Home() {
 
   if (loading) return <PageLoadingSkeleton />;
 
-  const currentHero = heroItems[heroIndex];
+
 
   return (
     <div className="space-y-6">
-      {/* 1. Hero Carousel */}
-      {currentHero && (
-        <div className="relative rounded-xl overflow-hidden h-56 md:h-80 lg:h-96">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentHero.id}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.5 }}
-              className="absolute inset-0"
-            >
-              <img
-                src={heroImage(currentHero.image)}
-                alt={currentHero.name}
-                className="w-full h-full object-cover"
-                onError={(e) => { const img = e.target as HTMLImageElement; if (!img.dataset.retried) { img.dataset.retried = '1'; img.src = currentHero.image; return; } img.style.display = 'none'; }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-r from-background via-background/70 to-transparent" />
-              <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
-            </motion.div>
-          </AnimatePresence>
-
-          <div className="absolute bottom-4 left-4 md:bottom-8 md:left-8 max-w-lg z-10">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="px-2 py-0.5 rounded-md bg-primary/20 text-primary text-xs font-semibold uppercase">
-                {currentHero.type === 'movie' ? 'Filme' : 'Série'}
-              </span>
-              {currentHero.rating && (
-                <span className="text-sm text-primary font-medium">★ {currentHero.rating}</span>
-              )}
-            </div>
-            <h2 className="text-xl md:text-3xl lg:text-4xl font-bold text-foreground mb-3 line-clamp-2">{currentHero.name}</h2>
-            <div className="flex gap-2">
-              <button
-                onClick={() => navigate(currentHero.type === 'movie' ? `/movies/${currentHero.id}` : `/series/${currentHero.id}`)}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg gradient-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity"
-              >
-                <Play className="w-4 h-4" /> Assistir
-              </button>
-              <button
-                onClick={() => navigate(currentHero.type === 'movie' ? `/movies/${currentHero.id}` : `/series/${currentHero.id}`)}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-secondary/80 text-foreground font-medium hover:bg-secondary transition-colors"
-              >
-                <Info className="w-4 h-4" /> Detalhes
-              </button>
-            </div>
-          </div>
-
-          {heroItems.length > 1 && (
-            <>
-              <button
-                onClick={() => setHeroIndex(i => (i - 1 + heroItems.length) % heroItems.length)}
-                className="absolute left-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-background/40 backdrop-blur-sm hover:bg-background/60 transition-colors"
-              >
-                <ChevronLeft className="w-5 h-5 text-foreground" />
-              </button>
-              <button
-                onClick={() => setHeroIndex(i => (i + 1) % heroItems.length)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-background/40 backdrop-blur-sm hover:bg-background/60 transition-colors"
-              >
-                <ChevronRight className="w-5 h-5 text-foreground" />
-              </button>
-              <div className="absolute bottom-3 right-4 z-10 flex gap-1.5">
-                {heroItems.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setHeroIndex(i)}
-                    className={`w-2 h-2 rounded-full transition-all ${i === heroIndex ? 'bg-primary w-5' : 'bg-foreground/30'}`}
-                  />
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-      )}
+      {/* 1. Premium Highlight Carousel */}
+      <HighlightCarousel items={heroItems} />
 
       {/* 2. Continuar Assistindo */}
       {continueWatching.length > 0 && (

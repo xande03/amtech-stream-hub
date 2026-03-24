@@ -34,10 +34,7 @@ export default function MobileNav() {
 
   return (
     <>
-      {/* Search button - top right on mobile */}
-      <div className="fixed top-3 right-3 z-40 md:hidden flex items-center gap-2">
-        <GlobalSearch />
-      </div>
+
 
       {/* Footer Navigation Bar - Pill style */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 md:hidden w-[95%] max-w-md">
