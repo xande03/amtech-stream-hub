@@ -19,11 +19,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           {/* Mobile Header */}
           <header className="h-16 flex md:hidden items-center justify-between px-4 sticky top-0 z-40 bg-background/80 backdrop-blur-md">
             <div className="w-10 md:hidden" /> {/* Spacer instead of sidebar trigger */}
-            <h1 className="text-xl font-black uppercase tracking-tight text-foreground">
-              {location.pathname === '/' ? 'Xerife Player' : 
-               location.pathname.startsWith('/live') ? 'TV ao Vivo' :
-               location.pathname.startsWith('/movies') ? 'Filmes' :
-               location.pathname.startsWith('/series') ? 'Séries' : 'Xerife Player'}
+            <h1 className="text-lg font-black tracking-tight flex items-center gap-1.5 overflow-hidden">
+              <span className="text-primary italic">XERIFE</span>
+              <span className="text-foreground opacity-60">PLAYER</span>
             </h1>
             <GlobalSearch />
           </header>
