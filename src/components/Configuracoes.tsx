@@ -13,7 +13,7 @@ const cores: Cor[] = [
   { nome: 'Laranja', valor: 'orange' },
 ];
 
-const Configuracoes = () => {
+const Configuracoes: React.FC = () => {
   const [corBotao, setCorBotao] = useState('green');
   const [corIndicador, setCorIndicador] = useState('green');
   const [corModulo, setCorModulo] = useState('green');
@@ -34,7 +34,7 @@ const Configuracoes = () => {
     <div>
       <h2>Configurações</h2>
       <div>
-        <label>Cor do botão:</label>
+        <label>Cor dos Botões:</label>
         <select value={corBotao} onChange={(e) => handleCorBotao(e.target.value)}>
           {cores.map((cor) => (
             <option key={cor.valor} value={cor.valor}>
@@ -44,7 +44,7 @@ const Configuracoes = () => {
         </select>
       </div>
       <div>
-        <label>Cor do indicador:</label>
+        <label>Cor dos Indicadores:</label>
         <select value={corIndicador} onChange={(e) => handleCorIndicador(e.target.value)}>
           {cores.map((cor) => (
             <option key={cor.valor} value={cor.valor}>
@@ -54,7 +54,7 @@ const Configuracoes = () => {
         </select>
       </div>
       <div>
-        <label>Cor do módulo:</label>
+        <label>Cor dos Módulos:</label>
         <select value={corModulo} onChange={(e) => handleCorModulo(e.target.value)}>
           {cores.map((cor) => (
             <option key={cor.valor} value={cor.valor}>
@@ -63,9 +63,6 @@ const Configuracoes = () => {
           ))}
         </select>
       </div>
-      <button style={{ backgroundColor: corBotao }}>Botão</button>
-      <div style={{ backgroundColor: corIndicador, width: 20, height: 20 }}></div>
-      <div style={{ backgroundColor: corModulo, width: 50, height: 50 }}></div>
     </div>
   );
 };
