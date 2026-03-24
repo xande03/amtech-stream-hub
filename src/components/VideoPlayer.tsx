@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import Hls from 'hls.js';
+import { motion } from 'framer-motion';
 import { ArrowLeft, Maximize, Minimize, Volume2, VolumeX, RotateCcw, PictureInPicture2, SkipForward, Cast, Airplay, Wifi, WifiOff, Loader2, Settings, Gauge } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -30,6 +31,16 @@ interface VideoPlayerProps {
   nextEpisodeLabel?: string;
   autoPlay?: boolean;
   isLive?: boolean;
+}
+
+function CountdownTimer({ seconds, onComplete }: { seconds: number; onComplete: () => void }) {
+  const [count, setCount] = useState(seconds);
+  useEffect(() => {
+    if (count <= 0) { onComplete(); return; }
+    const t = setInterval(() => setCount(c => c - 1), 1000);
+    return () => clearInterval(t);
+  }, [count, onComplete]);
+  return <>{count}</>;
 }
 
 export default function VideoPlayer({ url, title, startTime = 0, onProgress, onStreamError, onNextEpisode, nextEpisodeLabel, autoPlay = true, isLive = false }: VideoPlayerProps) {
@@ -415,8 +426,8 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
       } else if (showSkipIntro) {
         setShowSkipIntro(false);
       }
-      // Show next episode overlay when near end (>90%)
-      if (onNextEpisode && progress > 90 && !showNextOverlay) {
+      // Show next episode overlay when near end (>95% for auto-next)
+      if (onNextEpisode && progress >= 95 && !showNextOverlay) {
         setShowNextOverlay(true);
       }
     }
@@ -741,16 +752,66 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
         </div>
       )}
 
-      {/* Next episode overlay */}
+      {/* Next episode overlay with countdown */}
       {showNextOverlay && onNextEpisode && (
-        <div className="absolute bottom-20 right-4 z-20 animate-fade-in">
-          <button
-            onClick={onNextEpisode}
-            className="flex items-center gap-2 px-5 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm shadow-lg hover:bg-primary/90 transition-colors"
-          >
-            <SkipForward className="w-5 h-5" />
-            {nextEpisodeLabel || 'Próximo Episódio'}
-          </button>
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-[2px] animate-in fade-in duration-500">
+          <div className="bg-card/90 backdrop-blur-xl p-8 rounded-3xl border border-white/10 shadow-2xl flex flex-col items-center text-center max-w-sm">
+            <h3 className="text-xl font-bold text-white mb-2">Próximo Episódio</h3>
+            <p className="text-white/60 text-sm mb-6">{nextEpisodeLabel || 'O próximo episódio começará em instantes'}</p>
+            
+            <div className="relative w-24 h-24 mb-8">
+              <svg className="w-full h-full -rotate-90">
+                <circle
+                  cx="48"
+                  cy="48"
+                  r="44"
+                  stroke="currentColor"
+                  strokeWidth="8"
+                  fill="transparent"
+                  className="text-white/10"
+                />
+                <motion.circle
+                  cx="48"
+                  cy="48"
+                  r="44"
+                  stroke="currentColor"
+                  strokeWidth="8"
+                  fill="transparent"
+                  strokeDasharray="276"
+                  initial={{ strokeDashoffset: 276 }}
+                  animate={{ strokeDashoffset: 0 }}
+                  transition={{ duration: 5, ease: "linear" }}
+                  onAnimationComplete={onNextEpisode}
+                  className="text-primary"
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <motion.span 
+                  initial={{ opacity: 1 }}
+                  animate={{ opacity: 0 }}
+                  transition={{ repeat: 5, duration: 1, repeatType: "reverse" }}
+                  className="text-2xl font-black text-white"
+                >
+                  <CountdownTimer seconds={5} onComplete={() => {}} />
+                </motion.span>
+              </div>
+            </div>
+
+            <div className="flex gap-3 w-full">
+              <button 
+                onClick={() => setShowNextOverlay(false)}
+                className="flex-1 px-4 py-3 rounded-xl bg-white/10 text-white font-bold hover:bg-white/20 transition-all active:scale-95"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={onNextEpisode}
+                className="flex-1 px-4 py-3 rounded-xl bg-primary text-primary-foreground font-bold hover:bg-primary/90 transition-all active:scale-95 flex items-center justify-center gap-2"
+              >
+                <SkipForward className="w-4 h-4 fill-current" /> Agora
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

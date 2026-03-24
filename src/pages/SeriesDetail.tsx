@@ -113,9 +113,28 @@ export default function SeriesDetail() {
   const videoId = extractYouTubeId(info.youtube_trailer || '');
 
   return (
-    <div className="pb-24">
+    <div className="pb-24 relative">
+      {/* Adaptive Glow Background */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-30">
+        <motion.div 
+          animate={{ 
+            scale: [1, 1.2, 1],
+            rotate: [0, -5, 0]
+          }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          className="absolute -top-[10%] -left-[10%] w-[120%] h-[120%] blur-[120px] saturate-150"
+        >
+          <img 
+            src={info.cover ? posterImage(info.cover) : ''} 
+            className="w-full h-full object-cover"
+            alt=""
+          />
+        </motion.div>
+        <div className="absolute inset-0 bg-background/60" />
+      </div>
+
       {/* Backdrop banner */}
-      <div className="relative -mx-4 -mt-4 md:-mx-6 md:-mt-6 mb-6 md:h-96 md:aspect-auto aspect-[3/4] overflow-hidden bg-black flex items-center justify-center">
+      <div className="relative -mx-4 -mt-4 md:-mx-6 md:-mt-6 mb-6 md:h-96 md:aspect-auto aspect-[3/4] overflow-hidden bg-black flex items-center justify-center z-10">
         {showTrailer && videoId ? (
           <div className="absolute inset-0 z-20 bg-black flex items-center justify-center">
             <iframe

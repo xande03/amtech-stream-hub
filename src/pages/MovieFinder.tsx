@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
-import { Send, Bot, User, Loader2, Sparkles, Trash2 } from 'lucide-react';
+import { Send, Bot, User, Loader2, Sparkles, Trash2, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useWatchHistory } from '@/hooks/useWatchHistory';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -15,8 +16,17 @@ export default function MovieFinder() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { history } = useWatchHistory();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [historyContext, setHistoryContext] = useState<string>('');
+
+  useEffect(() => {
+    if (history.length > 0) {
+      const watched = history.slice(0, 5).map(h => h.name).join(', ');
+      setHistoryContext(`O usuário já assistiu e gosta de: ${watched}. Use isso como base para recomendações personalizadas se for relevante.`);
+    }
+  }, [history]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -42,7 +52,13 @@ export default function MovieFinder() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ messages: [...messages, userMsg] }),
+        body: JSON.stringify({ 
+          messages: [
+            { role: 'system', content: `Você é o Xerife Assistente, um especialista em cinema e streaming. ${historyContext} Seja prestativo, use emojis e sugira títulos disponíveis no catálogo.` },
+            ...messages, 
+            userMsg 
+          ] 
+        }),
       });
 
       if (!resp.ok) {
@@ -140,6 +156,15 @@ export default function MovieFinder() {
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-600/20 flex items-center justify-center">
               <Bot className="w-8 h-8 text-primary" />
             </div>
+            {history.length > 0 && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold uppercase tracking-wider"
+              >
+                <History className="w-3 h-3" /> Recomendações Personalizadas Ativas
+              </motion.div>
+            )}
             <div>
               <h2 className="text-xl font-bold text-foreground mb-1">Olá! 🤠</h2>
               <p className="text-muted-foreground text-sm max-w-md">Descreva o filme ou série que procura — por ator, gênero, cena, enredo... Eu encontro pra você!</p>
