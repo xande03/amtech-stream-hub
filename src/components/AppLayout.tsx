@@ -30,7 +30,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <SidebarTrigger className="text-foreground" />
             <GlobalSearch />
           </header>
-          <main className="flex-1 overflow-auto p-3 md:p-6 pb-6">
+          <main className="flex-1 overflow-auto p-3 md:p-6 pb-24 md:pb-6">
             {children}
           </main>
         </div>

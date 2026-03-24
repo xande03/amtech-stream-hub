@@ -49,6 +49,24 @@ export default function SettingsPage() {
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; msg: string } | null>(null);
   const [form, setForm] = useState<PlaylistForm>(emptyForm);
+  const [hasPasswordSet, setHasPasswordSet] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  useEffect(() => {
+    const saved = localStorage.getItem('xerife_admin_pass');
+    setHasPasswordSet(!!saved);
+  }, []);
+
+  const handleSetPassword = () => {
+    if (!newPassword || newPassword !== confirmPassword) {
+      toast.error('As senhas não coincidem ou estão vazias');
+      return;
+    }
+    localStorage.setItem('xerife_admin_pass', newPassword);
+    setHasPasswordSet(true);
+    toast.success('Senha definida com sucesso!');
+  };
 
   const loadPlaylists = useCallback(async () => {
     setLoading(true);
@@ -66,7 +84,9 @@ export default function SettingsPage() {
   }, [isUnlocked, loadPlaylists]);
 
   const handleUnlock = () => {
+    const saved = localStorage.getItem('xerife_admin_pass');
     if (!adminPassword.trim()) { setAuthError('Digite a senha'); return; }
+    if (adminPassword !== saved) { setAuthError('Senha incorreta'); return; }
     setAuthError('');
     setIsUnlocked(true);
   };
@@ -234,24 +254,44 @@ export default function SettingsPage() {
           </h2>
           <p className="text-sm text-muted-foreground mb-4">Área restrita ao administrador</p>
 
-          {!isUnlocked ? (
+          {!hasPasswordSet ? (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground bg-primary/5 p-3 rounded-lg border border-primary/20">
+                Esta é sua primeira vez acessando a área administrativa. Defina uma senha para proteger suas playlists.
+              </p>
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label>Nova Senha</Label>
+                  <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="bg-secondary" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Confirmar Senha</Label>
+                  <Input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="bg-secondary" />
+                </div>
+                <Button onClick={handleSetPassword} className="w-full gradient-primary">Definir Senha</Button>
+              </div>
+            </div>
+          ) : !isUnlocked ? (
             <div className="space-y-3">
-              <div className="space-y-2">
-                <Label className="text-foreground text-sm">Senha de Administrador</Label>
-                <div className="flex gap-2">
+              <div className="space-y-2 text-center py-4">
+                <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mx-auto mb-3">
+                  <Lock className="w-8 h-8 text-muted-foreground" />
+                </div>
+                <Label className="text-foreground text-sm">Área Protegida</Label>
+                <div className="flex flex-col gap-2 max-w-sm mx-auto mt-2">
                   <Input
                     type="password"
-                    placeholder="Digite a senha..."
+                    placeholder="Digite sua senha..."
                     value={adminPassword}
                     onChange={e => { setAdminPassword(e.target.value); setAuthError(''); }}
                     onKeyDown={e => e.key === 'Enter' && handleUnlock()}
-                    className="bg-secondary border-border text-foreground"
+                    className="bg-secondary border-border text-foreground text-center"
                   />
-                  <Button onClick={handleUnlock} className="gradient-primary text-primary-foreground px-6">
-                    <Lock className="w-4 h-4 mr-1" /> Entrar
+                  <Button onClick={handleUnlock} className="gradient-primary text-primary-foreground w-full">
+                    Desbloquear
                   </Button>
                 </div>
-                {authError && <p className="text-destructive text-xs">{authError}</p>}
+                {authError && <p className="text-destructive text-xs mt-2">{authError}</p>}
               </div>
             </div>
           ) : (

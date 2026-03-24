@@ -130,7 +130,7 @@ export default function MovieFinder() {
   ];
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] md:h-[calc(100vh-2rem)] max-w-3xl mx-auto">
+    <div className="flex flex-col h-[calc(100dvh-180px)] md:h-[calc(100vh-10rem)] max-w-3xl mx-auto pb-4">
       {/* Header */}
       <div className="flex items-center justify-between px-1 py-3">
         <div className="flex items-center gap-3">

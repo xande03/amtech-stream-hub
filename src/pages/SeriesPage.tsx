@@ -109,22 +109,6 @@ export default function SeriesPage() {
               </SelectContent>
             </Select>
           </div>
-
-          <div className="flex gap-2 pb-1 overflow-x-auto no-scrollbar">
-            {platformCategories.slice(0, 5).map(cat => (
-              <button 
-                key={cat.category_id} 
-                onClick={() => setSelectedCategory(cat.category_id)} 
-                className={`px-4 py-2.5 rounded-xl text-xs whitespace-nowrap transition-all border ${
-                  selectedCategory === cat.category_id 
-                    ? 'bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/20' 
-                    : 'bg-secondary/50 border-border text-muted-foreground hover:bg-secondary hover:text-foreground'
-                }`}
-              >
-                {cat.category_name}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
 

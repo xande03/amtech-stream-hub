@@ -37,15 +37,15 @@ export default function MobileNav() {
 
 
       {/* Footer Navigation Bar - Pill style */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 md:hidden w-[95%] max-w-md">
-        <div className="bg-black/80 backdrop-blur-xl border border-white/10 rounded-[2.5rem] px-2 py-2 flex items-center justify-around shadow-2xl overflow-hidden">
+      <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-40 md:hidden w-[95%] max-w-md">
+        <div className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-[2.5rem] px-2 py-2 flex items-center justify-around shadow-2xl overflow-hidden">
           {mainItems.map((item) => {
             const active = item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path);
             return (
               <button
                 key={item.path}
                 onClick={() => handleNavigate(item.path)}
-                className={`relative flex flex-col items-center gap-1 py-2 px-4 transition-all duration-300 group ${active ? 'text-[#ff5c35] scale-105' : 'text-white/60 hover:text-white'}`}
+                className={`relative flex flex-col items-center gap-1 py-2 px-4 transition-all duration-300 group ${active ? 'text-[#ff5c35] scale-105' : 'text-muted-foreground hover:text-foreground'}`}
               >
                 {active && (
                   <motion.div
@@ -54,8 +54,8 @@ export default function MobileNav() {
                     transition={{ type: 'spring', bounce: 0.25, duration: 0.5 }}
                   />
                 )}
-                <item.icon className={`w-6 h-6 transition-colors ${active ? 'text-[#ff5c35]' : 'text-white/70 group-hover:text-white'}`} />
-                <span className={`text-[10px] font-bold transition-colors ${active ? 'text-[#ff5c35]' : 'text-white/60'}`}>
+                <item.icon className={`w-6 h-6 transition-colors ${active ? 'text-[#ff5c35]' : 'text-muted-foreground group-hover:text-foreground'}`} />
+                <span className={`text-[10px] font-bold transition-colors ${active ? 'text-[#ff5c35]' : 'text-muted-foreground'}`}>
                   {item.label}
                 </span>
                 {active && (
@@ -71,10 +71,10 @@ export default function MobileNav() {
           {/* More button to open drawer */}
           <button
             onClick={() => setOpen(true)}
-            className="flex flex-col items-center gap-1 py-2 px-4 text-white/60 hover:text-white transition-all group"
+            className="flex flex-col items-center gap-1 py-2 px-4 text-muted-foreground hover:text-foreground transition-all group"
           >
-            <MoreHorizontal className="w-6 h-6 text-white/70 group-hover:text-white" />
-            <span className="text-[10px] font-bold text-white/60 group-hover:text-white">Mais</span>
+            <MoreHorizontal className="w-6 h-6 text-muted-foreground group-hover:text-foreground" />
+            <span className="text-[10px] font-bold text-muted-foreground group-hover:text-foreground">Mais</span>
           </button>
         </div>
       </div>
@@ -96,31 +96,31 @@ export default function MobileNav() {
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-              className="fixed bottom-0 left-0 right-0 z-50 md:hidden rounded-t-3xl bg-[#121212] border-t border-white/5 shadow-2xl"
+              className="fixed bottom-0 left-0 right-0 z-50 md:hidden rounded-t-[2.5rem] bg-card border-t border-border shadow-2xl overflow-hidden"
             >
               {/* Handle bar */}
               <div className="flex justify-center pt-3 pb-1">
-                <div className="w-12 h-1.5 rounded-full bg-white/10" />
+                <div className="w-12 h-1.5 rounded-full bg-muted" />
               </div>
 
               {/* Header */}
               <div className="flex items-center justify-between px-6 pb-4 pt-2">
                 <div className="flex items-center gap-3">
                   <img src={amtechIcon} alt="Xerife Player" className="w-8 h-8 rounded-xl shadow-lg" />
-                  <span className="text-white font-black text-lg tracking-tight">Ferramentas</span>
+                  <span className="text-foreground font-black text-lg tracking-tight">Ferramentas</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                    className="p-2.5 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
+                    className="p-2.5 rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
                   >
                     {theme === 'dark' ? <Sun className="w-5 h-5 text-yellow-500" /> : <Moon className="w-5 h-5 text-indigo-400" />}
                   </button>
                   <button
                     onClick={() => setOpen(false)}
-                    className="p-2.5 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
+                    className="p-2.5 rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
                   >
-                    <X className="w-5 h-5 text-white/70" />
+                    <X className="w-5 h-5 text-muted-foreground" />
                   </button>
                 </div>
               </div>
@@ -139,14 +139,14 @@ export default function MobileNav() {
                       className={`group relative flex flex-col items-center gap-3 py-5 px-2 rounded-2xl transition-all duration-300 ${
                         active
                           ? `bg-gradient-to-br ${color} shadow-lg ${glow}`
-                          : 'bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10'
+                          : 'bg-secondary border border-border/50 hover:bg-secondary/80 hover:border-border'
                       }`}
                     >
                       <Icon className={`w-6 h-6 transition-all duration-300 ${
-                        active ? 'text-white scale-110' : 'text-white/50 group-hover:text-white'
+                        active ? 'text-white scale-110' : 'text-muted-foreground group-hover:text-foreground'
                       }`} />
                       <span className={`text-[12px] font-bold leading-tight text-center transition-colors ${
-                        active ? 'text-white' : 'text-white/50 group-hover:text-white'
+                        active ? 'text-white' : 'text-muted-foreground group-hover:text-foreground'
                       }`}>
                         {label}
                       </span>

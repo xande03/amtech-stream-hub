@@ -75,6 +75,14 @@ export function useChromecast() {
         .then(() => {
           toast.dismiss('cast-loading');
           toast.success(`Transmitindo ${title} para o dispositivo.`);
+          
+          // Update local media session for control from lock screen/background if possible
+          if ('mediaSession' in navigator) {
+            navigator.mediaSession.metadata = new MediaMetadata({
+              title,
+              artwork: [{ src: poster, sizes: '512x512', type: 'image/png' }]
+            });
+          }
         })
         .catch((e: any) => {
           toast.dismiss('cast-loading');
