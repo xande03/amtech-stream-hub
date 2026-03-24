@@ -123,7 +123,12 @@ export default function AppSidebar() {
             <p className="text-[11px] text-muted-foreground truncate">📡 {playlistName}</p>
           </div>
         )}
-        <div className={`flex ${collapsed ? 'justify-center' : 'justify-end'}`}>
+        <div className={`flex ${collapsed ? 'justify-center' : 'justify-between items-center'}`}>
+          {!collapsed && (
+            <span className="text-[10px] text-muted-foreground">
+              v1.0.0 · 2024-09-16
+            </span>
+          )}
           <button
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             className={`flex items-center justify-center rounded-lg hover:bg-sidebar-accent transition-colors ${collapsed ? 'p-2 w-9 h-9' : 'p-2'}`}
