@@ -75,19 +75,17 @@ export default function HighlightCarousel({ items }: HighlightCarouselProps) {
                 return (
                   <motion.div
                     key={item.id}
-                    initial={{ scale: 0.8, opacity: 0, x: (i - index) * 160 }}
+                    initial={{ scale: 0.8, opacity: 0, x: (i - index) * 240 }}
                     animate={{ 
-                      scale: isActive ? 1.1 : 0.8, 
-                      opacity: isActive ? 1 : 0.5,
-                      x: (i - index) * (isActive ? 0 : (i < index ? -145 : 145)),
-                      rotateY: isActive ? 0 : (i < index ? 15 : -15),
+                      scale: isActive ? 1 : 0.8, 
+                      opacity: isActive ? 1 : 0.7,
+                      x: (i - index) * 210,
                       zIndex: isActive ? 30 : 10,
                       filter: isActive ? 'blur(0px)' : 'blur(0.5px)'
                     }}
-                    transition={{ type: 'spring', stiffness: 260, damping: 26 }}
+                    transition={{ type: 'spring', stiffness: 260, damping: 28 }}
                     onClick={() => isActive && navigate(item.type === 'movie' ? `/movies/${item.id}` : `/series/${item.id}`)}
-                    className="absolute w-[240px] aspect-[2/3] rounded-2xl overflow-hidden shadow-2xl border-2 border-white/5 bg-secondary preserve-3d"
-                    style={{ perspective: '1000px' }}
+                    className="absolute w-[260px] aspect-[2/3] rounded-2xl overflow-hidden shadow-2xl border-2 border-white/5 bg-secondary"
                   >
                     <img
                       src={posterImage(item.image)}
