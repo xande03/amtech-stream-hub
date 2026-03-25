@@ -127,7 +127,7 @@ Deno.serve(async (req) => {
       params = await req.json();
     }
     
-    const { action, access_code, category_id, vod_id, series_id, stream_type, stream_id, extension } = params;
+    const { action, access_code, category_id, vod_id, series_id, stream_type, stream_id, extension, server_url: direct_url, username: direct_user, password: direct_pass } = params;
 
     // Direct connection test (no access code needed - used before saving)
     if (action === "test_connection") {
@@ -182,10 +182,16 @@ Deno.serve(async (req) => {
       }
     }
 
-    const validation = await getCredentials(access_code);
+    let validation: any = null;
+    if (direct_url && direct_user && direct_pass) {
+      validation = { server_url: direct_url, username: direct_user, password: direct_pass, playlist_name: "Direct" };
+    } else if (access_code) {
+      validation = await getCredentials(access_code);
+    }
+
     if (!validation) {
       return new Response(
-        JSON.stringify({ error: "Código de acesso inválido" }),
+        JSON.stringify({ error: "Credenciais ou código de acesso não fornecidos" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
