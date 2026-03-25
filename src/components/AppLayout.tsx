@@ -69,7 +69,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <GlobalSearch />
           </header>
           <main className="flex-1 overflow-auto p-3 md:p-6 pb-24 md:pb-6">
-            {children}
+            <AnimatePresence mode="wait">
+              <PageTransition key={location.pathname}>
+                {children}
+              </PageTransition>
+            </AnimatePresence>
           </main>
         </div>
         {/* Mobile bottom nav */}
