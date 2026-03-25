@@ -23,6 +23,7 @@ import SettingsPage from "@/pages/SettingsPage";
 import AdminPage from "@/pages/AdminPage";
 import NotFound from "@/pages/NotFound";
 import { ThemeProvider } from "./components/ThemeProvider";
+import { CustomColorsProvider } from "./contexts/CustomColorsContext";
 
 const queryClient = new QueryClient();
 
@@ -65,6 +66,7 @@ const App = () => {
 
   return (
     <ThemeProvider defaultTheme="dark" attribute="class">
+      <CustomColorsProvider>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Toaster />
@@ -77,6 +79,7 @@ const App = () => {
           </AuthProvider>
         </TooltipProvider>
       </QueryClientProvider>
+      </CustomColorsProvider>
     </ThemeProvider>
   );
 };
