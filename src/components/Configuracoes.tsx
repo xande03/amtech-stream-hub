@@ -67,4 +67,3 @@ const Configuracoes: React.FC = () => {
 };
 
 export default Configuracoes;
-```
