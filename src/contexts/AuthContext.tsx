@@ -15,10 +15,13 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [accessCode, setAccessCode] = useState<string | null>(null);
-  const [serverInfo, setServerInfo] = useState<any>(null);
+  const [accessCode, setAccessCode] = useState<string | null>(() => localStorage.getItem('xerife_access_code'));
+  const [serverInfo, setServerInfo] = useState<any>(() => {
+    const saved = localStorage.getItem('xerife_server_info');
+    return saved ? JSON.parse(saved) : null;
+  });
   const [userInfo, setUserInfo] = useState<any>(null);
-  const [playlistName, setPlaylistName] = useState<string | null>(null);
+  const [playlistName, setPlaylistName] = useState<string | null>(() => localStorage.getItem('xerife_playlist_name'));
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
