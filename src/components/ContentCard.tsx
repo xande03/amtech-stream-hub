@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, Trash2, Star } from 'lucide-react';
+import { Heart, Trash2, Star, Tv, PlayCircle } from 'lucide-react';
 import { posterImage, posterSmall, iconImage, hdImage } from '@/lib/imageProxy';
 
 interface ContentCardProps {
@@ -96,10 +96,11 @@ export default function ContentCard({
         ) : null}
         <div
           data-fallback
-          className="w-full h-full flex items-center justify-center bg-secondary absolute inset-0"
+          className="w-full h-full flex flex-col items-center justify-center bg-zinc-900 absolute inset-0 text-center p-3"
           style={{ display: hdSrc ? 'none' : 'flex' }}
         >
-          <span className="text-muted-foreground text-xs text-center px-2 line-clamp-3">{title}</span>
+          {aspectRatio === 'square' ? <Tv className="w-8 h-8 text-zinc-700 mb-2" /> : <PlayCircle className="w-10 h-10 text-zinc-700 mb-2" />}
+          <span className="text-zinc-500 text-[10px] font-medium leading-tight">{title}</span>
         </div>
 
         <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />

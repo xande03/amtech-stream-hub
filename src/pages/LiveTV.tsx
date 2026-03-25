@@ -199,7 +199,7 @@ export default function LiveTV() {
             const isOffline = channelStatus[ch.stream_id] === false;
             return (
               <motion.div key={ch.stream_id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.02, 0.5) }}
-                onClick={() => { addToHistory({ id: ch.stream_id, type: 'live', name: ch.name, icon: ch.stream_icon }); window.open(`/player/live/${ch.stream_id}`, '_blank'); }}
+                onClick={() => { navigate(`/player/live/${ch.stream_id}?name=${encodeURIComponent(ch.name)}&icon=${encodeURIComponent(ch.stream_icon)}`); }}
                 className={`group cursor-pointer bg-card rounded-lg p-3 border transition-all relative ${isOnline ? 'border-green-500/40 hover:border-green-500/70 hover:shadow-[0_0_12px_rgba(34,197,94,0.15)]' : isOffline ? 'border-border opacity-50' : 'border-border hover:border-primary/50 hover:shadow-glow'}`}>
                 <button
                   onClick={(e) => { e.stopPropagation(); toggleFavorite({ id: ch.stream_id, type: 'live', name: ch.name, icon: ch.stream_icon }); }}
@@ -230,7 +230,7 @@ export default function LiveTV() {
             const isOffline = channelStatus[ch.stream_id] === false;
             return (
               <motion.div key={ch.stream_id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: Math.min(i * 0.015, 0.4) }}
-                onClick={() => { addToHistory({ id: ch.stream_id, type: 'live', name: ch.name, icon: ch.stream_icon }); window.open(`/player/live/${ch.stream_id}`, '_blank'); }}
+                onClick={() => { navigate(`/player/live/${ch.stream_id}?name=${encodeURIComponent(ch.name)}&icon=${encodeURIComponent(ch.stream_icon)}`); }}
                 className={`group cursor-pointer bg-card rounded-lg p-3 border transition-all flex items-center gap-3 ${isOnline ? 'border-green-500/40 hover:border-green-500/70' : isOffline ? 'border-border opacity-50' : 'border-border hover:border-primary/50 hover:shadow-glow'}`}>
                 <StatusIndicator streamId={ch.stream_id} />
                 <div className="w-12 h-12 rounded-md overflow-hidden bg-secondary flex-shrink-0 flex items-center justify-center">

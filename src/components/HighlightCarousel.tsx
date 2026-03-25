@@ -53,6 +53,15 @@ export default function HighlightCarousel({ items }: HighlightCarouselProps) {
 
   if (!items.length) return null;
 
+const handleWatchNow = (item: CarouselItem) => {
+    const ext = item.type === 'movie' ? 'mp4' : '';
+    const params = new URLSearchParams({
+      name: item.name,
+      icon: item.image || '',
+    });
+    navigate(`/player/${item.type}/${item.id}/${ext}?${params.toString()}`);
+  };
+
   if (isMobile) {
     return (
       <div className="relative w-full overflow-hidden py-4 min-h-[460px]">
@@ -84,7 +93,7 @@ export default function HighlightCarousel({ items }: HighlightCarouselProps) {
                       filter: isActive ? 'blur(0px)' : 'blur(0.5px)'
                     }}
                     transition={{ type: 'spring', stiffness: 260, damping: 28 }}
-                    onClick={() => isActive && navigate(item.type === 'movie' ? `/movies/${item.id}` : `/series/${item.id}`)}
+                    onClick={() => isActive && handleWatchNow(item)}
                     className="absolute w-[260px] aspect-[2/3] rounded-2xl overflow-hidden shadow-2xl border-2 border-white/5 bg-secondary"
                   >
                     <img
@@ -183,7 +192,7 @@ export default function HighlightCarousel({ items }: HighlightCarouselProps) {
 
           <div className="flex items-center gap-4 pt-4">
             <button
-              onClick={() => navigate(current.type === 'movie' ? `/movies/${current.id}` : `/series/${current.id}`)}
+              onClick={() => handleWatchNow(current)}
               className="flex items-center gap-3 px-8 py-3.5 rounded-full bg-white text-black font-black uppercase tracking-wider hover:bg-yellow-500 hover:text-black transition-all shadow-xl active:scale-95"
             >
               <Play className="w-5 h-5 fill-black" /> Assistir

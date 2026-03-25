@@ -97,9 +97,11 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
             await containerRef.current.requestFullscreen();
           }
           const orientation = screen.orientation as any;
-          if (orientation?.lock) await orientation.lock('landscape');
+          if (orientation && typeof orientation.lock === 'function') {
+            await orientation.lock('landscape');
+          }
         } catch (e) {
-          console.warn('Orientation lock failed:', e);
+          console.warn('Orientation lock or fullscreen failed:', e);
         }
       }
     };

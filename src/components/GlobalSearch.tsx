@@ -64,8 +64,8 @@ export default function GlobalSearch() {
     setOpen(false);
     setQuery('');
     if (item.type === 'live') {
-      addToHistory({ id: item.id, type: 'live', name: item.name, icon: item.image });
-      window.open(`/player/live/${item.id}`, '_blank');
+      const params = new URLSearchParams({ name: item.name, icon: item.image });
+      navigate(`/player/live/${item.id}?${params.toString()}`);
     } else if (item.type === 'movie') {
       navigate(`/movies/${item.id}`);
     } else {
