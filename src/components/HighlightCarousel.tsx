@@ -173,7 +173,7 @@ export default function HighlightCarousel({ items }: HighlightCarouselProps) {
             )}
           </div>
           
-          <h1 className="text-4xl md:text-5xl lg:text-7xl font-black text-white uppercase tracking-tight leading-none drop-shadow-2xl">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-white uppercase tracking-tight leading-[1.1] drop-shadow-2xl max-w-2xl">
             {current.name}
           </h1>
           

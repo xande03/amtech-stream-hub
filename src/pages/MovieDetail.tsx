@@ -59,7 +59,10 @@ export default function MovieDetail() {
     ]).then(([m, i]) => { setMovie(m); setInfo(i); }).finally(() => setLoading(false));
   }, [accessCode, id]);
 
-  const resumeTime = movie ? getResumeTime(movie.stream_id, 'movie') : 0;
+  const resumeTime = useMemo(() => {
+    if (!movie) return 0;
+    return getResumeTime(movie.stream_id, 'movie');
+  }, [movie, getResumeTime, history]);
 
   const handlePlay = async () => {
     if (!movie || !accessCode) return;
@@ -145,10 +148,20 @@ export default function MovieDetail() {
               <VideoPlayer 
                 url={streamUrl} 
                 title={movie.name} 
+                startTime={resumeTime}
                 className="w-full h-full"
                 onClose={() => setIsPlaying(false)}
-                onProgress={(p, t) => {
-                  // Optional: save progress via history hook
+                onProgress={(p, t, d) => {
+                  if (!movie) return;
+                  addToHistory({ 
+                    id: movie.stream_id, 
+                    type: 'movie', 
+                    name: movie.name, 
+                    icon: movie.stream_icon,
+                    progress: p,
+                    currentTime: t,
+                    duration: d 
+                  });
                 }}
               />
             </Suspense>

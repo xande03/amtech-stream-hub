@@ -39,6 +39,7 @@ export default function SeriesDetail() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [streamUrl, setStreamUrl] = useState('');
   const [currentEpisodeTitle, setCurrentEpisodeTitle] = useState('');
+  const [currentEpisode, setCurrentEpisode] = useState<Episode | null>(null);
 
   useEffect(() => {
     if (!accessCode || !id) return;
@@ -82,6 +83,7 @@ export default function SeriesDetail() {
       addToHistory({ id: episode.id, type: 'series', name: seriesInfo.info.name, icon: seriesCover, episodeInfo: `S${episode.season}E${episode.episode_num}` });
       
       setStreamUrl(url);
+      setCurrentEpisode(episode);
       setCurrentEpisodeTitle(`S${episode.season}E${episode.episode_num} - ${episode.title || ''}`);
       setIsPlaying(true);
       setLoading(false);
@@ -151,9 +153,24 @@ export default function SeriesDetail() {
             <Suspense fallback={<div className="w-full h-full flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}>
               <VideoPlayer 
                 url={streamUrl} 
-                title={`${info.name} - ${currentEpisodeTitle}`}
+                title={`${seriesInfo.info.name} - ${currentEpisodeTitle}`}
+                startTime={currentEpisode ? getEpisodeResumeTime(currentEpisode.id) : 0}
                 className="w-full h-full"
                 onClose={() => setIsPlaying(false)}
+                onProgress={(p, t, d) => {
+                  if (!currentEpisode || !seriesInfo) return;
+                  const seriesCover = seriesInfo.info.cover || seriesInfo.info.backdrop_path?.[0] || '';
+                  addToHistory({ 
+                    id: currentEpisode.id, 
+                    type: 'series', 
+                    name: seriesInfo.info.name, 
+                    icon: seriesCover, 
+                    episodeInfo: `S${currentEpisode.season}E${currentEpisode.episode_num}`,
+                    progress: p,
+                    currentTime: t,
+                    duration: d
+                  });
+                }}
                 onNextEpisode={() => {
                    // Handle next episode logic here if needed
                 }}
