@@ -1,3 +1,4 @@
+```typescript
 import React, { useState } from 'react';
 
 interface Cor {
@@ -12,7 +13,7 @@ const cores: Cor[] = [
   { nome: 'Laranja', valor: 'orange' },
 ];
 
-const Configuracoes: React.FC = () => {
+const Configuracoes = () => {
   const [corBotao, setCorBotao] = useState('green');
   const [corIndicador, setCorIndicador] = useState('green');
   const [corModulo, setCorModulo] = useState('green');
@@ -33,7 +34,7 @@ const Configuracoes: React.FC = () => {
     <div>
       <h2>Configurações</h2>
       <div>
-        <label>Cor dos Botões:</label>
+        <label>Cor dos botões:</label>
         <select value={corBotao} onChange={(e) => handleCorBotao(e.target.value)}>
           {cores.map((cor) => (
             <option key={cor.valor} value={cor.valor}>
@@ -43,7 +44,7 @@ const Configuracoes: React.FC = () => {
         </select>
       </div>
       <div>
-        <label>Cor dos Indicadores:</label>
+        <label>Cor dos indicadores:</label>
         <select value={corIndicador} onChange={(e) => handleCorIndicador(e.target.value)}>
           {cores.map((cor) => (
             <option key={cor.valor} value={cor.valor}>
@@ -53,7 +54,7 @@ const Configuracoes: React.FC = () => {
         </select>
       </div>
       <div>
-        <label>Cor dos Módulos:</label>
+        <label>Cor dos módulos:</label>
         <select value={corModulo} onChange={(e) => handleCorModulo(e.target.value)}>
           {cores.map((cor) => (
             <option key={cor.valor} value={cor.valor}>
@@ -67,3 +68,4 @@ const Configuracoes: React.FC = () => {
 };
 
 export default Configuracoes;
+```
