@@ -247,203 +247,219 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Admin section */}
-      <div className="bg-card rounded-xl border border-border overflow-hidden">
-        <div className="p-5">
-          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-1">
-            <Shield className="w-5 h-5 text-primary" /> Gerenciar Playlists
-          </h2>
-          <p className="text-sm text-muted-foreground mb-4">Área restrita ao administrador</p>
-
-          {!hasPasswordSet ? (
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground bg-primary/5 p-3 rounded-lg border border-primary/20">
-                Esta é sua primeira vez acessando a área administrativa. Defina uma senha para proteger suas playlists.
-              </p>
-              <div className="space-y-3">
-                <div className="space-y-2">
-                  <Label>Nova Senha</Label>
-                  <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="bg-secondary" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Confirmar Senha</Label>
-                  <Input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="bg-secondary" />
-                </div>
-                <Button onClick={handleSetPassword} className="w-full gradient-primary">Definir Senha</Button>
-              </div>
-            </div>
-          ) : !isUnlocked ? (
-            <div className="space-y-3">
-              <div className="space-y-2 text-center py-4">
-                <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mx-auto mb-3">
-                  <Lock className="w-8 h-8 text-muted-foreground" />
-                </div>
-                <Label className="text-foreground text-sm">Área Protegida</Label>
-                <div className="flex flex-col gap-2 max-w-sm mx-auto mt-2">
-                  <Input
-                    type="password"
-                    placeholder="Digite sua senha..."
-                    value={adminPassword}
-                    onChange={e => { setAdminPassword(e.target.value); setAuthError(''); }}
-                    onKeyDown={e => e.key === 'Enter' && handleUnlock()}
-                    className="bg-secondary border-border text-foreground text-center"
-                  />
-                  <Button onClick={handleUnlock} className="gradient-primary text-primary-foreground w-full">
-                    Desbloquear
-                  </Button>
-                </div>
-                {authError && <p className="text-destructive text-xs mt-2">{authError}</p>}
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {loading ? (
-                <div className="flex justify-center py-8">
-                  <Loader2 className="w-6 h-6 text-primary animate-spin" />
-                </div>
-              ) : (
-                <>
-                  {playlists.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-4">Nenhuma playlist cadastrada</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {playlists.map(pl => (
-                        <div key={pl.id} className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${pl.is_active ? 'border-primary/50 bg-primary/5' : 'border-border bg-secondary/30'}`}>
-                          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${pl.is_active ? 'bg-accent animate-pulse' : 'bg-muted-foreground/30'}`} />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-foreground truncate">{pl.playlist_name}</p>
-                            <p className="text-xs text-muted-foreground truncate">{pl.server_url} • {pl.username}</p>
-                          </div>
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${pl.is_active ? 'bg-accent/20 text-accent' : 'bg-secondary text-muted-foreground'}`}>
-                            {pl.is_active ? 'ATIVA' : 'INATIVA'}
-                          </span>
-                          <div className="flex gap-1">
-                            <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => openEditForm(pl)} title="Editar">
-                              <Pencil className="w-4 h-4 text-muted-foreground" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => handleToggle(pl.id)} title={pl.is_active ? 'Desativar' : 'Ativar'}>
-                              {pl.is_active ? <PowerOff className="w-4 h-4 text-muted-foreground" /> : <Power className="w-4 h-4 text-accent" />}
-                            </Button>
-                            <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => handleDelete(pl.id)} title="Excluir">
-                              <Trash2 className="w-4 h-4 text-destructive" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {!showForm && (
-                    <Button variant="outline" onClick={openAddForm} className="w-full border-dashed border-border text-foreground hover:border-primary/50">
-                      <Plus className="w-4 h-4 mr-2" /> Adicionar Playlist
-                    </Button>
-                  )}
-
-                  <AnimatePresence>
-                    {showForm && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="space-y-3 overflow-hidden"
-                      >
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-semibold text-foreground">
-                            {editingId ? 'Editar Playlist' : 'Nova Playlist'}
-                          </p>
-                          <button onClick={closeForm} className="p-1 rounded-full hover:bg-muted transition-colors">
-                            <X className="w-4 h-4 text-muted-foreground" />
-                          </button>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label className="text-foreground text-sm">Nome da Playlist</Label>
-                          <Input placeholder="Minha Playlist" value={form.playlist_name} onChange={e => setForm(f => ({ ...f, playlist_name: e.target.value }))} className="bg-secondary border-border text-foreground" />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label className="text-foreground text-sm">Servidor (URL ou nome do provedor) *</Label>
-                          <Input 
-                            placeholder="http://servidor.com:8080 ou nome (ex: warez)" 
-                            value={form.server_url} 
-                            onChange={e => { setForm(f => ({ ...f, server_url: e.target.value })); setTestResult(null); }} 
-                            className="bg-secondary border-border text-foreground" 
-                          />
-                          <p className="text-[11px] text-muted-foreground">
-                            Use a URL completa (ex: http://servidor.com:8080) ou apenas o nome do provedor (ex: warez). O sistema tentará resolver automaticamente.
-                          </p>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-2">
-                            <Label className="text-foreground text-sm">Usuário *</Label>
-                            <Input 
-                              placeholder="Username" 
-                              value={form.username} 
-                              onChange={e => { setForm(f => ({ ...f, username: e.target.value })); setTestResult(null); }} 
-                              className="bg-secondary border-border text-foreground" 
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="text-foreground text-sm">
-                              Senha {editingId ? '(vazio = manter)' : '*'}
-                            </Label>
-                            <div className="relative">
-                              <Input 
-                                type={showPassword ? 'text' : 'password'} 
-                                placeholder={editingId ? '••••••' : 'Password'} 
-                                value={form.password} 
-                                onChange={e => { setForm(f => ({ ...f, password: e.target.value })); setTestResult(null); }} 
-                                className="bg-secondary border-border text-foreground pr-9" 
-                              />
-                              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground">
-                                {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Test connection button */}
-                        <Button 
-                          variant="outline" 
-                          onClick={handleTestConnection} 
-                          disabled={testing || !form.server_url || !form.username || !form.password}
-                          className="w-full border-border text-foreground"
-                        >
-                          {testing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
-                          Testar Conexão
-                        </Button>
-
-                        {testResult && (
-                          <div className={`flex items-center gap-2 p-2.5 rounded-lg text-sm ${testResult.ok ? 'bg-accent/10 text-accent' : 'bg-destructive/10 text-destructive'}`}>
-                            {testResult.ok ? <CheckCircle className="w-4 h-4 flex-shrink-0" /> : <AlertCircle className="w-4 h-4 flex-shrink-0" />}
-                            <span>{testResult.msg}</span>
-                          </div>
-                        )}
-
-                        <div className="space-y-2">
-                          <Label className="text-foreground text-sm">Código de Acesso *</Label>
-                          <Input placeholder="Ex: 123" value={form.access_code} onChange={e => setForm(f => ({ ...f, access_code: e.target.value }))} className="bg-secondary border-border text-foreground" />
-                          <p className="text-[11px] text-muted-foreground">Código que os usuários usarão para acessar esta playlist</p>
-                        </div>
-
-                        <Button onClick={handleSave} disabled={saving} className="w-full gradient-primary text-primary-foreground font-medium">
-                          {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                          {editingId ? 'Atualizar Playlist' : 'Salvar Playlist'}
-                        </Button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </>
-              )}
-            </div>
-          )}
-        </div>
+      {/* Paleta de Cores */}
+      <div className="mb-4">
+        <Configuracoes />
       </div>
 
-      {/* Paleta de Cores */}
-      <div className="mt-4">
-        <Configuracoes />
+      {/* Acesso Restrito - compacto, próximo ao rodapé */}
+      <div className="bg-card rounded-xl border border-border overflow-hidden mt-8">
+        {!isUnlocked ? (
+          <button
+            type="button"
+            onClick={() => {
+              if (!hasPasswordSet) {
+                setIsUnlocked(false);
+              }
+            }}
+            className="w-full p-4 flex items-center justify-center gap-3 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Lock className="w-4 h-4" />
+            <span className="text-sm font-medium">Acesso Restrito</span>
+          </button>
+        ) : null}
+
+        <AnimatePresence>
+          {!isUnlocked && (
+            <motion.div
+              initial={false}
+              className="px-5 pb-5"
+            >
+              {!hasPasswordSet ? (
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground bg-primary/5 p-3 rounded-lg border border-primary/20">
+                    Defina uma senha para proteger suas playlists.
+                  </p>
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <Label>Nova Senha</Label>
+                      <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="bg-secondary" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Confirmar Senha</Label>
+                      <Input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="bg-secondary" />
+                    </div>
+                    <Button onClick={handleSetPassword} className="w-full gradient-primary">Definir Senha</Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex flex-col gap-2 max-w-xs mx-auto">
+                    <Input
+                      type="password"
+                      placeholder="Digite sua senha..."
+                      value={adminPassword}
+                      onChange={e => { setAdminPassword(e.target.value); setAuthError(''); }}
+                      onKeyDown={e => e.key === 'Enter' && handleUnlock()}
+                      className="bg-secondary border-border text-foreground text-center text-sm"
+                    />
+                    <Button onClick={handleUnlock} size="sm" className="gradient-primary text-primary-foreground w-full">
+                      Desbloquear
+                    </Button>
+                  </div>
+                  {authError && <p className="text-destructive text-xs text-center">{authError}</p>}
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {isUnlocked && (
+          <div className="p-5 space-y-4">
+            <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-1">
+              <Shield className="w-5 h-5 text-primary" /> Gerenciar Playlists
+            </h2>
+
+            {loading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="w-6 h-6 text-primary animate-spin" />
+              </div>
+            ) : (
+              <>
+                {playlists.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">Nenhuma playlist cadastrada</p>
+                ) : (
+                  <div className="space-y-2">
+                    {playlists.map(pl => (
+                      <div key={pl.id} className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${pl.is_active ? 'border-primary/50 bg-primary/5' : 'border-border bg-secondary/30'}`}>
+                        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${pl.is_active ? 'bg-accent animate-pulse' : 'bg-muted-foreground/30'}`} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">{pl.playlist_name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{pl.server_url} • {pl.username}</p>
+                        </div>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${pl.is_active ? 'bg-accent/20 text-accent' : 'bg-secondary text-muted-foreground'}`}>
+                          {pl.is_active ? 'ATIVA' : 'INATIVA'}
+                        </span>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => openEditForm(pl)} title="Editar">
+                            <Pencil className="w-4 h-4 text-muted-foreground" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => handleToggle(pl.id)} title={pl.is_active ? 'Desativar' : 'Ativar'}>
+                            {pl.is_active ? <PowerOff className="w-4 h-4 text-muted-foreground" /> : <Power className="w-4 h-4 text-accent" />}
+                          </Button>
+                          <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => handleDelete(pl.id)} title="Excluir">
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {!showForm && (
+                  <Button variant="outline" onClick={openAddForm} className="w-full border-dashed border-border text-foreground hover:border-primary/50">
+                    <Plus className="w-4 h-4 mr-2" /> Adicionar Playlist
+                  </Button>
+                )}
+
+                <AnimatePresence>
+                  {showForm && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="space-y-3 overflow-hidden"
+                    >
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-semibold text-foreground">
+                          {editingId ? 'Editar Playlist' : 'Nova Playlist'}
+                        </p>
+                        <button onClick={closeForm} className="p-1 rounded-full hover:bg-muted transition-colors">
+                          <X className="w-4 h-4 text-muted-foreground" />
+                        </button>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-foreground text-sm">Nome da Playlist</Label>
+                        <Input placeholder="Minha Playlist" value={form.playlist_name} onChange={e => setForm(f => ({ ...f, playlist_name: e.target.value }))} className="bg-secondary border-border text-foreground" />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-foreground text-sm">Servidor (URL ou nome do provedor) *</Label>
+                        <Input 
+                          placeholder="http://servidor.com:8080 ou nome (ex: warez)" 
+                          value={form.server_url} 
+                          onChange={e => { setForm(f => ({ ...f, server_url: e.target.value })); setTestResult(null); }} 
+                          className="bg-secondary border-border text-foreground" 
+                        />
+                        <p className="text-[11px] text-muted-foreground">
+                          Use a URL completa (ex: http://servidor.com:8080) ou apenas o nome do provedor (ex: warez). O sistema tentará resolver automaticamente.
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <Label className="text-foreground text-sm">Usuário *</Label>
+                          <Input 
+                            placeholder="Username" 
+                            value={form.username} 
+                            onChange={e => { setForm(f => ({ ...f, username: e.target.value })); setTestResult(null); }} 
+                            className="bg-secondary border-border text-foreground" 
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-foreground text-sm">
+                            Senha {editingId ? '(vazio = manter)' : '*'}
+                          </Label>
+                          <div className="relative">
+                            <Input 
+                              type={showPassword ? 'text' : 'password'} 
+                              placeholder={editingId ? '••••••' : 'Password'} 
+                              value={form.password} 
+                              onChange={e => { setForm(f => ({ ...f, password: e.target.value })); setTestResult(null); }} 
+                              className="bg-secondary border-border text-foreground pr-9" 
+                            />
+                            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground">
+                              {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <Button 
+                        variant="outline" 
+                        onClick={handleTestConnection} 
+                        disabled={testing || !form.server_url || !form.username || !form.password}
+                        className="w-full border-border text-foreground"
+                      >
+                        {testing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                        Testar Conexão
+                      </Button>
+
+                      {testResult && (
+                        <div className={`flex items-center gap-2 p-2.5 rounded-lg text-sm ${testResult.ok ? 'bg-accent/10 text-accent' : 'bg-destructive/10 text-destructive'}`}>
+                          {testResult.ok ? <CheckCircle className="w-4 h-4 flex-shrink-0" /> : <AlertCircle className="w-4 h-4 flex-shrink-0" />}
+                          <span>{testResult.msg}</span>
+                        </div>
+                      )}
+
+                      <div className="space-y-2">
+                        <Label className="text-foreground text-sm">Código de Acesso *</Label>
+                        <Input placeholder="Ex: 123" value={form.access_code} onChange={e => setForm(f => ({ ...f, access_code: e.target.value }))} className="bg-secondary border-border text-foreground" />
+                        <p className="text-[11px] text-muted-foreground">Código que os usuários usarão para acessar esta playlist</p>
+                      </div>
+
+                      <Button onClick={handleSave} disabled={saving} className="w-full gradient-primary text-primary-foreground font-medium">
+                        {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                        {editingId ? 'Atualizar Playlist' : 'Salvar Playlist'}
+                      </Button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       <p className="text-center text-muted-foreground text-xs mt-8">AMTECH PLAYER v1.0</p>
