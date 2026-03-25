@@ -1,4 +1,3 @@
-```typescript
 import React, { useState } from 'react';
 
 interface Cor {
@@ -68,4 +67,3 @@ const Configuracoes = () => {
 };
 
 export default Configuracoes;
-```
