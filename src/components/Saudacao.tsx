@@ -1,4 +1,3 @@
-```tsx
 import React from 'react';
 
 interface Props {
@@ -10,4 +9,3 @@ const Saudacao: React.FC<Props> = ({ nome }) => {
 };
 
 export default Saudacao;
-```
