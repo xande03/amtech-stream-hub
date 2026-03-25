@@ -3,7 +3,9 @@ import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/AppSidebar';
 import MobileNav from '@/components/MobileNav';
 import GlobalSearch from '@/components/GlobalSearch';
+import PageTransition from '@/components/PageTransition';
 import { useLocation } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import { Menu, Cast } from 'lucide-react';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
@@ -67,7 +69,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <GlobalSearch />
           </header>
           <main className="flex-1 overflow-auto p-3 md:p-6 pb-24 md:pb-6">
-            {children}
+            <AnimatePresence mode="wait">
+              <PageTransition key={location.pathname}>
+                {children}
+              </PageTransition>
+            </AnimatePresence>
           </main>
         </div>
         {/* Mobile bottom nav */}
