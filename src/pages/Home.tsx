@@ -48,11 +48,11 @@ export default function Home() {
       getVodCategories(serverInfo).catch(() => []),
       getSeriesCategories(serverInfo).catch(() => []),
     ]).then(([live, vod, ser, vodCats, serCats]) => {
-      setLiveStreams(live.slice(0, 20));
-      setMovies(vod);
-      setSeries(ser);
-      setMovieCategories(vodCats);
-      setSeriesCategories(serCats);
+      setLiveStreams(Array.isArray(live) ? live.slice(0, 20) : []);
+      setMovies(Array.isArray(vod) ? vod : []);
+      setSeries(Array.isArray(ser) ? ser : []);
+      setMovieCategories(Array.isArray(vodCats) ? vodCats : []);
+      setSeriesCategories(Array.isArray(serCats) ? serCats : []);
     }).finally(() => setLoading(false));
   }, [serverInfo]);
 

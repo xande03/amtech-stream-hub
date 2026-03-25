@@ -137,7 +137,8 @@ async function callApi(credentials: string | StreamUrlInfo, params: Record<strin
         });
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
-        return data;
+        const isListing = params.action?.includes('category') || params.action === 'get_series' || params.action === 'get_series_info' || params.action?.includes('_streams');
+        return isListing ? (Array.isArray(data) ? data : []) : data;
       } catch (proxyErr: any) {
         console.warn('Supabase Proxy missing or failed, trying public CORS proxy...', proxyErr);
         try {
@@ -146,10 +147,11 @@ async function callApi(credentials: string | StreamUrlInfo, params: Record<strin
           const res = await fetch(publicProxyUrl);
           const json = await res.json();
           const parsedData = JSON.parse(json.contents);
-          return parsedData;
+          const isListing = params.action?.includes('category') || params.action === 'get_series' || params.action === 'get_series_info' || params.action?.includes('_streams');
+          return isListing ? (Array.isArray(parsedData) ? parsedData : []) : parsedData;
         } catch (totalErr) {
           console.error('Falha total em todas as tentativas de conexão:', totalErr);
-          const isListing = params.action?.includes('category') || params.action === 'get_series' || params.action?.includes('_streams');
+          const isListing = params.action?.includes('category') || params.action === 'get_series' || params.action === 'get_series_info' || params.action?.includes('_streams');
           return isListing ? [] : {};
         }
       }
@@ -163,10 +165,11 @@ async function callApi(credentials: string | StreamUrlInfo, params: Record<strin
     });
     if (error) throw error;
     if (data?.error) throw new Error(data.error);
-    return data;
+    const isListing = params.action?.includes('category') || params.action === 'get_series' || params.action === 'get_series_info' || params.action?.includes('_streams');
+    return isListing ? (Array.isArray(data) ? data : []) : data;
   } catch (err) {
     console.error('Erro no fallback via código:', err);
-    const isListing = params.action?.includes('category') || params.action === 'get_series' || params.action?.includes('_streams');
+    const isListing = params.action?.includes('category') || params.action === 'get_series' || params.action === 'get_series_info' || params.action?.includes('_streams');
     return isListing ? [] : {};
   }
 }
