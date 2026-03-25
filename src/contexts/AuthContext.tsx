@@ -40,8 +40,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const fetchActiveConfig = useCallback(async () => {
+    // Carregar imediatamente do cache local (Lógica "de antes")
+    const savedCode = localStorage.getItem('xerife_access_code');
+    const savedInfo = localStorage.getItem('xerife_server_info');
+    const savedName = localStorage.getItem('xerife_playlist_name');
+    
+    if (savedCode && savedInfo) {
+      setAccessCode(savedCode);
+      setPlaylistName(savedName || 'Minha Playlist');
+      setServerInfo(JSON.parse(savedInfo));
+      setLoaded(true); // Libera o app instantaneamente com o que temos offline
+    }
+
     try {
-      // Reativando a sincronização direta com o banco de dados original (admin_config)
+      // Sincronização secundária com o banco (apenas se houver internet e projeto configurado)
       const { data: config, error } = await supabase
         .from('admin_config')
         .select('*')
@@ -49,36 +61,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle();
 
       if (config) {
-        setAccessCode(config.access_code);
-        setPlaylistName(config.playlist_name);
+        // Se houver uma nova playlist ativa no banco, atualiza o localstorage para todos os usuários
         const sInfo = {
           server_url: config.server_url,
           username: config.username,
           password: config.password,
           playlist_name: config.playlist_name
         };
-        setServerInfo(sInfo);
-        localStorage.setItem('xerife_access_code', config.access_code);
-        localStorage.setItem('xerife_playlist_name', config.playlist_name);
-        localStorage.setItem('xerife_server_info', JSON.stringify(sInfo));
-      } else {
-        // Fallback to local
-        const savedCode = localStorage.getItem('xerife_access_code');
-        const savedInfo = localStorage.getItem('xerife_server_info');
-        if (savedCode) {
-          setAccessCode(savedCode);
-          setPlaylistName(localStorage.getItem('xerife_playlist_name') || 'Minha Playlist');
-          if (savedInfo) setServerInfo(JSON.parse(savedInfo));
+        
+        // Só atualiza se for diferente do que temos no cache para evitar recargas desnecessárias
+        if (config.access_code !== savedCode) {
+          setAccessCode(config.access_code);
+          setPlaylistName(config.playlist_name);
+          setServerInfo(sInfo);
+          localStorage.setItem('xerife_access_code', config.access_code);
+          localStorage.setItem('xerife_playlist_name', config.playlist_name);
+          localStorage.setItem('xerife_server_info', JSON.stringify(sInfo));
         }
       }
-    } catch (e) { 
-      const savedCode = localStorage.getItem('xerife_access_code');
-      if (savedCode) {
-        setAccessCode(savedCode);
-        setPlaylistName(localStorage.getItem('xerife_playlist_name') || 'Minha Playlist');
-      }
+    } catch (e) {
+      console.warn('Falha na sincronização remota, mantendo cache local.');
+    } finally {
+      setLoaded(true); // Garante que o app carregue mesmo se tudo falhar
     }
-    setLoaded(true);
   }, []);
 
   useEffect(() => {
