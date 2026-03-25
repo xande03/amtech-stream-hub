@@ -5,11 +5,18 @@ import { getLiveStreams, getLiveCategories, checkChannelsStatus, LiveStream, Cat
 import { useFavorites } from '@/hooks/useFavorites';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
 import { Input } from '@/components/ui/input';
-import { Search, Tv, Heart, Wifi, WifiOff, Loader2, RefreshCw } from 'lucide-react';
+import { Search, Tv, Heart, Wifi, WifiOff, Loader2, RefreshCw, Filter } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { LiveTVSkeleton } from '@/components/LoadingSkeleton';
 import DraggableScroll from '@/components/DraggableScroll';
 import ChannelEpgPanel from '@/components/ChannelEpgPanel';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const PAGE_SIZE = 60;
 const CHECK_BATCH_SIZE = 50;
