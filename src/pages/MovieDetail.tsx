@@ -65,19 +65,12 @@ export default function MovieDetail() {
 
   const handlePlay = async () => {
     if (!movie || !accessCode) return;
-    try {
-      setLoading(true);
-      const url = await getStreamUrl(accessCode, 'movie', movie.stream_id, movie.container_extension || 'mp4');
-      
-      // Abrir player externo
-      window.open(url, '_blank');
-      
-      addToHistory({ id: movie.stream_id, type: 'movie', name: movie.name, icon: movie.stream_icon });
-      setLoading(false);
-    } catch (err) {
-      console.error(err);
-      setLoading(false);
-    }
+    const ext = movie.container_extension || 'mp4';
+    const params = new URLSearchParams({
+      name: movie.name,
+      icon: movie.stream_icon || '',
+    });
+    navigate(`/player/movie/${movie.stream_id}/${ext}?${params.toString()}`);
   };
 
   const similarMovies = useMemo(() => {

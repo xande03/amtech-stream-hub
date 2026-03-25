@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import Hls from 'hls.js';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Maximize, Minimize, Volume2, VolumeX, RotateCcw, PictureInPicture2, SkipForward, Cast, Airplay, Wifi, WifiOff, Loader2, Settings, Gauge } from 'lucide-react';
+import { ArrowLeft, Maximize, Minimize, Volume2, VolumeX, RotateCcw, PictureInPicture2, SkipForward, Play, Cast, Airplay, Wifi, WifiOff, Loader2, Settings, Gauge } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface QualityLevel {
@@ -85,29 +85,34 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
   const onProgressRef = useRef(onProgress);
   onProgressRef.current = onProgress;
 
-  // Lock to landscape on mount (mobile)
+  // Lock to landscape on play (mobile)
   useEffect(() => {
-    const lockLandscape = async () => {
-      try {
-        const orientation = screen.orientation as any;
-        if (orientation?.lock) await orientation.lock('landscape');
-      } catch {}
-    };
+    const video = videoRef.current;
+    if (!video) return;
 
-    const enterFullscreen = async () => {
-      try {
-        if (containerRef.current && !document.fullscreenElement) {
-          await containerRef.current.requestFullscreen();
+    const handlePlay = async () => {
+      if (window.innerWidth < 768) {
+        try {
+          if (containerRef.current && !document.fullscreenElement) {
+            await containerRef.current.requestFullscreen();
+          }
+          const orientation = screen.orientation as any;
+          if (orientation?.lock) await orientation.lock('landscape');
+        } catch (e) {
+          console.warn('Orientation lock failed:', e);
         }
-      } catch {}
+      }
     };
 
+    video.addEventListener('play', handlePlay);
+
+    // Initial check for mobile
     const timer = setTimeout(() => {
-      lockLandscape();
-      if (window.innerWidth < 768) enterFullscreen();
-    }, 300);
+      if (window.innerWidth < 768 && !video.paused) handlePlay();
+    }, 500);
 
     return () => {
+      video.removeEventListener('play', handlePlay);
       clearTimeout(timer);
       try { (screen.orientation as any)?.unlock?.(); } catch {}
     };
@@ -864,6 +869,18 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
         </div>
       )}
 
+      {/* Central Play Button Overlay */}
+      {!isPlaying && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/20 backdrop-blur-[2px]">
+          <button
+            onClick={() => videoRef.current?.play()}
+            className="w-20 h-20 flex items-center justify-center rounded-full bg-primary/90 text-primary-foreground shadow-2xl hover:scale-110 active:scale-95 transition-all group"
+          >
+            <Play className="w-10 h-10 fill-current group-hover:scale-110 transition-transform ml-1" />
+          </button>
+        </div>
+      )}
+
       <video
         ref={videoRef}
         className="w-full h-full object-contain"
@@ -873,6 +890,8 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
         disablePictureInPicture={false}
         muted={muted}
         onTimeUpdate={handleTimeUpdate}
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
       />
     </div>
   );

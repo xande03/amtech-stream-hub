@@ -63,8 +63,18 @@ export function ShareDialog({ isOpen, onClose, title, type, id }: ShareDialogPro
           </DialogDescription>
         </DialogHeader>
         
-        <div className="flex flex-col items-center justify-center p-6 bg-white rounded-xl my-4">
-          <QRCodeSVG value={shareUrl} size={200} level="H" includeMargin={true} />
+        <div className="flex flex-col items-center justify-center p-8 bg-white rounded-3xl my-4 shadow-xl ring-4 ring-primary/20">
+          <QRCodeSVG 
+            value={shareUrl} 
+            size={220} 
+            level="H" 
+            includeMargin={false}
+            imageSettings={{
+              src: "/lovable-uploads/logo.png", // Fallback if logo exists
+              x: undefined, y: undefined, height: 40, width: 40, excavate: true,
+            }}
+            fgColor="#18181b" // Match zinc-900 logic
+          />
         </div>
 
         <div className="flex items-center space-x-2 bg-zinc-900 border border-zinc-800 p-2 rounded-lg">

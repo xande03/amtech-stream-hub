@@ -71,22 +71,15 @@ export default function SeriesDetail() {
 
   const handlePlayEpisode = async (episode: Episode) => {
     if (!seriesInfo || !accessCode) return;
-    try {
-      setLoading(true);
-      const ext = episode.container_extension || 'mp4';
-      const url = await getStreamUrl(accessCode, 'series', episode.id, ext);
-      
-      // Abrir player externo
-      window.open(url, '_blank');
-      
-      const seriesCover = seriesInfo.info.cover || seriesInfo.info.backdrop_path?.[0] || '';
-      addToHistory({ id: episode.id, type: 'series', name: seriesInfo.info.name, icon: seriesCover, episodeInfo: `S${episode.season}E${episode.episode_num}` });
-      
-      setLoading(false);
-    } catch (err) {
-      console.error(err);
-      setLoading(false);
-    }
+    const ext = episode.container_extension || 'mp4';
+    const params = new URLSearchParams({
+      seriesId: String(seriesInfo.info.series_id),
+      season: String(episode.season),
+      ep: String(episode.episode_num),
+      name: seriesInfo.info.name,
+      icon: seriesInfo.info.cover || '',
+    });
+    navigate(`/player/series/${episode.id}/${ext}?${params.toString()}`);
   };
 
   const similarSeries = useMemo(() => {

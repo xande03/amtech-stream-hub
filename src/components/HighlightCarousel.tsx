@@ -44,12 +44,12 @@ export default function HighlightCarousel({ items }: HighlightCarouselProps) {
   const next = () => setIndex(i => (i + 1) % items.length);
   const prev = () => setIndex(i => (i - 1 + items.length) % items.length);
 
-  // Auto-rotate on desktop hero
+  // Auto-rotate
   useEffect(() => {
-    if (isMobile || items.length <= 1) return;
-    const timer = setInterval(next, 7000);
+    if (items.length <= 1) return;
+    const timer = setInterval(next, 4000);
     return () => clearInterval(timer);
-  }, [isMobile, items.length]);
+  }, [items.length]);
 
   if (!items.length) return null;
 
