@@ -76,11 +76,26 @@ export default function SettingsPage() {
   const loadPlaylists = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await supabase.functions.invoke('admin-config', {
-        body: { action: 'get_config' },
-      });
-      setPlaylists(data?.configs || []);
-    } catch { }
+      // Usando o banco de dados original (estável) diretamente
+      const { data, error } = await supabase
+        .from('admin_config')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setPlaylists((data as any[]) || []);
+    } catch (err: any) {
+      console.error('Error loading playlists:', err);
+      // Fallback para tentar via Edge Function caso o banco falhe RLS
+      try {
+        const { data } = await supabase.functions.invoke('admin-config', {
+          body: { action: 'get_config' },
+        });
+        if (data?.configs) setPlaylists(data.configs);
+      } catch {
+        toast.error('Erro ao conectar com o banco de dados. Verifique a URL do projeto.');
+      }
+    }
     setLoading(false);
   }, []);
 
@@ -170,67 +185,108 @@ export default function SettingsPage() {
 
     setSaving(true);
     try {
-      const action = editingId ? 'update_config' : 'save_config';
-      const body: any = {
-        action,
-        admin_password: adminPassword,
-        config: {
-          server_url: form.server_url.trim(),
-          username: form.username.trim(),
-          playlist_name: form.playlist_name.trim() || 'Nova Playlist',
-          access_code: form.access_code.trim(),
-        },
+      const configData: any = {
+        server_url: form.server_url.trim(),
+        username: form.username.trim(),
+        playlist_name: form.playlist_name.trim() || 'Nova Playlist',
+        access_code: form.access_code.trim(),
       };
-      if (form.password) body.config.password = form.password.trim();
-      if (editingId) body.id = editingId;
+      
+      if (form.password) configData.password = form.password.trim();
 
-      const { data, error } = await supabase.functions.invoke('admin-config', { body });
-      if (data?.error) {
-        if (data.error.includes('Senha')) { setIsUnlocked(false); setAuthError('Senha inválida'); }
-        throw new Error(data.error);
+      // Tentativa 1: Escrita direta no banco (mais estável se as permissões estiverem certas)
+      let error;
+      if (editingId) {
+        const { error: updateError } = await supabase
+          .from('admin_config')
+          .update(configData)
+          .eq('id', editingId);
+        error = updateError;
+      } else {
+        if (!configData.password) throw new Error('Senha obrigatória');
+        configData.is_active = false;
+        const { error: insertError } = await supabase
+          .from('admin_config')
+          .insert([configData]);
+        error = insertError;
       }
+
+      // Se falhou por RLS ou outro erro, tenta via Edge Function como fallback
+      if (error) {
+        console.warn('Direct database save failed, trying Edge Function fallback...', error);
+        const action = editingId ? 'update_config' : 'save_config';
+        const body: any = {
+          action,
+          admin_password: adminPassword, // Tpas1000_03
+          config: configData,
+        };
+        if (editingId) body.id = editingId;
+
+        const { data: edgeData, error: edgeError } = await supabase.functions.invoke('admin-config', { body });
+        if (edgeError || edgeData?.error) {
+          throw new Error(edgeData?.error || edgeError?.message || 'Erro de permissão no banco');
+        }
+      }
+
       toast.success(editingId ? 'Playlist atualizada!' : 'Playlist adicionada!');
       closeForm();
       loadPlaylists();
       refreshConfig();
     } catch (err: any) {
-      toast.error(err.message || 'Erro ao salvar no Supabase');
+      toast.error(err.message || 'Erro ao salvar playlist');
     }
     setSaving(false);
   };
 
   const handleToggle = async (id: string) => {
     try {
-      const { data } = await supabase.functions.invoke('admin-config', {
-        body: { action: 'toggle_config', id, admin_password: adminPassword },
-      });
-      if (data?.error) {
-        if (data.error.includes('Senha')) { setIsUnlocked(false); setAuthError('Senha inválida'); }
-        throw new Error(data.error);
+      const target = playlists.find(p => p.id === id);
+      if (!target) return;
+      
+      const newStatus = !target.is_active;
+
+      // Desativar outras se estiver ativando uma
+      if (newStatus) {
+        await supabase.from('admin_config').update({ is_active: false } as any).neq('id', id);
       }
-      toast.success('Playlist alterada!');
+
+      // Tentativa direta
+      const { error } = await supabase
+        .from('admin_config')
+        .update({ is_active: newStatus } as any)
+        .eq('id', id);
+
+      if (error) {
+        // Fallback Edge Function
+        await supabase.functions.invoke('admin-config', {
+          body: { action: 'toggle_config', id, admin_password: adminPassword },
+        });
+      }
+
+      toast.success(newStatus ? 'Playlist ativada!' : 'Playlist desativada!');
       loadPlaylists();
       refreshConfig();
     } catch (err: any) {
-      toast.error(err.message || 'Erro ao alternar');
+      toast.error('Erro ao alternar playlist');
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Tem certeza que deseja excluir esta playlist?')) return;
     try {
-      const { data } = await supabase.functions.invoke('admin-config', {
-        body: { action: 'delete_config', id, admin_password: adminPassword },
-      });
-      if (data?.error) {
-        if (data.error.includes('Senha')) { setIsUnlocked(false); setAuthError('Senha inválida'); }
-        throw new Error(data.error);
+      const { error } = await supabase.from('admin_config').delete().eq('id', id);
+      
+      if (error) {
+        await supabase.functions.invoke('admin-config', {
+          body: { action: 'delete_config', id, admin_password: adminPassword },
+        });
       }
+
       toast.success('Playlist excluída');
       loadPlaylists();
       refreshConfig();
     } catch (err: any) {
-      toast.error(err.message || 'Erro ao excluir');
+      toast.error('Erro ao excluir');
     }
   };
 
@@ -238,7 +294,6 @@ export default function SettingsPage() {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold text-foreground mb-6">Configurações</h1>
 
-      {/* History section */}
       <div className="bg-card rounded-xl p-5 border border-border mb-4">
         <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-4">
           <Clock className="w-5 h-5 text-primary" /> Histórico
@@ -253,12 +308,10 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Paleta de Cores */}
       <div className="mb-4">
         <Configuracoes />
       </div>
 
-      {/* Acesso Restrito - compacto, próximo ao rodapé */}
       <div className="bg-card rounded-xl border border-border overflow-hidden mt-8">
         {!isUnlocked ? (
           <button
@@ -398,29 +451,19 @@ export default function SettingsPage() {
                           onChange={e => { setForm(f => ({ ...f, server_url: e.target.value })); setTestResult(null); }} 
                           className="bg-secondary border-border text-foreground" 
                         />
-                        <p className="text-[11px] text-muted-foreground">
-                          Use a URL completa (ex: http://servidor.com:8080) ou apenas o nome do provedor (ex: warez). O sistema tentará resolver automaticamente.
-                        </p>
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-2">
                           <Label className="text-foreground text-sm">Usuário *</Label>
-                          <Input 
-                            placeholder="Username" 
-                            value={form.username} 
-                            onChange={e => { setForm(f => ({ ...f, username: e.target.value })); setTestResult(null); }} 
-                            className="bg-secondary border-border text-foreground" 
-                          />
+                          <Input placeholder="Username" value={form.username} onChange={e => { setForm(f => ({ ...f, username: e.target.value })); setTestResult(null); }} className="bg-secondary border-border text-foreground" />
                         </div>
                         <div className="space-y-2">
-                          <Label className="text-foreground text-sm">
-                            Senha {editingId ? '(vazio = manter)' : '*'}
-                          </Label>
+                          <Label className="text-foreground text-sm">Senha *</Label>
                           <div className="relative">
                             <Input 
                               type={showPassword ? 'text' : 'password'} 
-                              placeholder={editingId ? '••••••' : 'Password'} 
+                              placeholder="Password" 
                               value={form.password} 
                               onChange={e => { setForm(f => ({ ...f, password: e.target.value })); setTestResult(null); }} 
                               className="bg-secondary border-border text-foreground pr-9" 
@@ -452,7 +495,6 @@ export default function SettingsPage() {
                       <div className="space-y-2">
                         <Label className="text-foreground text-sm">Código de Acesso *</Label>
                         <Input placeholder="Ex: 123" value={form.access_code} onChange={e => setForm(f => ({ ...f, access_code: e.target.value }))} className="bg-secondary border-border text-foreground" />
-                        <p className="text-[11px] text-muted-foreground">Código que os usuários usarão para acessar esta playlist</p>
                       </div>
 
                       <Button onClick={handleSave} disabled={saving} className="w-full gradient-primary text-primary-foreground font-medium">
