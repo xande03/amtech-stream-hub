@@ -72,11 +72,17 @@ export default function SettingsPage() {
   const loadPlaylists = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await supabase.functions.invoke('admin-config', {
-        body: { action: 'get_config' },
-      });
-      setPlaylists(data?.configs || []);
-    } catch { }
+      const { data, error } = await supabase
+        .from('admin_config')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setPlaylists(data || []);
+    } catch (err: any) {
+      console.error('Error loading playlists:', err);
+      toast.error('Erro ao carregar as playlists do banco direto');
+    }
     setLoading(false);
   }, []);
 
@@ -163,67 +169,91 @@ export default function SettingsPage() {
 
     setSaving(true);
     try {
-      const action = editingId ? 'update_config' : 'save_config';
-      const body: any = {
-        action,
-        admin_password: adminPassword,
-        config: {
-          server_url: form.server_url.trim(),
-          username: form.username.trim(),
-          playlist_name: form.playlist_name.trim() || 'Nova Playlist',
-          access_code: form.access_code.trim(),
-        },
+      const configData: any = {
+        server_url: form.server_url.trim(),
+        username: form.username.trim(),
+        playlist_name: form.playlist_name.trim() || 'Nova Playlist',
+        access_code: form.access_code.trim(),
       };
-      if (form.password) body.config.password = form.password.trim();
-      if (editingId) body.id = editingId;
+      
+      if (form.password) configData.password = form.password.trim();
 
-      const { data, error } = await supabase.functions.invoke('admin-config', { body });
-      if (data?.error) {
-        if (data.error.includes('Senha')) { setIsUnlocked(false); setAuthError('Senha inválida'); }
-        throw new Error(data.error);
+      let error;
+      if (editingId) {
+        const { error: updateError } = await supabase
+          .from('admin_config')
+          .update(configData)
+          .eq('id', editingId);
+        error = updateError;
+      } else {
+        // Enforce password for new playlists (should be checked by UI already)
+        if (!configData.password) throw new Error('Senha é obrigatória para novas playlists');
+        
+        configData.is_active = false; // New playlists start inactive
+        const { error: insertError } = await supabase
+          .from('admin_config')
+          .insert([configData]);
+        error = insertError;
       }
+
+      if (error) throw error;
+
       toast.success(editingId ? 'Playlist atualizada!' : 'Playlist adicionada!');
       closeForm();
       loadPlaylists();
       refreshConfig();
     } catch (err: any) {
-      toast.error(err.message || 'Erro ao salvar no Supabase');
+      console.error('Save error:', err);
+      toast.error(err.message || 'Erro ao salvar no banco direto');
     }
     setSaving(false);
   };
 
   const handleToggle = async (id: string) => {
     try {
-      const { data } = await supabase.functions.invoke('admin-config', {
-        body: { action: 'toggle_config', id, admin_password: adminPassword },
-      });
-      if (data?.error) {
-        if (data.error.includes('Senha')) { setIsUnlocked(false); setAuthError('Senha inválida'); }
-        throw new Error(data.error);
+      const target = playlists.find(p => p.id === id);
+      if (!target) return;
+      
+      const newStatus = !target.is_active;
+
+      // If activating, we might want to deactivate others (optional, but usually preferred for "Active Playlist")
+      // In this app, only one can be active at a time? AuthContext uses maybeSingle().
+      if (newStatus) {
+        await supabase.from('admin_config').update({ is_active: false }).neq('id', id);
       }
-      toast.success('Playlist alterada!');
+
+      const { error } = await supabase
+        .from('admin_config')
+        .update({ is_active: newStatus })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast.success(newStatus ? 'Playlist ativada!' : 'Playlist desativada!');
       loadPlaylists();
       refreshConfig();
     } catch (err: any) {
-      toast.error(err.message || 'Erro ao alternar');
+      console.error('Toggle error:', err);
+      toast.error(err.message || 'Erro ao alternar playlist');
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Tem certeza que deseja excluir esta playlist?')) return;
     try {
-      const { data } = await supabase.functions.invoke('admin-config', {
-        body: { action: 'delete_config', id, admin_password: adminPassword },
-      });
-      if (data?.error) {
-        if (data.error.includes('Senha')) { setIsUnlocked(false); setAuthError('Senha inválida'); }
-        throw new Error(data.error);
-      }
+      const { error } = await supabase
+        .from('admin_config')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
       toast.success('Playlist excluída');
       loadPlaylists();
       refreshConfig();
     } catch (err: any) {
-      toast.error(err.message || 'Erro ao excluir');
+      console.error('Delete error:', err);
+      toast.error(err.message || 'Erro ao excluir playlist');
     }
   };
 
