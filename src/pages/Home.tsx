@@ -1,10 +1,10 @@
-```tsx
+```typescript
 import React from 'react';
 
 const Home: React.FC = () => {
   return (
     <div>
-      <h1>olá guerreiros</h1>
+      <h1>Olá, guerreiros!</h1>
     </div>
   );
 };
