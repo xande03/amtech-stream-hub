@@ -23,6 +23,7 @@ import SettingsPage from "@/pages/SettingsPage";
 import AdminPage from "@/pages/AdminPage";
 import NotFound from "@/pages/NotFound";
 import { ThemeProvider } from "./components/ThemeProvider";
+import { CustomColorsProvider } from "./contexts/CustomColorsContext";
 
 const queryClient = new QueryClient();
 
