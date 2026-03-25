@@ -25,7 +25,7 @@ function extractYouTubeId(input: string): string | null {
 
 export default function SeriesDetail() {
   const { id } = useParams<{ id: string }>();
-  const { accessCode } = useAuth();
+  const { serverInfo } = useAuth();
   const navigate = useNavigate();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { addToHistory, history, getResumeTime } = useWatchHistory();
@@ -39,19 +39,19 @@ export default function SeriesDetail() {
   const [showShareDialog, setShowShareDialog] = useState(false);
 
   useEffect(() => {
-    if (!accessCode || !id) return;
+    if (!serverInfo || !id) return;
     setLoading(true);
     setShowTrailer(false);
     Promise.all([
-      getSeriesInfo(accessCode, Number(id)),
-      getSeriesList(accessCode),
+      getSeriesInfo(serverInfo, Number(id)),
+      getSeriesList(serverInfo),
     ]).then(([data, list]) => {
       setSeriesInfo(data);
       setAllSeries(list);
       const seasons = Object.keys(data.episodes || {}).sort((a, b) => Number(a) - Number(b));
       if (seasons.length > 0) setSelectedSeason(seasons[0]);
     }).catch(() => {}).finally(() => setLoading(false));
-  }, [accessCode, id]);
+  }, [serverInfo, id]);
 
   const formatTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
@@ -70,7 +70,7 @@ export default function SeriesDetail() {
   };
 
   const handlePlayEpisode = async (episode: Episode) => {
-    if (!seriesInfo || !accessCode) return;
+    if (!seriesInfo || !serverInfo) return;
     const ext = episode.container_extension || 'mp4';
     const params = new URLSearchParams({
       seriesId: String(seriesInfo.info.series_id),
@@ -200,14 +200,14 @@ export default function SeriesDetail() {
               <button 
                 onClick={async (e) => {
                   e.stopPropagation();
-                  if (!accessCode || !seriesInfo || currentEpisodes.length === 0) return;
+                  if (!serverInfo || !seriesInfo || currentEpisodes.length === 0) return;
                   const firstUnwatched = currentEpisodes.find(ep => getEpisodeProgress(ep.id) < 90) || currentEpisodes[0];
                   if (!firstUnwatched) return;
                   const epInfo = `S${firstUnwatched.season}E${firstUnwatched.episode_num}`;
                   if (isDownloaded(firstUnwatched.id, 'series', epInfo)) return;
                   try {
                     const ext = firstUnwatched.container_extension || 'mp4';
-                    const url = await getStreamUrl(accessCode, 'series', firstUnwatched.id, ext);
+                    const url = await getStreamUrl(serverInfo, 'series', firstUnwatched.id, ext);
                     startDownload({
                       id: firstUnwatched.id,
                       type: 'series',
@@ -235,12 +235,12 @@ export default function SeriesDetail() {
               <Button 
                 variant="outline"
                 onClick={async () => {
-                  if (!accessCode || !seriesInfo || currentEpisodes.length === 0) return;
+                  if (!serverInfo || !seriesInfo || currentEpisodes.length === 0) return;
                   const firstUnwatched = currentEpisodes.find(ep => getEpisodeProgress(ep.id) < 90) || currentEpisodes[0];
                   if (!firstUnwatched) return;
                   try {
                     const ext = firstUnwatched.container_extension || 'mp4';
-                    const url = await getStreamUrl(accessCode, 'series', firstUnwatched.id, ext);
+                    const url = await getStreamUrl(serverInfo, 'series', firstUnwatched.id, ext);
                     castMedia(url, `${seriesInfo.info.name} - S${firstUnwatched.season}E${firstUnwatched.episode_num}`, seriesInfo.info.cover || '');
                   } catch (e) { console.error('Error starting cast', e); }
                 }}
@@ -308,12 +308,12 @@ export default function SeriesDetail() {
                     className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 self-center"
                     onClick={async (e) => {
                       e.stopPropagation();
-                      if (!accessCode || !seriesInfo) return;
+                      if (!serverInfo || !seriesInfo) return;
                       const epInfo = `S${ep.season}E${ep.episode_num}`;
                       if (isDownloaded(ep.id, 'series', epInfo)) return;
                       try {
                         const ext = ep.container_extension || 'mp4';
-                        const url = await getStreamUrl(accessCode, 'series', ep.id, ext);
+                        const url = await getStreamUrl(serverInfo, 'series', ep.id, ext);
                         startDownload({ id: ep.id, type: 'series', name: seriesInfo.info.name, icon: seriesInfo.info.cover || '', url, episodeInfo: epInfo, episodeTitle: ep.title, seriesId: seriesInfo.info.series_id });
                       } catch { /* ignore */ }
                     }}
@@ -330,10 +330,10 @@ export default function SeriesDetail() {
                     className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 self-center hidden sm:block"
                     onClick={async (e) => {
                       e.stopPropagation();
-                      if (!accessCode || !seriesInfo) return;
+                      if (!serverInfo || !seriesInfo) return;
                       try {
                         const ext = ep.container_extension || 'mp4';
-                        const url = await getStreamUrl(accessCode, 'series', ep.id, ext);
+                        const url = await getStreamUrl(serverInfo, 'series', ep.id, ext);
                         castMedia(url, `${seriesInfo.info.name} - S${ep.season}E${ep.episode_num}`, seriesInfo.info.cover || '');
                       } catch (err) { console.error('Cast error:', err); }
                     }}

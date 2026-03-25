@@ -90,9 +90,53 @@ export interface StreamUrlInfo {
   password: string;
 }
 
-async function callProxy(body: Record<string, any>) {
+async function callApi(credentials: string | StreamUrlInfo, params: Record<string, any>) {
+  // If it's an object, we use direct fetch (sent-to-sent)
+  if (typeof credentials === 'object' && credentials?.server_url) {
+    const { server_url, username, password } = credentials;
+    const baseUrl = server_url.replace(/\/$/, '');
+    const url = new URL(`${baseUrl}/player_api.php`);
+    
+    url.searchParams.set('username', username);
+    url.searchParams.set('password', password);
+    
+    // Map internal actions to Xtream API actions
+    const actionMap: Record<string, string> = {
+      'get_live_categories': 'get_live_categories',
+      'get_live_streams': 'get_live_streams',
+      'get_vod_categories': 'get_vod_categories',
+      'get_vod_streams': 'get_vod_streams',
+      'get_series_categories': 'get_series_categories',
+      'get_series': 'get_series',
+      'get_series_info': 'get_series_info',
+      'get_vod_info': 'get_vod_info',
+      'get_short_epg': 'get_short_epg',
+      'check_channels': 'get_live_streams' // Xtream API doesn't have a direct 'check_channels' action, often 'get_live_streams' is used to check status.
+    };
+
+    const action = actionMap[params.action] || params.action;
+    if (action) url.searchParams.set('action', action);
+    
+    // Add other params
+    for (const [key, value] of Object.entries(params)) {
+      if (key === 'action') continue;
+      url.searchParams.set(key, String(value));
+    }
+
+    try {
+      const response = await fetch(url.toString());
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      return await response.json();
+    } catch (err) {
+      console.warn('Direct fetch failed, falling back to proxy if possible:', err);
+      // If direct fails (CORS?), we'll throw as per instruction.
+      throw err;
+    }
+  }
+
+  // Fallback to proxy (only if access code string is provided)
   const { data, error } = await supabase.functions.invoke('xtream-proxy', {
-    body,
+    body: { ...params, access_code: credentials },
   });
   if (error) throw new Error(error.message || 'Erro na requisição');
   if (data?.error) throw new Error(data.error);
@@ -100,39 +144,39 @@ async function callProxy(body: Record<string, any>) {
 }
 
 export async function authenticateWithCode(accessCode: string) {
-  return callProxy({ action: 'authenticate', access_code: accessCode });
+  return callApi(accessCode, { action: 'authenticate' });
 }
 
-export async function getLiveCategories(accessCode: string): Promise<Category[]> {
-  return callProxy({ action: 'get_live_categories', access_code: accessCode });
+export async function getLiveCategories(credentials: string | StreamUrlInfo): Promise<Category[]> {
+  return callApi(credentials, { action: 'get_live_categories' });
 }
 
-export async function getLiveStreams(accessCode: string, categoryId?: string): Promise<LiveStream[]> {
-  return callProxy({ action: 'get_live_streams', access_code: accessCode, category_id: categoryId });
+export async function getLiveStreams(credentials: string | StreamUrlInfo, categoryId?: string): Promise<LiveStream[]> {
+  return callApi(credentials, { action: 'get_live_streams', category_id: categoryId });
 }
 
-export async function getVodCategories(accessCode: string): Promise<Category[]> {
-  return callProxy({ action: 'get_vod_categories', access_code: accessCode });
+export async function getVodCategories(credentials: string | StreamUrlInfo): Promise<Category[]> {
+  return callApi(credentials, { action: 'get_vod_categories' });
 }
 
-export async function getVodStreams(accessCode: string, categoryId?: string): Promise<VodStream[]> {
-  return callProxy({ action: 'get_vod_streams', access_code: accessCode, category_id: categoryId });
+export async function getVodStreams(credentials: string | StreamUrlInfo, categoryId?: string): Promise<VodStream[]> {
+  return callApi(credentials, { action: 'get_vod_streams', category_id: categoryId });
 }
 
-export async function getSeriesCategories(accessCode: string): Promise<Category[]> {
-  return callProxy({ action: 'get_series_categories', access_code: accessCode });
+export async function getSeriesCategories(credentials: string | StreamUrlInfo): Promise<Category[]> {
+  return callApi(credentials, { action: 'get_series_categories' });
 }
 
-export async function getSeriesList(accessCode: string, categoryId?: string): Promise<Series[]> {
-  return callProxy({ action: 'get_series', access_code: accessCode, category_id: categoryId });
+export async function getSeriesList(credentials: string | StreamUrlInfo, categoryId?: string): Promise<Series[]> {
+  return callApi(credentials, { action: 'get_series', category_id: categoryId });
 }
 
-export async function getSeriesInfo(accessCode: string, seriesId: number): Promise<SeriesInfo> {
-  return callProxy({ action: 'get_series_info', access_code: accessCode, series_id: seriesId });
+export async function getSeriesInfo(credentials: string | StreamUrlInfo, seriesId: number): Promise<SeriesInfo> {
+  return callApi(credentials, { action: 'get_series_info', series_id: seriesId });
 }
 
-export async function getVodInfo(accessCode: string, vodId: number): Promise<any> {
-  return callProxy({ action: 'get_vod_info', access_code: accessCode, vod_id: vodId });
+export async function getVodInfo(credentials: string | StreamUrlInfo, vodId: number): Promise<any> {
+  return callApi(credentials, { action: 'get_vod_info', vod_id: vodId });
 }
 
 export interface EpgEntry {
@@ -150,15 +194,28 @@ export interface EpgEntry {
   has_archive?: number;
 }
 
-export async function getShortEpg(accessCode: string, streamId: number, limit?: number): Promise<EpgEntry[]> {
-  const data = await callProxy({ action: 'get_short_epg', access_code: accessCode, stream_id: streamId, limit: limit || 4 });
+export async function getShortEpg(credentials: string | StreamUrlInfo, streamId: number, limit?: number): Promise<EpgEntry[]> {
+  const data = await callApi(credentials, { action: 'get_short_epg', stream_id: streamId, limit: limit || 4 });
   return data?.epg_listings || [];
 }
 
-export async function getStreamUrl(accessCode: string, streamType: 'live' | 'movie' | 'series', streamId: number | string, extension?: string): Promise<string> {
-  const data = await callProxy({
+export async function getStreamUrl(credentials: string | StreamUrlInfo, streamType: 'live' | 'movie' | 'series', streamId: number | string, extension?: string): Promise<string> {
+  if (typeof credentials === 'object' && credentials?.server_url) {
+    const { server_url, username, password } = credentials;
+    const baseUrl = server_url.replace(/\/$/, '');
+    const ext = extension || (streamType === 'live' ? 'ts' : 'mp4');
+    
+    // Direct stream URL: http://server:port/type/username/password/id.ext
+    // For Xtream, it's usually:
+    // Live: /live/user/pass/id.ts
+    // Movie: /movie/user/pass/id.mp4
+    // Series: /series/user/pass/id.mp4
+    const typePath = streamType === 'series' ? 'series' : (streamType === 'movie' ? 'movie' : 'live');
+    return `${baseUrl}/${typePath}/${username}/${password}/${streamId}.${ext}`;
+  }
+
+  const data = await callApi(credentials, {
     action: 'get_stream_url',
-    access_code: accessCode,
     stream_type: streamType,
     stream_id: streamId,
     extension,
@@ -166,16 +223,24 @@ export async function getStreamUrl(accessCode: string, streamType: 'live' | 'mov
   return data.url;
 }
 
-export async function checkChannelsStatus(accessCode: string, streamIds: number[]): Promise<Record<number, boolean>> {
-  const data = await callProxy({ action: 'check_channels', access_code: accessCode, stream_ids: streamIds });
+export async function checkChannelsStatus(credentials: string | StreamUrlInfo, streamIds: number[]): Promise<Record<number, boolean>> {
+  const data = await callApi(credentials, { action: 'check_channels', stream_ids: streamIds });
   return data?.results || {};
 }
 
-export function getProxyStreamUrl(accessCode: string, streamType: 'live' | 'movie' | 'series', streamId: number | string, extension?: string): string {
+export function getProxyStreamUrl(credentials: string | StreamUrlInfo, streamType: 'live' | 'movie' | 'series', streamId: number | string, extension?: string): string {
+  if (typeof credentials === 'object' && credentials?.server_url) {
+    const { server_url, username, password } = credentials;
+    const baseUrl = server_url.replace(/\/$/, '');
+    const ext = extension || (streamType === 'live' ? 'ts' : 'mp4');
+    const typePath = streamType === 'series' ? 'series' : (streamType === 'movie' ? 'movie' : 'live');
+    return `${baseUrl}/${typePath}/${username}/${password}/${streamId}.${ext}`;
+  }
+
   const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID || 'knrubxjvtgkypasndwkn';
   const params = new URLSearchParams({
     action: 'proxy_stream',
-    access_code: accessCode,
+    access_code: String(credentials),
     stream_type: streamType,
     stream_id: String(streamId),
   });

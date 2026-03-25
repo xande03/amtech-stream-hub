@@ -23,29 +23,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchActiveConfig = useCallback(async () => {
     try {
-      // Direct database access instead of Edge Function
-      const { data, error } = await supabase
+      // Reativando a sincronização direta com o banco de dados original (admin_config)
+      const { data: config, error } = await supabase
         .from('admin_config')
-        .select('id, server_url, username, playlist_name, access_code, is_active')
+        .select('*')
         .eq('is_active', true)
-        .order('updated_at', { ascending: false })
-        .limit(1)
         .maybeSingle();
 
-      if (data) {
-        setAccessCode(data.access_code);
-        setPlaylistName(data.playlist_name);
-        localStorage.setItem('xerife_access_code', data.access_code);
-        localStorage.setItem('xerife_playlist_name', data.playlist_name);
+      if (config) {
+        setAccessCode(config.access_code);
+        setPlaylistName(config.playlist_name);
+        const sInfo = {
+          server_url: config.server_url,
+          username: config.username,
+          password: config.password,
+          playlist_name: config.playlist_name
+        };
+        setServerInfo(sInfo);
+        localStorage.setItem('xerife_access_code', config.access_code);
+        localStorage.setItem('xerife_playlist_name', config.playlist_name);
+        localStorage.setItem('xerife_server_info', JSON.stringify(sInfo));
       } else {
         // Fallback to local
         const savedCode = localStorage.getItem('xerife_access_code');
+        const savedInfo = localStorage.getItem('xerife_server_info');
         if (savedCode) {
           setAccessCode(savedCode);
           setPlaylistName(localStorage.getItem('xerife_playlist_name') || 'Minha Playlist');
+          if (savedInfo) setServerInfo(JSON.parse(savedInfo));
         }
       }
-    } catch { 
+    } catch (e) { 
       const savedCode = localStorage.getItem('xerife_access_code');
       if (savedCode) {
         setAccessCode(savedCode);
@@ -63,10 +71,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAccessCode(code);
     localStorage.setItem('xerife_access_code', code);
     if (info) {
-      setServerInfo(info.server_info);
+      setServerInfo(info.server_info || info);
       setUserInfo(info.user_info);
       setPlaylistName(info.playlist_name);
       localStorage.setItem('xerife_playlist_name', info.playlist_name);
+      localStorage.setItem('xerife_server_info', JSON.stringify(info.server_info || info));
     }
   }, []);
 
@@ -77,6 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setPlaylistName(null);
     localStorage.removeItem('xerife_access_code');
     localStorage.removeItem('xerife_playlist_name');
+    localStorage.removeItem('xerife_server_info');
   }, []);
 
   if (!loaded) return null; // Wait until config is fetched

@@ -27,7 +27,7 @@ function isRecentlyAdded(added?: string | number): boolean {
 }
 
 export default function Home() {
-  const { accessCode } = useAuth();
+  const { serverInfo } = useAuth();
   const navigate = useNavigate();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { history, removeFromHistory } = useWatchHistory();
@@ -39,14 +39,14 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!accessCode) return;
+    if (!serverInfo) return;
     setLoading(true);
     Promise.all([
-      getLiveStreams(accessCode).catch(() => []),
-      getVodStreams(accessCode).catch(() => []),
-      getSeriesList(accessCode).catch(() => []),
-      getVodCategories(accessCode).catch(() => []),
-      getSeriesCategories(accessCode).catch(() => []),
+      getLiveStreams(serverInfo).catch(() => []),
+      getVodStreams(serverInfo).catch(() => []),
+      getSeriesList(serverInfo).catch(() => []),
+      getVodCategories(serverInfo).catch(() => []),
+      getSeriesCategories(serverInfo).catch(() => []),
     ]).then(([live, vod, ser, vodCats, serCats]) => {
       setLiveStreams(live.slice(0, 20));
       setMovies(vod);
@@ -54,7 +54,7 @@ export default function Home() {
       setMovieCategories(vodCats);
       setSeriesCategories(serCats);
     }).finally(() => setLoading(false));
-  }, [accessCode]);
+  }, [serverInfo]);
 
   // Most recently added movies & series (by 'added' timestamp desc)
   const topMovies = useMemo(() =>

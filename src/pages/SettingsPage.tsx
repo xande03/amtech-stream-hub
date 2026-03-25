@@ -72,12 +72,10 @@ export default function SettingsPage() {
   const loadPlaylists = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('admin_config')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (!error) setPlaylists(data || []);
+      const { data } = await supabase.functions.invoke('admin-config', {
+        body: { action: 'get_config' },
+      });
+      setPlaylists(data?.configs || []);
     } catch { }
     setLoading(false);
   }, []);
@@ -131,7 +129,6 @@ export default function SettingsPage() {
     setTesting(true);
     setTestResult(null);
     try {
-      // Test proxy is still on old or needs deployment, but CRUD works now
       const { data, error } = await supabase.functions.invoke('xtream-proxy', {
         body: {
           action: 'test_connection',
@@ -159,36 +156,32 @@ export default function SettingsPage() {
       toast.error('Preencha os campos obrigatórios');
       return;
     }
+    if (!editingId && !form.password) {
+      toast.error('Senha é obrigatória para nova playlist');
+      return;
+    }
 
     setSaving(true);
     try {
-      const configData: any = {
-        server_url: form.server_url.trim(),
-        username: form.username.trim(),
-        playlist_name: form.playlist_name.trim() || 'Nova Playlist',
-        access_code: form.access_code.trim(),
+      const action = editingId ? 'update_config' : 'save_config';
+      const body: any = {
+        action,
+        admin_password: adminPassword,
+        config: {
+          server_url: form.server_url.trim(),
+          username: form.username.trim(),
+          playlist_name: form.playlist_name.trim() || 'Nova Playlist',
+          access_code: form.access_code.trim(),
+        },
       };
-      if (form.password) configData.password = form.password.trim();
+      if (form.password) body.config.password = form.password.trim();
+      if (editingId) body.id = editingId;
 
-      let error;
-      if (editingId) {
-        const { error: err } = await supabase
-          .from('admin_config')
-          .update(configData)
-          .eq('id', editingId);
-        error = err;
-      } else {
-        const { error: err } = await supabase
-          .from('admin_config')
-          .insert({ ...configData, is_active: false });
-        error = err;
+      const { data, error } = await supabase.functions.invoke('admin-config', { body });
+      if (data?.error) {
+        if (data.error.includes('Senha')) { setIsUnlocked(false); setAuthError('Senha inválida'); }
+        throw new Error(data.error);
       }
-
-      if (error) {
-        if (error.code === '42501') throw new Error('Permissão negada. Execute o código SQL de RLS fornecido.');
-        throw new Error(error.message);
-      }
-      
       toast.success(editingId ? 'Playlist atualizada!' : 'Playlist adicionada!');
       closeForm();
       loadPlaylists();
@@ -201,21 +194,13 @@ export default function SettingsPage() {
 
   const handleToggle = async (id: string) => {
     try {
-      const current = playlists.find(p => p.id === id);
-      const newState = !current?.is_active;
-
-      // Reset others if activating
-      if (newState) {
-        await supabase.from('admin_config').update({ is_active: false }).eq('is_active', true);
+      const { data } = await supabase.functions.invoke('admin-config', {
+        body: { action: 'toggle_config', id, admin_password: adminPassword },
+      });
+      if (data?.error) {
+        if (data.error.includes('Senha')) { setIsUnlocked(false); setAuthError('Senha inválida'); }
+        throw new Error(data.error);
       }
-
-      const { error } = await supabase
-        .from('admin_config')
-        .update({ is_active: newState })
-        .eq('id', id);
-
-      if (error) throw error;
-      
       toast.success('Playlist alterada!');
       loadPlaylists();
       refreshConfig();
@@ -227,13 +212,13 @@ export default function SettingsPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('Tem certeza que deseja excluir esta playlist?')) return;
     try {
-      const { error } = await supabase
-        .from('admin_config')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-      
+      const { data } = await supabase.functions.invoke('admin-config', {
+        body: { action: 'delete_config', id, admin_password: adminPassword },
+      });
+      if (data?.error) {
+        if (data.error.includes('Senha')) { setIsUnlocked(false); setAuthError('Senha inválida'); }
+        throw new Error(data.error);
+      }
       toast.success('Playlist excluída');
       loadPlaylists();
       refreshConfig();

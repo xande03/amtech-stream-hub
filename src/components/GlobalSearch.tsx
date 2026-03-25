@@ -15,7 +15,7 @@ type ResultItem = {
 };
 
 export default function GlobalSearch() {
-  const { accessCode } = useAuth();
+  const { serverInfo } = useAuth();
   const navigate = useNavigate();
   const { addToHistory } = useWatchHistory();
   const [open, setOpen] = useState(false);
@@ -28,19 +28,19 @@ export default function GlobalSearch() {
 
   // Load data on first open
   useEffect(() => {
-    if (!open || loaded || !accessCode) return;
+    if (!open || loaded || !serverInfo) return;
     setLoading(true);
     Promise.all([
-      getVodStreams(accessCode).catch(() => []),
-      getSeriesList(accessCode).catch(() => []),
-      getLiveStreams(accessCode).catch(() => []),
+      getVodStreams(serverInfo).catch(() => []),
+      getSeriesList(serverInfo).catch(() => []),
+      getLiveStreams(serverInfo).catch(() => []),
     ]).then(([m, s, l]) => {
       setMovies(m);
       setSeries(s);
       setLiveStreams(l);
       setLoaded(true);
     }).finally(() => setLoading(false));
-  }, [open, loaded, accessCode]);
+  }, [open, loaded, serverInfo]);
 
   const results = useMemo((): ResultItem[] => {
     if (!query.trim()) return [];

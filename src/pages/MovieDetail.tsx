@@ -25,7 +25,7 @@ function extractYouTubeId(input: string): string | null {
 
 export default function MovieDetail() {
   const { id } = useParams<{ id: string }>();
-  const { accessCode } = useAuth();
+  const { serverInfo } = useAuth();
   const navigate = useNavigate();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { addToHistory, history, getResumeTime } = useWatchHistory();
@@ -46,17 +46,17 @@ export default function MovieDetail() {
   };
 
   useEffect(() => {
-    if (!accessCode || !id) return;
+    if (!serverInfo || !id) return;
     setLoading(true);
     setShowTrailer(false); // Reset trailer when movie changes
     Promise.all([
-      getVodStreams(accessCode).then(movies => {
+      getVodStreams(serverInfo).then(movies => {
         setAllMovies(movies);
         return movies.find(m => m.stream_id === Number(id)) || null;
       }),
-      getVodInfo(accessCode, Number(id)).catch(() => null),
+      getVodInfo(serverInfo, Number(id)).catch(() => null),
     ]).then(([m, i]) => { setMovie(m); setInfo(i); }).finally(() => setLoading(false));
-  }, [accessCode, id]);
+  }, [serverInfo, id]);
 
   const resumeTime = useMemo(() => {
     if (!movie) return 0;
@@ -64,7 +64,7 @@ export default function MovieDetail() {
   }, [movie, getResumeTime, history]);
 
   const handlePlay = async () => {
-    if (!movie || !accessCode) return;
+    if (!movie || !serverInfo) return;
     const ext = movie.container_extension || 'mp4';
     const params = new URLSearchParams({
       name: movie.name,
@@ -200,9 +200,9 @@ export default function MovieDetail() {
               <button 
                 onClick={async (e) => {
                   e.stopPropagation();
-                  if (!accessCode || isDownloaded(movie.stream_id, 'movie')) return;
+                  if (!serverInfo || isDownloaded(movie.stream_id, 'movie')) return;
                   try {
-                    const url = await getStreamUrl(accessCode, 'movie', movie.stream_id, movie.container_extension || 'mp4');
+                    const url = await getStreamUrl(serverInfo, 'movie', movie.stream_id, movie.container_extension || 'mp4');
                     startDownload({ id: movie.stream_id, type: 'movie', name: movie.name, icon: movie.stream_icon || '', url });
                   } catch { /* ignore */ }
                 }}
@@ -220,10 +220,10 @@ export default function MovieDetail() {
               <Button 
                 variant="outline"
                 onClick={async () => {
-                  if (!accessCode || !movie) return;
+                  if (!serverInfo || !movie) return;
                   try {
                     const ext = movie.container_extension || 'mp4';
-                    const url = await getStreamUrl(accessCode, 'movie', movie.stream_id, ext);
+                    const url = await getStreamUrl(serverInfo, 'movie', movie.stream_id, ext);
                     castMedia(url, movie.name, movie.stream_icon || '');
                   } catch (e) { console.error('Error starting cast', e); }
                 }}

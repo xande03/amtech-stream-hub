@@ -22,13 +22,13 @@ const LIVE_ATTEMPTS: StreamAttempt[] = [
 export default function PlayerPage() {
   const { type, id, ext } = useParams<{ type: string; id: string; ext?: string }>();
   const [searchParams] = useSearchParams();
-  const { accessCode: liveAccessCode } = useAuth();
-  // Capture access code at mount time so admin playlist changes don't interrupt playback
-  const stableAccessCodeRef = useRef(liveAccessCode);
-  if (!stableAccessCodeRef.current && liveAccessCode) {
-    stableAccessCodeRef.current = liveAccessCode;
+  const { serverInfo: currentServerInfo } = useAuth();
+  // Capture server info at mount time so admin playlist changes don't interrupt playback
+  const stableServerInfoRef = useRef(currentServerInfo);
+  if (!stableServerInfoRef.current && currentServerInfo) {
+    stableServerInfoRef.current = currentServerInfo;
   }
-  const accessCode = stableAccessCodeRef.current;
+  const serverInfo = stableServerInfoRef.current;
   const { updateProgress, addToHistory, getResumeTime } = useWatchHistory();
   const [streamUrl, setStreamUrl] = useState<string | null>(null);
   const [resumeTime, setResumeTime] = useState<number>(0);
@@ -49,8 +49,8 @@ export default function PlayerPage() {
 
   // Load series info to find next episode
   useEffect(() => {
-    if (type !== 'series' || !seriesId || !accessCode) return;
-    getSeriesInfo(accessCode, Number(seriesId)).then(data => {
+    if (type !== 'series' || !seriesId || !serverInfo) return;
+    getSeriesInfo(serverInfo, Number(seriesId)).then(data => {
       const epNum = Number(episodeNum);
       const currentSeason = season || '';
       const eps = data.episodes?.[currentSeason] || [];
@@ -74,7 +74,7 @@ export default function PlayerPage() {
         setCurrentTitle(`${seriesName} — S${currentEp.season}E${currentEp.episode_num}`);
       }
     }).catch(() => {});
-  }, [type, seriesId, season, episodeNum, id, accessCode, seriesName]);
+  }, [type, seriesId, season, episodeNum, id, serverInfo, seriesName]);
 
   // Ensure movie/series is added to history when player opens (covers all entry points)
   useEffect(() => {
@@ -98,7 +98,7 @@ export default function PlayerPage() {
   }, [id, type, isLive, getResumeTime, searchParams, addToHistory, episodeNum, season]);
 
   useEffect(() => {
-    if (!accessCode || !type || !id) return;
+    if (!serverInfo || !type || !id) return;
     setLoading(true);
     setError(null);
     attemptIndex.current = 0;
@@ -106,7 +106,7 @@ export default function PlayerPage() {
     const streamType = type as 'live' | 'movie' | 'series';
 
     if (ext) {
-      getStreamUrl(accessCode, streamType, id, ext)
+      getStreamUrl(serverInfo, streamType, id, ext)
         .then(url => setStreamUrl(url))
         .catch(err => setError(err.message))
         .finally(() => setLoading(false));
@@ -114,17 +114,17 @@ export default function PlayerPage() {
     }
 
     if (!isLive) {
-      getStreamUrl(accessCode, streamType, id, 'mp4')
+      getStreamUrl(serverInfo, streamType, id, 'mp4')
         .then(url => setStreamUrl(url))
         .catch(err => setError(err.message))
         .finally(() => setLoading(false));
       return;
     }
 
-    tryNextAttempt(accessCode, streamType, id, 0);
-  }, [accessCode, type, id, ext, isLive]);
+    tryNextAttempt(serverInfo, streamType, id, 0);
+  }, [serverInfo, type, id, ext, isLive]);
 
-  const tryNextAttempt = (code: string, streamType: 'live' | 'movie' | 'series', streamId: string, index: number) => {
+  const tryNextAttempt = (info: any, streamType: 'live' | 'movie' | 'series', streamId: string, index: number) => {
     if (index >= LIVE_ATTEMPTS.length) {
       setError('Não foi possível carregar o canal. Tente outro canal.');
       setLoading(false);
@@ -135,25 +135,25 @@ export default function PlayerPage() {
     attemptIndex.current = index;
 
     if (attempt.proxy) {
-      const url = getProxyStreamUrl(code, streamType, streamId, attempt.ext);
+      const url = getProxyStreamUrl(info, streamType, streamId, attempt.ext);
       setStreamUrl(url);
       setLoading(false);
     } else {
-      getStreamUrl(code, streamType, streamId, attempt.ext)
+      getStreamUrl(info, streamType, streamId, attempt.ext)
         .then(url => { setStreamUrl(url); setLoading(false); })
-        .catch(() => tryNextAttempt(code, streamType, streamId, index + 1));
+        .catch(() => tryNextAttempt(info, streamType, streamId, index + 1));
     }
   };
 
   const handleStreamError = () => {
-    if (!isLive || !accessCode || !id) return;
+    if (!isLive || !serverInfo || !id) return;
     const nextIndex = attemptIndex.current + 1;
     if (nextIndex < LIVE_ATTEMPTS.length) {
       console.log(`[Live] Attempt ${nextIndex + 1}/${LIVE_ATTEMPTS.length}: ${LIVE_ATTEMPTS[nextIndex].ext} (proxy: ${LIVE_ATTEMPTS[nextIndex].proxy})`);
       setError(null);
       setLoading(true);
       setStreamUrl(null);
-      setTimeout(() => tryNextAttempt(accessCode, type as 'live', id, nextIndex), 800);
+      setTimeout(() => tryNextAttempt(serverInfo, type as 'live', id, nextIndex), 800);
     }
   };
 
