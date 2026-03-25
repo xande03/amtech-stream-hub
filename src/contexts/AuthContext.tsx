@@ -23,16 +23,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchActiveConfig = useCallback(async () => {
     try {
-      const { data } = await supabase.functions.invoke('admin-config', {
-        body: { action: 'get_active_config' },
-      });
-      if (data?.config) {
-        setAccessCode(data.config.access_code);
-        setPlaylistName(data.config.playlist_name);
-        localStorage.setItem('xerife_access_code', data.config.access_code);
-        localStorage.setItem('xerife_playlist_name', data.config.playlist_name);
+      // Direct database access instead of Edge Function
+      const { data, error } = await supabase
+        .from('admin_config')
+        .select('id, server_url, username, playlist_name, access_code, is_active')
+        .eq('is_active', true)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (data) {
+        setAccessCode(data.access_code);
+        setPlaylistName(data.playlist_name);
+        localStorage.setItem('xerife_access_code', data.access_code);
+        localStorage.setItem('xerife_playlist_name', data.playlist_name);
       } else {
-        // Fallback to local if network fails but still continue
+        // Fallback to local
         const savedCode = localStorage.getItem('xerife_access_code');
         if (savedCode) {
           setAccessCode(savedCode);
@@ -40,7 +46,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
     } catch { 
-      // Fallback on error
       const savedCode = localStorage.getItem('xerife_access_code');
       if (savedCode) {
         setAccessCode(savedCode);
