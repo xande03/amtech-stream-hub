@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { QRCodeSVG } from 'qrcode.react';
 import { Copy, Check, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
+import logo from '@/assets/amtech-icon.png';
 
 interface ShareDialogProps {
   isOpen: boolean;
@@ -70,8 +71,8 @@ export function ShareDialog({ isOpen, onClose, title, type, id }: ShareDialogPro
             level="H" 
             includeMargin={false}
             imageSettings={{
-              src: "/lovable-uploads/logo.png", // Fallback if logo exists
-              x: undefined, y: undefined, height: 40, width: 40, excavate: true,
+              src: logo,
+              x: undefined, y: undefined, height: 50, width: 50, excavate: true,
             }}
             fgColor="#18181b" // Match zinc-900 logic
           />

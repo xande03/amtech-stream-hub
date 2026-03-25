@@ -28,43 +28,48 @@ import { CustomColorsProvider } from "./contexts/CustomColorsContext";
 
 const queryClient = new QueryClient();
 
+import { useLocation } from "react-router-dom";
+import { AnimatePresence } from 'framer-motion';
+import PageTransition from "@/components/PageTransition";
+
 function AppRoutes() {
   const { isConfigured } = useAuth();
+  const location = useLocation();
 
-  // Route for shared player is accessible even when not configured (requires ac param)
   const sharedRoutes = (
     <Route path="/view/:type/:id/:name?" element={<SharedPlayer />} />
   );
 
-  if (!isConfigured) {
-    return (
-      <Routes>
-        {sharedRoutes}
-        <Route path="/settings" element={<AppLayout><SettingsPage /></AppLayout>} />
-        <Route path="*" element={<Navigate to="/settings" replace />} />
-      </Routes>
-    );
-  }
-
   return (
-    <Routes>
-      <Route path="/admin" element={<AdminPage />} />
-      <Route path="/player/:type/:id/:ext?" element={<PlayerPage />} />
-      {sharedRoutes}
-      <Route path="/" element={<AppLayout><Home /></AppLayout>} />
-      <Route path="/live" element={<AppLayout><LiveTV /></AppLayout>} />
-      <Route path="/movies" element={<AppLayout><Movies /></AppLayout>} />
-      <Route path="/movies/:id" element={<AppLayout><MovieDetail /></AppLayout>} />
-      <Route path="/series" element={<AppLayout><SeriesPage /></AppLayout>} />
-      <Route path="/series/:id" element={<AppLayout><SeriesDetail /></AppLayout>} />
-      <Route path="/favorites" element={<AppLayout><Favorites /></AppLayout>} />
-      <Route path="/finder" element={<AppLayout><MovieFinder /></AppLayout>} />
-      <Route path="/history" element={<AppLayout><History /></AppLayout>} />
-      <Route path="/downloads" element={<AppLayout><Downloads /></AppLayout>} />
-      
-      <Route path="/settings" element={<AppLayout><SettingsPage /></AppLayout>} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname.split('/')[1]}>
+        {!isConfigured ? (
+          <>
+            {sharedRoutes}
+            <Route path="/settings" element={<AppLayout><PageTransition><SettingsPage /></PageTransition></AppLayout>} />
+            <Route path="*" element={<Navigate to="/settings" replace />} />
+          </>
+        ) : (
+          <>
+            <Route path="/admin" element={<PageTransition><AdminPage /></PageTransition>} />
+            <Route path="/player/:type/:id/:ext?" element={<PlayerPage />} />
+            {sharedRoutes}
+            <Route path="/" element={<AppLayout><PageTransition><Home /></PageTransition></AppLayout>} />
+            <Route path="/live" element={<AppLayout><PageTransition><LiveTV /></PageTransition></AppLayout>} />
+            <Route path="/movies" element={<AppLayout><PageTransition><Movies /></PageTransition></AppLayout>} />
+            <Route path="/movies/:id" element={<AppLayout><PageTransition><MovieDetail /></PageTransition></AppLayout>} />
+            <Route path="/series" element={<AppLayout><PageTransition><SeriesPage /></PageTransition></AppLayout>} />
+            <Route path="/series/:id" element={<AppLayout><PageTransition><SeriesDetail /></PageTransition></AppLayout>} />
+            <Route path="/favorites" element={<AppLayout><PageTransition><Favorites /></PageTransition></AppLayout>} />
+            <Route path="/finder" element={<AppLayout><PageTransition><MovieFinder /></PageTransition></AppLayout>} />
+            <Route path="/history" element={<AppLayout><PageTransition><History /></PageTransition></AppLayout>} />
+            <Route path="/downloads" element={<AppLayout><PageTransition><Downloads /></PageTransition></AppLayout>} />
+            <Route path="/settings" element={<AppLayout><PageTransition><SettingsPage /></PageTransition></AppLayout>} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </>
+        )}
+      </Routes>
+    </AnimatePresence>
   );
 }
 

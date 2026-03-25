@@ -23,12 +23,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchActiveConfig = useCallback(async () => {
     try {
-      const { data } = await supabase.functions.invoke('admin-config', {
-        body: { action: 'get_active_config' },
-      });
-      if (data?.config) {
-        setAccessCode(data.config.access_code);
-        setPlaylistName(data.config.playlist_name);
+      const savedCode = localStorage.getItem('xerife_access_code');
+      const savedName = localStorage.getItem('xerife_playlist_name');
+      
+      if (savedCode) {
+        setAccessCode(savedCode);
+        setPlaylistName(savedName || 'Minha Playlist');
       } else {
         setAccessCode(null);
         setPlaylistName(null);
@@ -45,10 +45,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const setConfig = useCallback((code: string, info?: any) => {
     setAccessCode(code);
+    localStorage.setItem('xerife_access_code', code);
     if (info) {
       setServerInfo(info.server_info);
       setUserInfo(info.user_info);
       setPlaylistName(info.playlist_name);
+      localStorage.setItem('xerife_playlist_name', info.playlist_name);
     }
   }, []);
 
@@ -57,6 +59,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setServerInfo(null);
     setUserInfo(null);
     setPlaylistName(null);
+    localStorage.removeItem('xerife_access_code');
+    localStorage.removeItem('xerife_playlist_name');
   }, []);
 
   if (!loaded) return null; // Wait until config is fetched
