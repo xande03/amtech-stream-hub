@@ -66,6 +66,7 @@ const App = () => {
 
   return (
     <ThemeProvider defaultTheme="dark" attribute="class">
+      <CustomColorsProvider>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Toaster />
