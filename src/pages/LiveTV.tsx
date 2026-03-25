@@ -174,11 +174,11 @@ export default function LiveTV() {
       </div>
 
       <div className="flex flex-col gap-4 mb-6">
-        <div className="flex gap-2 items-center">
-          <div className="relative max-w-lg w-full">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <Input placeholder="Buscar canais..." value={search} onChange={e => setSearch(e.target.value)} className="pl-12 h-12 text-base bg-secondary border-border text-foreground rounded-xl" />
-          </div>
+        <div className="relative max-w-lg w-full">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+          <Input placeholder="Buscar canais..." value={search} onChange={e => setSearch(e.target.value)} className="pl-12 h-12 text-base bg-secondary border-border text-foreground rounded-xl" />
+        </div>
+
         <div className="flex flex-wrap gap-3 items-center">
           <div className="flex-1 min-w-[200px]">
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
