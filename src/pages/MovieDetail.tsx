@@ -1,6 +1,5 @@
-import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-const VideoPlayer = lazy(() => import('@/components/VideoPlayer'));
 import { useParams, useNavigate } from 'react-router-dom';
 import { getVodInfo, getVodStreams, VodStream } from '@/services/xtreamApi';
 import { useFavorites } from '@/hooks/useFavorites';
@@ -9,12 +8,13 @@ import ContentCard from '@/components/ContentCard';
 import ContentRow from '@/components/ContentRow';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { Play, Heart, ArrowLeft, Star, Clock, Calendar, RotateCcw, Download, CheckCircle2, Loader2, Youtube, X, Cast } from 'lucide-react';
+import { Play, Heart, ArrowLeft, Star, Clock, RotateCcw, Download, CheckCircle2, Loader2, Youtube, X, Cast, Share2 } from 'lucide-react';
 import { DetailSkeleton } from '@/components/LoadingSkeleton';
 import { backdropImage, posterImage } from '@/lib/imageProxy';
 import { useDownloads } from '@/hooks/useDownloads';
 import { useChromecast } from '@/hooks/useChromecast';
 import { getStreamUrl } from '@/services/xtreamApi';
+import { ShareDialog } from '@/components/ShareDialog';
 
 function extractYouTubeId(input: string): string | null {
   if (!input) return null;
@@ -36,8 +36,7 @@ export default function MovieDetail() {
   const [info, setInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showTrailer, setShowTrailer] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [streamUrl, setStreamUrl] = useState('');
+  const [showShareDialog, setShowShareDialog] = useState(false);
 
   const formatTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
@@ -69,18 +68,18 @@ export default function MovieDetail() {
     try {
       setLoading(true);
       const url = await getStreamUrl(accessCode, 'movie', movie.stream_id, movie.container_extension || 'mp4');
-      setStreamUrl(url);
+      
+      // Abrir player externo
+      window.open(url, '_blank');
+      
       addToHistory({ id: movie.stream_id, type: 'movie', name: movie.name, icon: movie.stream_icon });
-      setIsPlaying(true);
       setLoading(false);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       console.error(err);
       setLoading(false);
     }
   };
 
-  // Similar movies: same category or overlapping genres
   const similarMovies = useMemo(() => {
     if (!movie || allMovies.length === 0) return [];
     const movieInfo = info?.info || movie;
@@ -91,9 +90,7 @@ export default function MovieDetail() {
       .filter(m => m.stream_id !== movie.stream_id)
       .map(m => {
         let score = 0;
-        // Same category
         if (m.category_id === movie.category_id) score += 3;
-        // Overlapping genres
         const mGenre = (m.genre || '').toLowerCase();
         genres.forEach(g => { if (mGenre.includes(g)) score += 2; });
         return { movie: m, score };
@@ -121,52 +118,20 @@ export default function MovieDetail() {
 
   return (
     <div className="pb-24 relative">
-      {/* Adaptive Glow Background */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-30">
         <motion.div 
-          animate={{ 
-            scale: [1, 1.2, 1],
-            rotate: [0, 5, 0]
-          }}
+          animate={{ scale: [1, 1.2, 1], rotate: [0, 5, 0] }}
           transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
           className="absolute -top-[10%] -left-[10%] w-[120%] h-[120%] blur-[120px] saturate-150"
         >
-          <img 
-            src={movie.stream_icon ? posterImage(movie.stream_icon) : ''} 
-            className="w-full h-full object-cover"
-            alt=""
-          />
+          <img src={movie.stream_icon ? posterImage(movie.stream_icon) : ''} className="w-full h-full object-cover" alt="" />
         </motion.div>
         <div className="absolute inset-0 bg-background/60" />
       </div>
 
       {/* Backdrop banner */}
-      <div className="relative -mx-4 -mt-4 md:-mx-6 md:-mt-6 mb-6 md:h-[500px] md:aspect-auto aspect-[16/9] overflow-hidden bg-black flex items-center justify-center z-10 transition-all duration-500">
-        {isPlaying && streamUrl ? (
-          <div className="absolute inset-0 z-30 bg-black animate-in fade-in duration-500">
-             <Suspense fallback={<div className="w-full h-full flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}>
-              <VideoPlayer 
-                url={streamUrl} 
-                title={movie.name} 
-                startTime={resumeTime}
-                className="w-full h-full"
-                onClose={() => setIsPlaying(false)}
-                onProgress={(p, t, d) => {
-                  if (!movie) return;
-                  addToHistory({ 
-                    id: movie.stream_id, 
-                    type: 'movie', 
-                    name: movie.name, 
-                    icon: movie.stream_icon,
-                    progress: p,
-                    currentTime: t,
-                    duration: d 
-                  });
-                }}
-              />
-            </Suspense>
-          </div>
-        ) : showTrailer && videoId ? (
+      <div className="relative -mx-4 -mt-4 md:-mx-6 md:-mt-6 mb-6 md:h-[500px] md:aspect-auto aspect-[16/9] overflow-hidden bg-black flex items-center justify-center z-10">
+        {showTrailer && videoId ? (
           <div className="absolute inset-0 z-20 bg-black flex items-center justify-center">
             <iframe
               src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`}
@@ -201,7 +166,7 @@ export default function MovieDetail() {
       </div>
 
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center md:items-start md:flex-row gap-6 md:px-4">
-        {/* Desktop Poster (hidden on mobile as it's the backdrop) */}
+        {/* Desktop Poster */}
         <div className="hidden md:block w-64 flex-shrink-0">
           <div className="aspect-[2/3] rounded-xl overflow-hidden bg-secondary relative shadow-lg">
             {movie.stream_icon ? <img src={posterImage(movie.stream_icon)} alt={movie.name} className="w-full h-full object-cover" onError={(e) => { const img = e.target as HTMLImageElement; if (!img.dataset.retried) { img.dataset.retried = '1'; img.src = movie.stream_icon; } }} /> : <div className="w-full h-full flex items-center justify-center text-muted-foreground">Sem capa</div>}
@@ -219,18 +184,12 @@ export default function MovieDetail() {
 
         <div className="flex-1 w-full space-y-5 text-center md:text-left">
           <h1 className="text-3xl md:text-4xl font-black text-foreground uppercase tracking-wide">{movie.name}</h1>
-          
           <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-sm font-medium text-muted-foreground">
             {movie.rating && <span className="flex items-center gap-1.5 bg-secondary/50 px-3 py-1 rounded-full"><Star className="w-4 h-4 fill-primary text-primary" /> {movie.rating}</span>}
             {releaseDate && <span className="px-3 py-1 rounded-full bg-secondary/50">{releaseDate.split('-')[0]}</span>}
             {duration && <span className="flex items-center gap-1.5 px-3 py-1"><Clock className="w-4 h-4" /> {duration}</span>}
           </div>
-
-          {genre && (
-            <div className="font-medium text-foreground text-sm overflow-hidden text-ellipsis whitespace-nowrap px-4 md:px-0">
-              {genre.split(',').map(g => g.trim()).join(', ')}
-            </div>
-          )}
+          {genre && <div className="font-medium text-foreground text-sm overflow-hidden text-ellipsis whitespace-nowrap px-4 md:px-0">{genre.split(',').map(g => g.trim()).join(', ')}</div>}
 
           <div className="pt-2 px-4 md:px-0 flex flex-col gap-4">
             {resumeTime > 0 ? (
@@ -244,13 +203,7 @@ export default function MovieDetail() {
             )}
 
             <div className="flex items-center justify-start gap-2 py-2 w-full overflow-x-auto no-scrollbar pl-1 pr-4 md:pl-0">
-              <button 
-                onClick={() => toggleFavorite({ id: movie.stream_id, type: 'movie', name: movie.name, icon: movie.stream_icon })} 
-                className={`flex-shrink-0 p-3.5 md:p-4 rounded-full border border-border bg-background transition-colors hover:bg-secondary flex items-center justify-center ${isFavorite(movie.stream_id, 'movie') ? 'border-primary/50' : ''}`}
-              >
-                <Heart className={`w-5 h-5 ${isFavorite(movie.stream_id, 'movie') ? 'fill-primary text-primary' : 'text-foreground'}`} />
-              </button>
-
+              <button onClick={() => toggleFavorite({ id: movie.stream_id, type: 'movie', name: movie.name, icon: movie.stream_icon })} className={`flex-shrink-0 p-3.5 md:p-4 rounded-full border border-border bg-background transition-colors hover:bg-secondary flex items-center justify-center ${isFavorite(movie.stream_id, 'movie') ? 'border-primary/50' : ''}`}><Heart className={`w-5 h-5 ${isFavorite(movie.stream_id, 'movie') ? 'fill-primary text-primary' : 'text-foreground'}`} /></button>
               <button 
                 onClick={async (e) => {
                   e.stopPropagation();
@@ -270,14 +223,7 @@ export default function MovieDetail() {
                   return <Download className="w-5 h-5 text-foreground" />;
                 })()}
               </button>
-
-              {trailerValue && videoId && (
-                <Button variant="outline" onClick={() => { setShowTrailer(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="flex-shrink-0 rounded-full px-5 py-5 border-border text-foreground hover:bg-secondary font-medium h-auto">
-                  <Youtube className="w-5 h-5 mr-2 text-destructive" />
-                  Trailer
-                </Button>
-              )}
-              
+              {trailerValue && videoId && <Button variant="outline" onClick={() => { setShowTrailer(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="flex-shrink-0 rounded-full px-5 py-5 border-border text-foreground hover:bg-secondary font-medium h-auto"><Youtube className="w-5 h-5 mr-2 text-destructive" /> Trailer</Button>}
               <Button 
                 variant="outline"
                 onClick={async () => {
@@ -290,9 +236,9 @@ export default function MovieDetail() {
                 }}
                 className="flex-shrink-0 rounded-full px-5 py-5 border-border text-foreground hover:bg-secondary font-medium h-auto"
               >
-                <Cast className="w-5 h-5 mr-2" />
-                Chromecast
+                <Cast className="w-5 h-5 mr-2" /> Chromecast
               </Button>
+              <Button variant="outline" onClick={() => setShowShareDialog(true)} className="flex-shrink-0 rounded-full px-5 py-5 border-border text-foreground hover:bg-secondary font-medium h-auto"><Share2 className="w-5 h-5 mr-2" /> Compartilhar</Button>
             </div>
           </div>
 
@@ -304,23 +250,19 @@ export default function MovieDetail() {
         </div>
       </motion.div>
 
-      {/* Similar movies section */}
       {similarMovies.length > 0 && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mt-10">
           <ContentRow title="Títulos Semelhantes">
             {similarMovies.map(m => (
               <div key={m.stream_id} className="w-32 md:w-40 flex-shrink-0">
-                <ContentCard
-                  title={m.name}
-                  image={m.stream_icon}
-                  rating={m.rating}
-                  onClick={() => navigate(`/movies/${m.stream_id}`)}
-                />
+                <ContentCard title={m.name} image={m.stream_icon} rating={m.rating} onClick={() => navigate(`/movies/${m.stream_id}`)} />
               </div>
             ))}
           </ContentRow>
         </motion.div>
       )}
+
+      {movie && <ShareDialog isOpen={showShareDialog} onClose={() => setShowShareDialog(false)} title={movie.name} type="movie" id={movie.stream_id} />}
     </div>
   );
 }

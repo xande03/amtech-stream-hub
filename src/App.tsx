@@ -18,6 +18,7 @@ import Favorites from "@/pages/Favorites";
 import MovieFinder from "@/pages/MovieFinder";
 import History from "@/pages/History";
 import Downloads from "@/pages/Downloads";
+import SharedPlayer from "@/pages/SharedPlayer";
 
 import SettingsPage from "@/pages/SettingsPage";
 import AdminPage from "@/pages/AdminPage";
@@ -29,9 +30,15 @@ const queryClient = new QueryClient();
 function AppRoutes() {
   const { isConfigured } = useAuth();
 
+  // Route for shared player is accessible even when not configured (requires ac param)
+  const sharedRoutes = (
+    <Route path="/view/:type/:id/:name?" element={<SharedPlayer />} />
+  );
+
   if (!isConfigured) {
     return (
       <Routes>
+        {sharedRoutes}
         <Route path="/settings" element={<AppLayout><SettingsPage /></AppLayout>} />
         <Route path="*" element={<Navigate to="/settings" replace />} />
       </Routes>
@@ -42,6 +49,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/admin" element={<AdminPage />} />
       <Route path="/player/:type/:id/:ext?" element={<PlayerPage />} />
+      {sharedRoutes}
       <Route path="/" element={<AppLayout><Home /></AppLayout>} />
       <Route path="/live" element={<AppLayout><LiveTV /></AppLayout>} />
       <Route path="/movies" element={<AppLayout><Movies /></AppLayout>} />
@@ -54,7 +62,7 @@ function AppRoutes() {
       <Route path="/downloads" element={<AppLayout><Downloads /></AppLayout>} />
       
       <Route path="/settings" element={<AppLayout><SettingsPage /></AppLayout>} />
-      <Route path="*" element={<NotFound />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

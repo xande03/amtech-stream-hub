@@ -6,96 +6,82 @@ export function useChromecast() {
 
   const initCastAndGetSession = (): Promise<any> => {
     return new Promise((resolve, reject) => {
-      // If already initialized
-      if (window.cast?.framework) {
-        const context = window.cast.framework.CastContext.getInstance();
-        try {
-          context.setOptions({
-            receiverApplicationId: window.chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
-            autoJoinPolicy: window.chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
-          });
-        } catch (e) { /* ignore if already set */ }
-        
-        context.requestSession()
-          .then(() => resolve(context.getCurrentSession()))
-          .catch(reject);
+      if (!window.chrome?.cast || !window.cast?.framework) {
+        reject('API do Chromecast não carregada. Verifique sua conexão ou tente recarregar a página.');
         return;
       }
 
-      // Add scripts
-      window.__onGCastApiAvailable = (isAvailable: boolean) => {
-        if (isAvailable && window.cast?.framework) {
-          const context = window.cast.framework.CastContext.getInstance();
-          context.setOptions({
-            receiverApplicationId: window.chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
-            autoJoinPolicy: window.chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
-          });
-          context.requestSession()
-            .then(() => resolve(context.getCurrentSession()))
-            .catch(reject);
-        } else {
-          reject('Cast API not available');
-        }
-      };
-
-      if (!document.getElementById('cast-api')) {
-        const script = document.createElement('script');
-        script.id = 'cast-api';
-        script.src = 'https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1';
-        document.body.appendChild(script);
+      const context = window.cast.framework.CastContext.getInstance();
+      try {
+        context.setOptions({
+          receiverApplicationId: window.chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
+          autoJoinPolicy: window.chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED,
+          resumeSavedSession: true
+        });
+      } catch (e) { /* already initialized */ }
+      
+      const session = context.getCurrentSession();
+      if (session) {
+        resolve(session);
+        return;
       }
+
+      context.requestSession()
+        .then(() => resolve(context.getCurrentSession()))
+        .catch(reject);
     });
   };
 
   const castMedia = useCallback(async (url: string, title: string, poster: string) => {
     try {
-      if (isCasting) {
-        toast.info('Já existe uma transmissão em andamento.');
-        return;
-      }
-      
       const session = await initCastAndGetSession();
       if (!session) {
-        toast.error('Não foi possível iniciar a sessão de espelhamento.');
+        toast.error('Não foi possível conectar ao dispositivo.');
         return;
       }
 
+      // Metadata with more info for better experience
       const mediaInfo = new window.chrome.cast.media.MediaInfo(url, 'video/mp4');
       mediaInfo.metadata = new window.chrome.cast.media.GenericMediaMetadata();
       mediaInfo.metadata.metadataType = window.chrome.cast.media.MetadataType.GENERIC;
       mediaInfo.metadata.title = title;
+      mediaInfo.metadata.subtitle = 'Transmitindo via Xerife Hub';
       mediaInfo.metadata.images = [{ url: poster }];
 
       const request = new window.chrome.cast.media.LoadRequest(mediaInfo);
+      request.autoplay = true;
       
       setIsCasting(true);
-      toast.loading('Iniciando transmissão...', { id: 'cast-loading' });
+      const loadingToast = toast.loading(`Enviando ${title} para a TV...`);
 
       session.loadMedia(request)
         .then(() => {
-          toast.dismiss('cast-loading');
-          toast.success(`Transmitindo ${title} para o dispositivo.`);
+          toast.dismiss(loadingToast);
+          toast.success(`Transmitindo ${title}`);
           
-          // Update local media session for control from lock screen/background if possible
           if ('mediaSession' in navigator) {
             navigator.mediaSession.metadata = new MediaMetadata({
               title,
+              artist: 'Xerife Hub',
               artwork: [{ src: poster, sizes: '512x512', type: 'image/png' }]
             });
           }
         })
         .catch((e: any) => {
-          toast.dismiss('cast-loading');
-          toast.error('Erro ao transmitir a mídia.');
+          toast.dismiss(loadingToast);
+          toast.error('Ocorreu um erro ao iniciar a reprodução na TV.');
           setIsCasting(false);
-          console.error(e);
+          console.error('Session loadMedia error:', e);
         });
 
-    } catch (error) {
-      console.error('Cast error:', error);
-      toast.error('Falha ao conectar ou selecionar dispositivo.');
+    } catch (error: any) {
+      if (error !== 'cancel') {
+        console.error('Cast error:', error);
+        toast.error(typeof error === 'string' ? error : 'Falha ao conectar ou selecionar dispositivo.');
+      }
+      setIsCasting(false);
     }
-  }, [isCasting]);
+  }, []);
 
   return { castMedia, isCasting };
 }

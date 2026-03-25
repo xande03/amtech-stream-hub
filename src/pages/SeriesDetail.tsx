@@ -1,6 +1,5 @@
-import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-const VideoPlayer = lazy(() => import('@/components/VideoPlayer'));
 import { useParams, useNavigate } from 'react-router-dom';
 import { getSeriesInfo, getSeriesList, SeriesInfo, Series, Episode } from '@/services/xtreamApi';
 import { useFavorites } from '@/hooks/useFavorites';
@@ -9,12 +8,13 @@ import ContentCard from '@/components/ContentCard';
 import ContentRow from '@/components/ContentRow';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { Play, Heart, ArrowLeft, Star, CheckCircle2, RotateCcw, Download, Loader2, Youtube, X, Cast } from 'lucide-react';
+import { Play, Heart, ArrowLeft, Star, CheckCircle2, RotateCcw, Download, Loader2, Youtube, X, Cast, Share2 } from 'lucide-react';
 import { SeriesDetailSkeleton } from '@/components/LoadingSkeleton';
 import { backdropImage, posterImage, episodeThumbnail } from '@/lib/imageProxy';
 import { useDownloads } from '@/hooks/useDownloads';
 import { useChromecast } from '@/hooks/useChromecast';
 import { getStreamUrl } from '@/services/xtreamApi';
+import { ShareDialog } from '@/components/ShareDialog';
 
 function extractYouTubeId(input: string): string | null {
   if (!input) return null;
@@ -36,15 +36,12 @@ export default function SeriesDetail() {
   const [selectedSeason, setSelectedSeason] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [showTrailer, setShowTrailer] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [streamUrl, setStreamUrl] = useState('');
-  const [currentEpisodeTitle, setCurrentEpisodeTitle] = useState('');
-  const [currentEpisode, setCurrentEpisode] = useState<Episode | null>(null);
+  const [showShareDialog, setShowShareDialog] = useState(false);
 
   useEffect(() => {
     if (!accessCode || !id) return;
     setLoading(true);
-    setShowTrailer(false); // Reset trailer when series changes
+    setShowTrailer(false);
     Promise.all([
       getSeriesInfo(accessCode, Number(id)),
       getSeriesList(accessCode),
@@ -79,15 +76,13 @@ export default function SeriesDetail() {
       const ext = episode.container_extension || 'mp4';
       const url = await getStreamUrl(accessCode, 'series', episode.id, ext);
       
+      // Abrir player externo
+      window.open(url, '_blank');
+      
       const seriesCover = seriesInfo.info.cover || seriesInfo.info.backdrop_path?.[0] || '';
       addToHistory({ id: episode.id, type: 'series', name: seriesInfo.info.name, icon: seriesCover, episodeInfo: `S${episode.season}E${episode.episode_num}` });
       
-      setStreamUrl(url);
-      setCurrentEpisode(episode);
-      setCurrentEpisodeTitle(`S${episode.season}E${episode.episode_num} - ${episode.title || ''}`);
-      setIsPlaying(true);
       setLoading(false);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       console.error(err);
       setLoading(false);
@@ -127,57 +122,20 @@ export default function SeriesDetail() {
 
   return (
     <div className="pb-24 relative">
-      {/* Adaptive Glow Background */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-30">
         <motion.div 
-          animate={{ 
-            scale: [1, 1.2, 1],
-            rotate: [0, -5, 0]
-          }}
+          animate={{ scale: [1, 1.2, 1], rotate: [0, -5, 0] }}
           transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
           className="absolute -top-[10%] -left-[10%] w-[120%] h-[120%] blur-[120px] saturate-150"
         >
-          <img 
-            src={info.cover ? posterImage(info.cover) : ''} 
-            className="w-full h-full object-cover"
-            alt=""
-          />
+          <img src={info.cover ? posterImage(info.cover) : ''} className="w-full h-full object-cover" alt="" />
         </motion.div>
         <div className="absolute inset-0 bg-background/60" />
       </div>
 
       {/* Backdrop banner */}
       <div className="relative -mx-4 -mt-4 md:-mx-6 md:-mt-6 mb-6 md:h-[500px] md:aspect-auto aspect-[16/9] overflow-hidden bg-black flex items-center justify-center z-10 transition-all duration-500">
-        {isPlaying && streamUrl ? (
-          <div className="absolute inset-0 z-30 bg-black animate-in fade-in duration-500">
-            <Suspense fallback={<div className="w-full h-full flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}>
-              <VideoPlayer 
-                url={streamUrl} 
-                title={`${seriesInfo.info.name} - ${currentEpisodeTitle}`}
-                startTime={currentEpisode ? getEpisodeResumeTime(currentEpisode.id) : 0}
-                className="w-full h-full"
-                onClose={() => setIsPlaying(false)}
-                onProgress={(p, t, d) => {
-                  if (!currentEpisode || !seriesInfo) return;
-                  const seriesCover = seriesInfo.info.cover || seriesInfo.info.backdrop_path?.[0] || '';
-                  addToHistory({ 
-                    id: currentEpisode.id, 
-                    type: 'series', 
-                    name: seriesInfo.info.name, 
-                    icon: seriesCover, 
-                    episodeInfo: `S${currentEpisode.season}E${currentEpisode.episode_num}`,
-                    progress: p,
-                    currentTime: t,
-                    duration: d
-                  });
-                }}
-                onNextEpisode={() => {
-                   // Handle next episode logic here if needed
-                }}
-              />
-            </Suspense>
-          </div>
-        ) : showTrailer && videoId ? (
+        {showTrailer && videoId ? (
           <div className="absolute inset-0 z-20 bg-black flex items-center justify-center">
             <iframe
               src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`}
@@ -221,17 +179,11 @@ export default function SeriesDetail() {
 
         <div className="flex-1 w-full space-y-5 text-center md:text-left">
           <h1 className="text-3xl md:text-4xl font-black text-foreground uppercase tracking-wide">{info.name}</h1>
-          
           <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-sm font-medium text-muted-foreground">
             {info.rating && <span className="flex items-center gap-1.5 bg-secondary/50 px-3 py-1 rounded-full"><Star className="w-4 h-4 fill-primary text-primary" /> {info.rating}</span>}
             {info.releaseDate && <span className="px-3 py-1 rounded-full bg-secondary/50">{info.releaseDate.split('-')[0]}</span>}
           </div>
-
-          {info.genre && (
-            <div className="font-medium text-foreground text-sm overflow-hidden text-ellipsis whitespace-nowrap px-4 md:px-0">
-              {info.genre.split(',').map(g => g.trim()).join(', ')}
-            </div>
-          )}
+          {info.genre && <div className="font-medium text-foreground text-sm overflow-hidden text-ellipsis whitespace-nowrap px-4 md:px-0">{info.genre.split(',').map(g => g.trim()).join(', ')}</div>}
 
           <div className="pt-2 px-4 md:px-0 flex flex-col gap-4">
             <Button 
@@ -301,9 +253,9 @@ export default function SeriesDetail() {
                 }}
                 className="flex-shrink-0 rounded-full px-5 py-5 border-border text-foreground hover:bg-secondary font-medium h-auto"
               >
-                <Cast className="w-5 h-5 mr-2" />
-                Chromecast
+                <Cast className="w-5 h-5 mr-2" /> Chromecast
               </Button>
+              <Button variant="outline" onClick={() => setShowShareDialog(true)} className="flex-shrink-0 rounded-full px-5 py-5 border-border text-foreground hover:bg-secondary font-medium h-auto"><Share2 className="w-5 h-5 mr-2" /> Compartilhar</Button>
             </div>
           </div>
 
@@ -317,9 +269,7 @@ export default function SeriesDetail() {
         <div className="mb-4">
           <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
             {seasons.map(s => (
-              <button key={s} onClick={() => setSelectedSeason(s)} className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${selectedSeason === s ? 'gradient-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'}`}>
-                Temporada {s}
-              </button>
+              <button key={s} onClick={() => setSelectedSeason(s)} className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${selectedSeason === s ? 'gradient-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'}`}>Temporada {s}</button>
             ))}
           </div>
         </div>
@@ -335,10 +285,7 @@ export default function SeriesDetail() {
                 className="rounded-lg bg-card border border-border hover:border-primary/30 transition-colors cursor-pointer group overflow-hidden"
                 onClick={() => handlePlayEpisode(ep)}>
                 <div className="flex items-start gap-4 p-3">
-                  {/* Episode number */}
                   <span className="text-lg font-medium text-muted-foreground mt-2 w-6 text-center flex-shrink-0">{index + 1}</span>
-                  
-                  {/* Thumbnail with progress bar overlay */}
                   <div className="w-28 flex-shrink-0">
                     <div className="aspect-video rounded-md overflow-hidden bg-secondary relative">
                       {ep.info?.movie_image ? (
@@ -348,21 +295,10 @@ export default function SeriesDetail() {
                           <Play className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
                         </div>
                       )}
-                      {isWatched && (
-                        <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
-                          <CheckCircle2 className="w-6 h-6 text-primary" />
-                        </div>
-                      )}
-                      {/* Progress bar at bottom of thumbnail */}
-                      {progress > 0 && progress <= 90 && (
-                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-secondary/80">
-                          <div className="h-full bg-destructive rounded-r-full" style={{ width: `${progress}%` }} />
-                        </div>
-                      )}
+                      {isWatched && <div className="absolute inset-0 bg-background/60 flex items-center justify-center"><CheckCircle2 className="w-6 h-6 text-primary" /></div>}
+                      {progress > 0 && progress <= 90 && <div className="absolute bottom-0 left-0 right-0 h-1 bg-secondary/80"><div className="h-full bg-destructive rounded-r-full" style={{ width: `${progress}%` }} /></div>}
                     </div>
                   </div>
-
-                  {/* Info */}
                   <div className="flex-1 min-w-0 pt-0.5">
                     <div className="flex items-start justify-between gap-2">
                       <p className={`text-sm font-semibold ${isWatched ? 'text-muted-foreground' : 'text-foreground'}`}>{ep.title || `Episódio ${ep.episode_num}`}</p>
@@ -370,15 +306,11 @@ export default function SeriesDetail() {
                     </div>
                     {(() => {
                       const epResume = getEpisodeResumeTime(ep.id);
-                      if (epResume > 0 && !isWatched) {
-                        return <p className="text-xs text-primary flex items-center gap-1 mt-0.5"><RotateCcw className="w-3 h-3" /> Retomar de {formatTime(epResume)}</p>;
-                      }
+                      if (epResume > 0 && !isWatched) return <p className="text-xs text-primary flex items-center gap-1 mt-0.5"><RotateCcw className="w-3 h-3" /> Retomar de {formatTime(epResume)}</p>;
                       return null;
                     })()}
                     {ep.info?.plot && <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{ep.info.plot}</p>}
                   </div>
-
-                  {/* Download button */}
                   <button
                     className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 self-center"
                     onClick={async (e) => {
@@ -389,16 +321,7 @@ export default function SeriesDetail() {
                       try {
                         const ext = ep.container_extension || 'mp4';
                         const url = await getStreamUrl(accessCode, 'series', ep.id, ext);
-                        startDownload({
-                          id: ep.id,
-                          type: 'series',
-                          name: seriesInfo.info.name,
-                          icon: seriesInfo.info.cover || '',
-                          url,
-                          episodeInfo: epInfo,
-                          episodeTitle: ep.title,
-                          seriesId: seriesInfo.info.series_id,
-                        });
+                        startDownload({ id: ep.id, type: 'series', name: seriesInfo.info.name, icon: seriesInfo.info.cover || '', url, episodeInfo: epInfo, episodeTitle: ep.title, seriesId: seriesInfo.info.series_id });
                       } catch { /* ignore */ }
                     }}
                   >
@@ -410,8 +333,6 @@ export default function SeriesDetail() {
                       return <Download className="w-5 h-5" />;
                     })()}
                   </button>
-
-                  {/* Cast button for individual episode */}
                   <button
                     className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 self-center hidden sm:block"
                     onClick={async (e) => {
@@ -440,17 +361,14 @@ export default function SeriesDetail() {
           <ContentRow title="Títulos Semelhantes">
             {similarSeries.map(s => (
               <div key={s.series_id} className="w-32 md:w-40 flex-shrink-0">
-                <ContentCard
-                  title={s.name}
-                  image={s.cover}
-                  rating={s.rating}
-                  onClick={() => navigate(`/series/${s.series_id}`)}
-                />
+                <ContentCard title={s.name} image={s.cover} rating={s.rating} onClick={() => navigate(`/series/${s.series_id}`)} />
               </div>
             ))}
           </ContentRow>
         </motion.div>
       )}
+
+      {seriesInfo && <ShareDialog isOpen={showShareDialog} onClose={() => setShowShareDialog(false)} title={seriesInfo.info.name} type="series" id={seriesInfo.info.series_id} />}
     </div>
   );
 }
