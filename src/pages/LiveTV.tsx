@@ -179,10 +179,30 @@ export default function LiveTV() {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <Input placeholder="Buscar canais..." value={search} onChange={e => setSearch(e.target.value)} className="pl-12 h-12 text-base bg-secondary border-border text-foreground rounded-xl" />
           </div>
+        <div className="flex flex-wrap gap-3 items-center">
+          <div className="flex-1 min-w-[200px]">
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-full h-12 bg-secondary border-border text-foreground rounded-xl px-4 focus:ring-primary/20">
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-muted-foreground" />
+                  <SelectValue placeholder="Selecione uma categoria" />
+                </div>
+              </SelectTrigger>
+              <SelectContent className="bg-popover border-border max-h-[400px]">
+                <SelectItem value="all">Todas as Categorias</SelectItem>
+                {categories.map(cat => (
+                  <SelectItem key={cat.category_id} value={cat.category_id}>
+                    {cat.category_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Status filter buttons */}
           <div className="flex gap-1 bg-secondary rounded-lg p-0.5 flex-shrink-0">
             <button onClick={() => setStatusFilter('all')} className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${statusFilter === 'all' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>Todos</button>
-            <button onClick={() => setStatusFilter('online')} className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1 ${statusFilter === 'online' ? 'bg-green-600 text-white' : 'text-muted-foreground'}`}>
+            <button onClick={() => setStatusFilter('online')} className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1 ${statusFilter === 'online' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'}`}>
               <Wifi className="w-3 h-3" /> Online
             </button>
             <button onClick={() => setStatusFilter('offline')} className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1 ${statusFilter === 'offline' ? 'bg-destructive text-destructive-foreground' : 'text-muted-foreground'}`}>
@@ -190,13 +210,6 @@ export default function LiveTV() {
             </button>
           </div>
         </div>
-
-        <DraggableScroll>
-          <button onClick={() => setSelectedCategory('all')} className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors ${selectedCategory === 'all' ? 'gradient-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'}`}>Todos</button>
-          {categories.map(cat => (
-            <button key={cat.category_id} onClick={() => setSelectedCategory(cat.category_id)} className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors ${selectedCategory === cat.category_id ? 'gradient-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'}`}>{cat.category_name}</button>
-          ))}
-        </DraggableScroll>
       </div>
 
       {viewMode === 'grid' ? (
