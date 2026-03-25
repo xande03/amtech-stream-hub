@@ -21,6 +21,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [playlistName, setPlaylistName] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
 
+  useEffect(() => {
+    // Limpeza de cache se o projeto Supabase mudar (migração)
+    const currentProject = import.meta.env.VITE_SUPABASE_URL;
+    const lastProject = localStorage.getItem('xerife_last_project');
+    
+    if (lastProject && lastProject !== currentProject) {
+      console.log('Detectada mudança de projeto Supabase. Limpando cache para garantir funcionamento de ponta a ponta...');
+      localStorage.removeItem('xerife_access_code');
+      localStorage.removeItem('xerife_playlist_name');
+      localStorage.removeItem('xerife_server_info');
+      localStorage.removeItem('xerife_admin_pass');
+    }
+    localStorage.setItem('xerife_last_project', currentProject);
+  }, []);
+
   const fetchActiveConfig = useCallback(async () => {
     try {
       // Reativando a sincronização direta com o banco de dados original (admin_config)
