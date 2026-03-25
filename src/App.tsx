@@ -79,6 +79,7 @@ const App = () => {
           </AuthProvider>
         </TooltipProvider>
       </QueryClientProvider>
+      </CustomColorsProvider>
     </ThemeProvider>
   );
 };
