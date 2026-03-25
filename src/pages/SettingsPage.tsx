@@ -69,11 +69,13 @@ export default function SettingsPage() {
     toast.success('Senha definida com sucesso!');
   };
 
-  const loadPlaylists = useCallback(() => {
+  const loadPlaylists = useCallback(async () => {
     setLoading(true);
     try {
-      const saved = localStorage.getItem('xerife_playlists');
-      setPlaylists(saved ? JSON.parse(saved) : []);
+      const { data } = await supabase.functions.invoke('admin-config', {
+        body: { action: 'get_config' },
+      });
+      setPlaylists(data?.configs || []);
     } catch { }
     setLoading(false);
   }, []);
@@ -149,74 +151,80 @@ export default function SettingsPage() {
     setTesting(false);
   };
 
-  const handleApplyConfig = (pl: PlaylistConfig) => {
-    localStorage.setItem('xerife_access_code', pl.access_code);
-    localStorage.setItem('xerife_playlist_name', pl.playlist_name);
-    refreshConfig();
-    toast.success(`Playlist "${pl.playlist_name}" ativada!`);
-  };
-
   const handleSave = async () => {
     if (!form.server_url || !form.username || !form.access_code) {
       toast.error('Preencha os campos obrigatórios');
       return;
     }
+    if (!editingId && !form.password) {
+      toast.error('Senha é obrigatória para nova playlist');
+      return;
+    }
 
     setSaving(true);
     try {
-      const newPlaylists = [...playlists];
-      const newPl: PlaylistConfig = {
-        id: editingId || Date.now().toString(),
-        server_url: form.server_url,
-        username: form.username,
-        playlist_name: form.playlist_name || 'Nova Playlist',
-        access_code: form.access_code,
-        is_active: false,
-        created_at: new Date().toISOString(),
+      const action = editingId ? 'update_config' : 'save_config';
+      const body: any = {
+        action,
+        admin_password: adminPassword,
+        config: {
+          server_url: form.server_url.trim(),
+          username: form.username.trim(),
+          playlist_name: form.playlist_name.trim() || 'Nova Playlist',
+          access_code: form.access_code.trim(),
+        },
       };
+      if (form.password) body.config.password = form.password.trim();
+      if (editingId) body.id = editingId;
 
-      if (editingId) {
-        const idx = newPlaylists.findIndex(p => p.id === editingId);
-        if (idx >= 0) newPlaylists[idx] = newPl;
-      } else {
-        newPlaylists.push(newPl);
+      const { data, error } = await supabase.functions.invoke('admin-config', { body });
+      if (data?.error) {
+        if (data.error.includes('Senha')) { setIsUnlocked(false); setAuthError('Senha inválida'); }
+        throw new Error(data.error);
       }
-
-      localStorage.setItem('xerife_playlists', JSON.stringify(newPlaylists));
-      setPlaylists(newPlaylists);
       toast.success(editingId ? 'Playlist atualizada!' : 'Playlist adicionada!');
       closeForm();
+      loadPlaylists();
+      refreshConfig();
     } catch (err: any) {
-      toast.error('Erro ao salvar localmente');
+      toast.error(err.message || 'Erro ao salvar no Supabase');
     }
     setSaving(false);
   };
 
-  const handleToggle = (id: string) => {
-    const updated = playlists.map(pl => ({
-      ...pl,
-      is_active: pl.id === id ? !pl.is_active : false
-    }));
-    
-    const active = updated.find(p => p.is_active);
-    if (active) {
-      handleApplyConfig(active);
-    } else {
-      localStorage.removeItem('xerife_access_code');
-      localStorage.removeItem('xerife_playlist_name');
+  const handleToggle = async (id: string) => {
+    try {
+      const { data } = await supabase.functions.invoke('admin-config', {
+        body: { action: 'toggle_config', id, admin_password: adminPassword },
+      });
+      if (data?.error) {
+        if (data.error.includes('Senha')) { setIsUnlocked(false); setAuthError('Senha inválida'); }
+        throw new Error(data.error);
+      }
+      toast.success('Playlist alterada!');
+      loadPlaylists();
       refreshConfig();
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao alternar');
     }
-
-    localStorage.setItem('xerife_playlists', JSON.stringify(updated));
-    setPlaylists(updated);
   };
 
-  const handleDelete = (id: string) => {
-    if (!confirm('Excluir esta playlist?')) return;
-    const filtered = playlists.filter(p => p.id !== id);
-    localStorage.setItem('xerife_playlists', JSON.stringify(filtered));
-    setPlaylists(filtered);
-    toast.success('Playlist removida');
+  const handleDelete = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir esta playlist?')) return;
+    try {
+      const { data } = await supabase.functions.invoke('admin-config', {
+        body: { action: 'delete_config', id, admin_password: adminPassword },
+      });
+      if (data?.error) {
+        if (data.error.includes('Senha')) { setIsUnlocked(false); setAuthError('Senha inválida'); }
+        throw new Error(data.error);
+      }
+      toast.success('Playlist excluída');
+      loadPlaylists();
+      refreshConfig();
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao excluir');
+    }
   };
 
   return (

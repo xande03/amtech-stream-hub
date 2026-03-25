@@ -23,18 +23,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchActiveConfig = useCallback(async () => {
     try {
+      const { data } = await supabase.functions.invoke('admin-config', {
+        body: { action: 'get_active_config' },
+      });
+      if (data?.config) {
+        setAccessCode(data.config.access_code);
+        setPlaylistName(data.config.playlist_name);
+        localStorage.setItem('xerife_access_code', data.config.access_code);
+        localStorage.setItem('xerife_playlist_name', data.config.playlist_name);
+      } else {
+        // Fallback to local if network fails but still continue
+        const savedCode = localStorage.getItem('xerife_access_code');
+        if (savedCode) {
+          setAccessCode(savedCode);
+          setPlaylistName(localStorage.getItem('xerife_playlist_name') || 'Minha Playlist');
+        }
+      }
+    } catch { 
+      // Fallback on error
       const savedCode = localStorage.getItem('xerife_access_code');
-      const savedName = localStorage.getItem('xerife_playlist_name');
-      
       if (savedCode) {
         setAccessCode(savedCode);
-        setPlaylistName(savedName || 'Minha Playlist');
-      } else {
-        setAccessCode(null);
-        setPlaylistName(null);
+        setPlaylistName(localStorage.getItem('xerife_playlist_name') || 'Minha Playlist');
       }
-    } catch {
-      setAccessCode(null);
     }
     setLoaded(true);
   }, []);
