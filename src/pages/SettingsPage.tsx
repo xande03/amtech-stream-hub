@@ -11,6 +11,7 @@ import {
   Loader2, Save, Shield, Pencil, X, CheckCircle, AlertCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
+import Configuracoes from '@/components/Configuracoes';
 
 interface PlaylistConfig {
   id: string;
@@ -438,6 +439,11 @@ export default function SettingsPage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Paleta de Cores */}
+      <div className="mt-4">
+        <Configuracoes />
       </div>
 
       <p className="text-center text-muted-foreground text-xs mt-8">AMTECH PLAYER v1.0</p>
