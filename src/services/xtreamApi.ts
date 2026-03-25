@@ -90,151 +90,95 @@ export interface StreamUrlInfo {
   password: string;
 }
 
-async function callApi(credentials: string | StreamUrlInfo, params: Record<string, any>) {
-  if (typeof credentials === 'object' && credentials?.server_url) {
-    const { server_url, username, password } = credentials;
-    const baseUrl = server_url.replace(/\/$/, '');
-    const url = new URL(`${baseUrl}/player_api.php`);
-    
-    url.searchParams.set('username', username);
-    url.searchParams.set('password', password);
-    
-    const actionMap: Record<string, string> = {
-      'get_live_categories': 'get_live_categories',
-      'get_live_streams': 'get_live_streams',
-      'get_vod_categories': 'get_vod_categories',
-      'get_vod_streams': 'get_vod_streams',
-      'get_series_categories': 'get_series_categories',
-      'get_series': 'get_series',
-      'get_series_info': 'get_series_info',
-      'get_vod_info': 'get_vod_info',
-      'get_short_epg': 'get_short_epg',
-      'check_channels': 'get_live_streams'
-    };
-
-    const action = actionMap[params.action] || params.action;
-    if (action) url.searchParams.set('action', action);
-    
-    for (const [key, value] of Object.entries(params)) {
-      if (key === 'action') continue;
-      url.searchParams.set(key, String(value));
-    }
-
-    try {
-      const response = await fetch(url.toString());
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      return await response.json();
-    } catch (err) {
-      console.warn('Direct fetch failed, trying proxy fallback...', err);
-      try {
-        const { data, error } = await supabase.functions.invoke('xtream-proxy', {
-          body: { 
-            ...params, 
-            server_url: credentials.server_url,
-            username: credentials.username,
-            password: credentials.password
-          },
-        });
-        if (error) throw error;
-        if (data?.error) throw new Error(data.error);
-        const isListing = params.action?.includes('category') || params.action === 'get_series' || params.action === 'get_series_info' || params.action?.includes('_streams');
-        return isListing ? (Array.isArray(data) ? data : []) : data;
-      } catch (proxyErr: any) {
-        console.warn('Supabase Proxy missing or failed, trying public CORS proxy...', proxyErr);
-        try {
-          // Último recurso: Usar um proxy CORS público para que o usuário veja os conteúdos
-          const publicProxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url.toString())}`;
-          const res = await fetch(publicProxyUrl);
-          const json = await res.json();
-          const parsedData = JSON.parse(json.contents);
-          const isListing = params.action?.includes('category') || params.action === 'get_series' || params.action === 'get_series_info' || params.action?.includes('_streams');
-          return isListing ? (Array.isArray(parsedData) ? parsedData : []) : parsedData;
-        } catch (totalErr) {
-          console.error('Falha total em todas as tentativas de conexão:', totalErr);
-          const isListing = params.action?.includes('category') || params.action === 'get_series' || params.action === 'get_series_info' || params.action?.includes('_streams');
-          return isListing ? [] : {};
-        }
-      }
-    }
-  }
-
-  // Fallback para código de acesso string
-  try {
-    const { data, error } = await supabase.functions.invoke('xtream-proxy', {
-      body: { ...params, access_code: credentials },
-    });
-    if (error) throw error;
-    if (data?.error) throw new Error(data.error);
-    const isListing = params.action?.includes('category') || params.action === 'get_series' || params.action === 'get_series_info' || params.action?.includes('_streams');
-    return isListing ? (Array.isArray(data) ? data : []) : data;
-  } catch (err) {
-    console.error('Erro no fallback via código:', err);
-    const isListing = params.action?.includes('category') || params.action === 'get_series' || params.action === 'get_series_info' || params.action?.includes('_streams');
-    return isListing ? [] : {};
-  }
+async function callProxy(body: Record<string, any>) {
+  const { data, error } = await supabase.functions.invoke('xtream-proxy', {
+    body,
+  });
+  if (error) throw new Error(error.message || 'Erro na requisição');
+  if (data?.error) throw new Error(data.error);
+  return data;
 }
 
 export async function authenticateWithCode(accessCode: string) {
-  return callApi(accessCode, { action: 'authenticate' });
+  return callProxy({ action: 'authenticate', access_code: accessCode });
 }
 
-export async function getLiveCategories(creds: string | StreamUrlInfo) {
-  return callApi(creds, { action: 'get_live_categories' });
+export async function getLiveCategories(accessCode: string): Promise<Category[]> {
+  return callProxy({ action: 'get_live_categories', access_code: accessCode });
 }
 
-export async function getLiveStreams(creds: string | StreamUrlInfo, categoryId?: string) {
-  return callApi(creds, { action: 'get_live_streams', category_id: categoryId });
+export async function getLiveStreams(accessCode: string, categoryId?: string): Promise<LiveStream[]> {
+  return callProxy({ action: 'get_live_streams', access_code: accessCode, category_id: categoryId });
 }
 
-export async function getVodCategories(creds: string | StreamUrlInfo) {
-  return callApi(creds, { action: 'get_vod_categories' });
+export async function getVodCategories(accessCode: string): Promise<Category[]> {
+  return callProxy({ action: 'get_vod_categories', access_code: accessCode });
 }
 
-export async function getVodStreams(creds: string | StreamUrlInfo, categoryId?: string) {
-  return callApi(creds, { action: 'get_vod_streams', category_id: categoryId });
+export async function getVodStreams(accessCode: string, categoryId?: string): Promise<VodStream[]> {
+  return callProxy({ action: 'get_vod_streams', access_code: accessCode, category_id: categoryId });
 }
 
-export async function getSeriesCategories(creds: string | StreamUrlInfo) {
-  return callApi(creds, { action: 'get_series_categories' });
+export async function getSeriesCategories(accessCode: string): Promise<Category[]> {
+  return callProxy({ action: 'get_series_categories', access_code: accessCode });
 }
 
-export async function getSeriesList(creds: string | StreamUrlInfo, categoryId?: string) {
-  return callApi(creds, { action: 'get_series', category_id: categoryId });
+export async function getSeriesList(accessCode: string, categoryId?: string): Promise<Series[]> {
+  return callProxy({ action: 'get_series', access_code: accessCode, category_id: categoryId });
 }
 
-export async function getSeriesInfo(creds: string | StreamUrlInfo, seriesId: number) {
-  return callApi(creds, { action: 'get_series_info', series_id: seriesId });
+export async function getSeriesInfo(accessCode: string, seriesId: number): Promise<SeriesInfo> {
+  return callProxy({ action: 'get_series_info', access_code: accessCode, series_id: seriesId });
 }
 
-export async function getVodInfo(creds: string | StreamUrlInfo, vodId: number) {
-  return callApi(creds, { action: 'get_vod_info', vod_id: vodId });
+export async function getVodInfo(accessCode: string, vodId: number): Promise<any> {
+  return callProxy({ action: 'get_vod_info', access_code: accessCode, vod_id: vodId });
 }
 
-export async function getShortEpg(creds: string | StreamUrlInfo, streamId: number) {
-  const data = await callApi(creds, { action: 'get_short_epg', stream_id: streamId });
+export interface EpgEntry {
+  id: string;
+  epg_id: string;
+  title: string;
+  lang: string;
+  start: string;
+  end: string;
+  description: string;
+  channel_id: string;
+  start_timestamp: number;
+  stop_timestamp: number;
+  now_playing?: boolean;
+  has_archive?: number;
+}
+
+export async function getShortEpg(accessCode: string, streamId: number, limit?: number): Promise<EpgEntry[]> {
+  const data = await callProxy({ action: 'get_short_epg', access_code: accessCode, stream_id: streamId, limit: limit || 4 });
   return data?.epg_listings || [];
 }
 
-export async function getAllEpg(creds: string | StreamUrlInfo, streamId: number) {
-  return callApi(creds, { action: 'get_all_epg', stream_id: streamId });
+export async function getStreamUrl(accessCode: string, streamType: 'live' | 'movie' | 'series', streamId: number | string, extension?: string): Promise<string> {
+  const data = await callProxy({
+    action: 'get_stream_url',
+    access_code: accessCode,
+    stream_type: streamType,
+    stream_id: streamId,
+    extension,
+  });
+  return data.url;
 }
 
-export async function getStreamUrl(creds: string | StreamUrlInfo, type: 'live' | 'movie' | 'series', id: string | number, extension?: string) {
-  const data = await callApi(creds, { action: 'get_stream_url', stream_type: type, stream_id: id, extension });
-  return data?.url;
-}
-
-export async function checkChannelsStatus(creds: string | StreamUrlInfo, streamIds: number[]) {
-  const data = await callApi(creds, { action: 'check_channels', stream_ids: streamIds });
+export async function checkChannelsStatus(accessCode: string, streamIds: number[]): Promise<Record<number, boolean>> {
+  const data = await callProxy({ action: 'check_channels', access_code: accessCode, stream_ids: streamIds });
   return data?.results || {};
 }
 
-/**
- * Retorna a URL do proxy para um stream, garantindo que passe pelas funções do Supabase.
- * Isso resolve problemas de Mixed Content (HTTP em página HTTPS) e CORS.
- */
-export function getProxyStreamUrl(accessCode: string, type: 'live' | 'movie' | 'series', id: string | number, extension?: string) {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const ext = extension || (type === 'live' ? 'm3u8' : 'mp4');
-  return `${supabaseUrl}/functions/v1/xtream-proxy?action=proxy_stream&access_code=${encodeURIComponent(accessCode)}&stream_type=${type}&stream_id=${id}&extension=${ext}`;
+export function getProxyStreamUrl(accessCode: string, streamType: 'live' | 'movie' | 'series', streamId: number | string, extension?: string): string {
+  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID || 'knrubxjvtgkypasndwkn';
+  const params = new URLSearchParams({
+    action: 'proxy_stream',
+    access_code: accessCode,
+    stream_type: streamType,
+    stream_id: String(streamId),
+  });
+  if (extension) params.set('extension', extension);
+  return `https://${projectId}.supabase.co/functions/v1/xtream-proxy?${params.toString()}`;
 }

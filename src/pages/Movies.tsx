@@ -31,7 +31,7 @@ import { LayoutGrid, Filter } from 'lucide-react';
 const PAGE_SIZE = 60;
 
 export default function Movies() {
-  const { serverInfo } = useAuth();
+  const { accessCode } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { isFavorite, toggleFavorite } = useFavorites();
@@ -44,11 +44,11 @@ export default function Movies() {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   useEffect(() => {
-    if (!serverInfo) return;
+    if (!accessCode) return;
     setLoading(true);
     Promise.all([
-      getVodStreams(serverInfo).catch(() => []),
-      getVodCategories(serverInfo).catch(() => []),
+      getVodStreams(accessCode).catch(() => []),
+      getVodCategories(accessCode).catch(() => []),
     ]).then(([m, c]) => { 
       // Sort movies by 'added' timestamp descending (Newest first)
       const sortedMovies = [...m].sort((a, b) => {
@@ -59,7 +59,7 @@ export default function Movies() {
       setMovies(sortedMovies); 
       setCategories(c); 
     }).finally(() => setLoading(false));
-  }, [serverInfo]);
+  }, [accessCode]);
 
   useEffect(() => { setVisibleCount(PAGE_SIZE); }, [selectedCategory, search]);
 

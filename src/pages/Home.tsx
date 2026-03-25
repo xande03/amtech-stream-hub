@@ -27,55 +27,34 @@ function isRecentlyAdded(added?: string | number): boolean {
 }
 
 export default function Home() {
-  const { serverInfo } = useAuth();
+  const { accessCode } = useAuth();
   const navigate = useNavigate();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { history, removeFromHistory } = useWatchHistory();
-  const [liveStreams, setLiveStreams] = useState<LiveStream[]>(() => JSON.parse(localStorage.getItem('cache_live') || '[]'));
-  const [movies, setMovies] = useState<VodStream[]>(() => JSON.parse(localStorage.getItem('cache_vod') || '[]'));
-  const [series, setSeries] = useState<Series[]>(() => JSON.parse(localStorage.getItem('cache_series') || '[]'));
-  const [movieCategories, setMovieCategories] = useState<Category[]>(() => JSON.parse(localStorage.getItem('cache_vod_cats') || '[]'));
-  const [seriesCategories, setSeriesCategories] = useState<Category[]>(() => JSON.parse(localStorage.getItem('cache_ser_cats') || '[]'));
-  const [loading, setLoading] = useState(false);
+  const [liveStreams, setLiveStreams] = useState<LiveStream[]>([]);
+  const [movies, setMovies] = useState<VodStream[]>([]);
+  const [series, setSeries] = useState<Series[]>([]);
+  const [movieCategories, setMovieCategories] = useState<Category[]>([]);
+  const [seriesCategories, setSeriesCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!serverInfo) {
-      setLoading(false);
-      return;
-    }
-    
-    // Se não houver nada no cache, mostre o skeleton
-    if (movies.length === 0 && series.length === 0) {
-      setLoading(true);
-    }
-
+    if (!accessCode) return;
+    setLoading(true);
     Promise.all([
-      getLiveStreams(serverInfo).catch(() => []),
-      getVodStreams(serverInfo).catch(() => []),
-      getSeriesList(serverInfo).catch(() => []),
-      getVodCategories(serverInfo).catch(() => []),
-      getSeriesCategories(serverInfo).catch(() => []),
+      getLiveStreams(accessCode).catch(() => []),
+      getVodStreams(accessCode).catch(() => []),
+      getSeriesList(accessCode).catch(() => []),
+      getVodCategories(accessCode).catch(() => []),
+      getSeriesCategories(accessCode).catch(() => []),
     ]).then(([live, vod, ser, vodCats, serCats]) => {
-      const liveData = Array.isArray(live) ? live.slice(0, 20) : [];
-      const vodData = Array.isArray(vod) ? vod : [];
-      const serData = Array.isArray(ser) ? ser : [];
-      const vodCatsData = Array.isArray(vodCats) ? vodCats : [];
-      const serCatsData = Array.isArray(serCats) ? serCats : [];
-
-      setLiveStreams(liveData);
-      setMovies(vodData);
-      setSeries(serData);
-      setMovieCategories(vodCatsData);
-      setSeriesCategories(serCatsData);
-
-      // Salvar no cache para carregamento imediato na próxima vez
-      localStorage.setItem('cache_live', JSON.stringify(liveData));
-      localStorage.setItem('cache_vod', JSON.stringify(vodData.slice(0, 100))); // Limitar cache para performance
-      localStorage.setItem('cache_series', JSON.stringify(serData.slice(0, 100)));
-      localStorage.setItem('cache_vod_cats', JSON.stringify(vodCatsData));
-      localStorage.setItem('cache_ser_cats', JSON.stringify(serCatsData));
+      setLiveStreams(live.slice(0, 20));
+      setMovies(vod);
+      setSeries(ser);
+      setMovieCategories(vodCats);
+      setSeriesCategories(serCats);
     }).finally(() => setLoading(false));
-  }, [serverInfo]);
+  }, [accessCode]);
 
   // Most recently added movies & series (by 'added' timestamp desc)
   const topMovies = useMemo(() =>

@@ -32,7 +32,7 @@ import { LayoutGrid, Filter } from 'lucide-react';
 const PAGE_SIZE = 60;
 
 export default function SeriesPage() {
-  const { serverInfo } = useAuth();
+  const { accessCode } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { isFavorite, toggleFavorite } = useFavorites();
@@ -45,11 +45,11 @@ export default function SeriesPage() {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   useEffect(() => {
-    if (!serverInfo) return;
+    if (!accessCode) return;
     setLoading(true);
     Promise.all([
-      getSeriesList(serverInfo).catch(() => []),
-      getSeriesCategories(serverInfo).catch(() => []),
+      getSeriesList(accessCode).catch(() => []),
+      getSeriesCategories(accessCode).catch(() => []),
     ]).then(([s, c]) => { 
       // Sort series by 'last_modified' (or added date/relevance)
       const sortedSeries = [...s].sort((a, b) => {
@@ -60,7 +60,7 @@ export default function SeriesPage() {
       setSeries(sortedSeries); 
       setCategories(c); 
     }).finally(() => setLoading(false));
-  }, [serverInfo]);
+  }, [accessCode]);
 
   useEffect(() => { setVisibleCount(PAGE_SIZE); }, [selectedCategory, search]);
 

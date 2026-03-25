@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
 
     const protectedActions = ["save_config", "toggle_config", "delete_config", "update_config"];
     if (protectedActions.includes(action)) {
-      const adminPw = Deno.env.get("ADMIN_SECRET") || "Tpas1000_03";
+      const adminPw = Deno.env.get("ADMIN_SECRET") || "abcd123";
       if (admin_password !== adminPw) {
         return new Response(JSON.stringify({ error: "Senha de administrador inválida" }), {
           status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }

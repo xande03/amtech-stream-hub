@@ -22,7 +22,7 @@ const PAGE_SIZE = 60;
 const CHECK_BATCH_SIZE = 50;
 
 export default function LiveTV() {
-  const { serverInfo } = useAuth();
+  const { accessCode } = useAuth();
   const navigate = useNavigate();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { addToHistory } = useWatchHistory();
@@ -38,27 +38,27 @@ export default function LiveTV() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'online' | 'offline'>('all');
 
   useEffect(() => {
-    if (!serverInfo) return;
+    if (!accessCode) return;
     setLoading(true);
-     Promise.all([
-      getLiveStreams(serverInfo).catch(() => []),
-      getLiveCategories(serverInfo).catch(() => []),
+    Promise.all([
+      getLiveStreams(accessCode).catch(() => []),
+      getLiveCategories(accessCode).catch(() => []),
     ]).then(([s, c]) => {
       setStreams(s);
       setCategories(c);
     }).finally(() => setLoading(false));
-  }, [serverInfo]);
+  }, [accessCode]);
 
   // Check channel status for currently filtered channels
   const checkStatus = useCallback(async (channelsToCheck: LiveStream[]) => {
-    if (!serverInfo || channelsToCheck.length === 0) return;
+    if (!accessCode || channelsToCheck.length === 0) return;
     setCheckingStatus(true);
     try {
       // Check in batches
       const ids = channelsToCheck.map(c => c.stream_id);
       for (let i = 0; i < ids.length; i += CHECK_BATCH_SIZE) {
         const batch = ids.slice(i, i + CHECK_BATCH_SIZE);
-        const results = await checkChannelsStatus(serverInfo, batch);
+        const results = await checkChannelsStatus(accessCode, batch);
         setChannelStatus(prev => ({ ...prev, ...results }));
       }
     } catch (e) {
@@ -66,7 +66,7 @@ export default function LiveTV() {
     } finally {
       setCheckingStatus(false);
     }
-  }, [serverInfo]);
+  }, [accessCode]);
 
   // Auto-check when category changes or on initial load
   useEffect(() => {

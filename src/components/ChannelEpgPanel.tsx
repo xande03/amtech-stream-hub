@@ -47,16 +47,16 @@ interface Props {
 }
 
 export default function ChannelEpgPanel({ streamId, compact = false }: Props) {
-  const { serverInfo } = useAuth();
+  const { accessCode } = useAuth();
   const [entries, setEntries] = useState<EpgEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
   const loadEpg = () => {
-    if (loaded || !serverInfo) return;
+    if (loaded || !accessCode) return;
     setLoading(true);
-    getShortEpg(serverInfo, streamId, 8)
+    getShortEpg(accessCode, streamId, 8)
       .then(setEntries)
       .catch(() => setEntries([]))
       .finally(() => { setLoading(false); setLoaded(true); });
