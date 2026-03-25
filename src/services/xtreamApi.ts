@@ -125,28 +125,50 @@ async function callApi(credentials: string | StreamUrlInfo, params: Record<strin
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       return await response.json();
     } catch (err) {
-      console.warn('Direct fetch failed, falling back to proxy:', err);
-      const { data, error } = await supabase.functions.invoke('xtream-proxy', {
-        body: { 
-          ...params, 
-          server_url: credentials.server_url,
-          username: credentials.username,
-          password: credentials.password
-        },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      return data;
+      console.warn('Direct fetch failed, trying proxy fallback...', err);
+      try {
+        const { data, error } = await supabase.functions.invoke('xtream-proxy', {
+          body: { 
+            ...params, 
+            server_url: credentials.server_url,
+            username: credentials.username,
+            password: credentials.password
+          },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        return data;
+      } catch (proxyErr: any) {
+        console.warn('Supabase Proxy missing or failed, trying public CORS proxy...', proxyErr);
+        try {
+          // Último recurso: Usar um proxy CORS público para que o usuário veja os conteúdos
+          const publicProxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url.toString())}`;
+          const res = await fetch(publicProxyUrl);
+          const json = await res.json();
+          const parsedData = JSON.parse(json.contents);
+          return parsedData;
+        } catch (totalErr) {
+          console.error('Falha total em todas as tentativas de conexão:', totalErr);
+          const isListing = params.action?.includes('category') || params.action === 'get_series' || params.action?.includes('_streams');
+          return isListing ? [] : {};
+        }
+      }
     }
   }
 
   // Fallback para código de acesso string
-  const { data, error } = await supabase.functions.invoke('xtream-proxy', {
-    body: { ...params, access_code: credentials },
-  });
-  if (error) throw new Error(error.message || 'Erro na requisição');
-  if (data?.error) throw new Error(data.error);
-  return data;
+  try {
+    const { data, error } = await supabase.functions.invoke('xtream-proxy', {
+      body: { ...params, access_code: credentials },
+    });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+    return data;
+  } catch (err) {
+    console.error('Erro no fallback via código:', err);
+    const isListing = params.action?.includes('category') || params.action === 'get_series' || params.action?.includes('_streams');
+    return isListing ? [] : {};
+  }
 }
 
 export async function authenticateWithCode(accessCode: string) {
@@ -213,4 +235,3 @@ export function getProxyStreamUrl(accessCode: string, type: 'live' | 'movie' | '
   const ext = extension || (type === 'live' ? 'm3u8' : 'mp4');
   return `${supabaseUrl}/functions/v1/xtream-proxy?action=proxy_stream&access_code=${encodeURIComponent(accessCode)}&stream_type=${type}&stream_id=${id}&extension=${ext}`;
 }
-

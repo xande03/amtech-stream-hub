@@ -151,6 +151,7 @@ export default function SettingsPage() {
     setTesting(true);
     setTestResult(null);
     try {
+      // Tentativa 1: Via Proxy (mais confiável para CORS)
       const { data, error } = await supabase.functions.invoke('xtream-proxy', {
         body: {
           action: 'test_connection',
@@ -159,16 +160,48 @@ export default function SettingsPage() {
           password: form.password.trim(),
         },
       });
+      
       if (error || data?.error) {
-        setTestResult({ ok: false, msg: data?.error || error?.message || 'Falha na conexão' });
+        throw new Error(data?.error || error?.message || 'Falha via proxy');
       } else {
         if (data?.resolved_url && data.resolved_url !== form.server_url.trim()) {
           setForm(f => ({ ...f, server_url: data.resolved_url }));
         }
-        setTestResult({ ok: true, msg: `Conectado! ${data?.user_info?.status === 'Active' ? 'Conta ativa' : 'Servidor respondeu'}` });
+        setTestResult({ ok: true, msg: `Conectado via Proxy! ${data?.user_info?.status === 'Active' ? 'Conta ativa' : 'Servidor respondeu'}` });
       }
     } catch (err: any) {
-      setTestResult({ ok: false, msg: err.message || 'Erro ao testar' });
+      console.warn('Proxy test failed, trying direct connection...', err);
+      // Tentativa 2: Direto pelo Navegador (Sent-to-Sent)
+      try {
+        let baseUrl = form.server_url.trim().replace(/\/$/, '');
+        if (!baseUrl.startsWith('http')) baseUrl = `http://${baseUrl}`;
+        const testUrl = `${baseUrl}/player_api.php?username=${encodeURIComponent(form.username)}&password=${encodeURIComponent(form.password)}`;
+        
+        const res = await fetch(testUrl);
+        if (res.ok) {
+          const data = await res.json();
+          setTestResult({ ok: true, msg: `Conectado Direto! ${data?.user_info?.status === 'Active' ? 'Conta ativa' : 'Servidor respondeu'}` });
+        } else {
+          throw new Error('CORS');
+        }
+      } catch (innerErr: any) {
+        console.warn('Direct connection effort failed (CORS), trying public CORS proxy as last resort...', innerErr);
+        // Tentativa 3: Proxy CORS Público (Último recurso)
+        try {
+          let baseUrl = form.server_url.trim().replace(/\/$/, '');
+          if (!baseUrl.startsWith('http')) baseUrl = `http://${baseUrl}`;
+          const testUrl = `${baseUrl}/player_api.php?username=${encodeURIComponent(form.username)}&password=${encodeURIComponent(form.password)}`;
+          const publicProxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(testUrl)}`;
+          
+          const res = await fetch(publicProxyUrl);
+          const json = await res.json();
+          const data = JSON.parse(json.contents);
+          
+          setTestResult({ ok: true, msg: `Conectado via Proxy Público! ${data?.user_info?.status === 'Active' ? 'Conta ativa' : 'Servidor respondeu'}` });
+        } catch (totalErr) {
+          setTestResult({ ok: false, msg: `Erro de Conexão: Servidor offline ou bloqueio total de segurança. Verifique a URL e credenciais.` });
+        }
+      }
     }
     setTesting(false);
   };
