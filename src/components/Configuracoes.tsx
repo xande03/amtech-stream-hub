@@ -1,4 +1,3 @@
-```typescript
 import React, { useState } from 'react';
 
 interface Cor {
