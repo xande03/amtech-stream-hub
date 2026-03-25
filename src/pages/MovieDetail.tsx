@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+const VideoPlayer = lazy(() => import('@/components/VideoPlayer'));
 import { useParams, useNavigate } from 'react-router-dom';
 import { getVodInfo, getVodStreams, VodStream } from '@/services/xtreamApi';
 import { useFavorites } from '@/hooks/useFavorites';
@@ -35,6 +36,8 @@ export default function MovieDetail() {
   const [info, setInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showTrailer, setShowTrailer] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [streamUrl, setStreamUrl] = useState('');
 
   const formatTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
@@ -58,11 +61,20 @@ export default function MovieDetail() {
 
   const resumeTime = movie ? getResumeTime(movie.stream_id, 'movie') : 0;
 
-  const handlePlay = () => {
-    if (!movie) return;
-    addToHistory({ id: movie.stream_id, type: 'movie', name: movie.name, icon: movie.stream_icon });
-    const params = new URLSearchParams({ name: movie.name, icon: movie.stream_icon || '' });
-    navigate(`/player/movie/${movie.stream_id}/${movie.container_extension || 'mp4'}?${params.toString()}`);
+  const handlePlay = async () => {
+    if (!movie || !accessCode) return;
+    try {
+      setLoading(true);
+      const url = await getStreamUrl(accessCode, 'movie', movie.stream_id, movie.container_extension || 'mp4');
+      setStreamUrl(url);
+      addToHistory({ id: movie.stream_id, type: 'movie', name: movie.name, icon: movie.stream_icon });
+      setIsPlaying(true);
+      setLoading(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+      console.error(err);
+      setLoading(false);
+    }
   };
 
   // Similar movies: same category or overlapping genres
@@ -126,8 +138,22 @@ export default function MovieDetail() {
       </div>
 
       {/* Backdrop banner */}
-      <div className="relative -mx-4 -mt-4 md:-mx-6 md:-mt-6 mb-6 md:h-96 md:aspect-auto aspect-[3/4] overflow-hidden bg-black flex items-center justify-center z-10">
-        {showTrailer && videoId ? (
+      <div className="relative -mx-4 -mt-4 md:-mx-6 md:-mt-6 mb-6 md:h-[500px] md:aspect-auto aspect-[16/9] overflow-hidden bg-black flex items-center justify-center z-10 transition-all duration-500">
+        {isPlaying && streamUrl ? (
+          <div className="absolute inset-0 z-30 bg-black animate-in fade-in duration-500">
+             <Suspense fallback={<div className="w-full h-full flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}>
+              <VideoPlayer 
+                url={streamUrl} 
+                title={movie.name} 
+                className="w-full h-full"
+                onClose={() => setIsPlaying(false)}
+                onProgress={(p, t) => {
+                  // Optional: save progress via history hook
+                }}
+              />
+            </Suspense>
+          </div>
+        ) : showTrailer && videoId ? (
           <div className="absolute inset-0 z-20 bg-black flex items-center justify-center">
             <iframe
               src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`}

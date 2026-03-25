@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+const VideoPlayer = lazy(() => import('@/components/VideoPlayer'));
 import { useParams, useNavigate } from 'react-router-dom';
 import { getSeriesInfo, getSeriesList, SeriesInfo, Series, Episode } from '@/services/xtreamApi';
 import { useFavorites } from '@/hooks/useFavorites';
@@ -35,6 +36,9 @@ export default function SeriesDetail() {
   const [selectedSeason, setSelectedSeason] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [showTrailer, setShowTrailer] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [streamUrl, setStreamUrl] = useState('');
+  const [currentEpisodeTitle, setCurrentEpisodeTitle] = useState('');
 
   useEffect(() => {
     if (!accessCode || !id) return;
@@ -67,18 +71,25 @@ export default function SeriesDetail() {
     return getResumeTime(episodeId, 'series');
   };
 
-  const handlePlayEpisode = (episode: Episode) => {
-    if (!seriesInfo) return;
-    const seriesCover = seriesInfo.info.cover || seriesInfo.info.backdrop_path?.[0] || '';
-    addToHistory({ id: episode.id, type: 'series', name: seriesInfo.info.name, icon: seriesCover, episodeInfo: `S${episode.season}E${episode.episode_num}` });
-    const ext = episode.container_extension || 'mp4';
-    const params = new URLSearchParams({
-      seriesId: String(seriesInfo.info.series_id),
-      season: String(episode.season),
-      ep: String(episode.episode_num),
-      name: seriesInfo.info.name,
-    });
-    navigate(`/player/series/${episode.id}/${ext}?${params.toString()}`);
+  const handlePlayEpisode = async (episode: Episode) => {
+    if (!seriesInfo || !accessCode) return;
+    try {
+      setLoading(true);
+      const ext = episode.container_extension || 'mp4';
+      const url = await getStreamUrl(accessCode, 'series', episode.id, ext);
+      
+      const seriesCover = seriesInfo.info.cover || seriesInfo.info.backdrop_path?.[0] || '';
+      addToHistory({ id: episode.id, type: 'series', name: seriesInfo.info.name, icon: seriesCover, episodeInfo: `S${episode.season}E${episode.episode_num}` });
+      
+      setStreamUrl(url);
+      setCurrentEpisodeTitle(`S${episode.season}E${episode.episode_num} - ${episode.title || ''}`);
+      setIsPlaying(true);
+      setLoading(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+      console.error(err);
+      setLoading(false);
+    }
   };
 
   const similarSeries = useMemo(() => {
@@ -134,8 +145,22 @@ export default function SeriesDetail() {
       </div>
 
       {/* Backdrop banner */}
-      <div className="relative -mx-4 -mt-4 md:-mx-6 md:-mt-6 mb-6 md:h-96 md:aspect-auto aspect-[3/4] overflow-hidden bg-black flex items-center justify-center z-10">
-        {showTrailer && videoId ? (
+      <div className="relative -mx-4 -mt-4 md:-mx-6 md:-mt-6 mb-6 md:h-[500px] md:aspect-auto aspect-[16/9] overflow-hidden bg-black flex items-center justify-center z-10 transition-all duration-500">
+        {isPlaying && streamUrl ? (
+          <div className="absolute inset-0 z-30 bg-black animate-in fade-in duration-500">
+            <Suspense fallback={<div className="w-full h-full flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}>
+              <VideoPlayer 
+                url={streamUrl} 
+                title={`${info.name} - ${currentEpisodeTitle}`}
+                className="w-full h-full"
+                onClose={() => setIsPlaying(false)}
+                onNextEpisode={() => {
+                   // Handle next episode logic here if needed
+                }}
+              />
+            </Suspense>
+          </div>
+        ) : showTrailer && videoId ? (
           <div className="absolute inset-0 z-20 bg-black flex items-center justify-center">
             <iframe
               src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`}

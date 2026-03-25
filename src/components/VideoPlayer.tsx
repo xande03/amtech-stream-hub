@@ -31,6 +31,8 @@ interface VideoPlayerProps {
   nextEpisodeLabel?: string;
   autoPlay?: boolean;
   isLive?: boolean;
+  className?: string;
+  onClose?: () => void;
 }
 
 function CountdownTimer({ seconds, onComplete }: { seconds: number; onComplete: () => void }) {
@@ -43,7 +45,7 @@ function CountdownTimer({ seconds, onComplete }: { seconds: number; onComplete: 
   return <>{count}</>;
 }
 
-export default function VideoPlayer({ url, title, startTime = 0, onProgress, onStreamError, onNextEpisode, nextEpisodeLabel, autoPlay = true, isLive = false }: VideoPlayerProps) {
+export default function VideoPlayer({ url, title, startTime = 0, onProgress, onStreamError, onNextEpisode, nextEpisodeLabel, autoPlay = true, isLive = false, className, onClose }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -55,6 +57,8 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
   const [showNextOverlay, setShowNextOverlay] = useState(false);
   const [showSkipIntro, setShowSkipIntro] = useState(false);
   const [skipIntroDismissed, setSkipIntroDismissed] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(autoPlay);
+  const [showControls, setShowControls] = useState(true);
   const [isCasting, setIsCasting] = useState(false);
   const [castAvailable, setCastAvailable] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'stable' | 'reconnecting' | 'idle'>('idle');
@@ -602,10 +606,20 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
     : qualityLevels.find(l => l.index === currentQuality)?.label || 'Auto';
 
   return (
-    <div ref={containerRef} className="relative bg-background w-full h-full" onTouchEnd={handleDoubleTap}>
+    <div 
+      ref={containerRef}
+      className={`relative group bg-black overflow-hidden flex flex-col ${className || 'w-full h-full aspect-video md:aspect-auto md:h-full'}`}
+      onMouseMove={() => { setShowControls(true); }}
+      onMouseLeave={() => { if (isPlaying) setShowControls(false); }}
+      onTouchEnd={handleDoubleTap}
+    >
       {/* Top bar */}
       <div className="absolute top-0 left-0 right-0 z-10 flex items-center gap-3 p-3 md:p-4 bg-gradient-to-b from-background/80 to-transparent">
         <button onClick={() => {
+          if (onClose) {
+            onClose();
+            return;
+          }
           // If opened in a new tab (no history), close the tab or navigate to /live
           if (window.history.length <= 1) {
             try { window.close(); } catch {}
