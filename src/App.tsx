@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -19,18 +19,15 @@ import MovieFinder from "@/pages/MovieFinder";
 import History from "@/pages/History";
 import Downloads from "@/pages/Downloads";
 import SharedPlayer from "@/pages/SharedPlayer";
-
 import SettingsPage from "@/pages/SettingsPage";
 import AdminPage from "@/pages/AdminPage";
 import NotFound from "@/pages/NotFound";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { CustomColorsProvider } from "./contexts/CustomColorsContext";
-
-const queryClient = new QueryClient();
-
-import { useLocation } from "react-router-dom";
 import { AnimatePresence } from 'framer-motion';
 import PageTransition from "@/components/PageTransition";
+
+const queryClient = new QueryClient();
 
 function AppRoutes() {
   const { isConfigured } = useAuth();
@@ -80,18 +77,18 @@ const App = () => {
   return (
     <ThemeProvider defaultTheme="dark" attribute="class">
       <CustomColorsProvider>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          {showSplash && <SplashScreen onFinish={handleSplashFinish} />}
-          <AuthProvider>
-            <BrowserRouter>
-              <AppRoutes />
-            </BrowserRouter>
-          </AuthProvider>
-        </TooltipProvider>
-      </QueryClientProvider>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            {showSplash && <SplashScreen onFinish={handleSplashFinish} />}
+            <AuthProvider>
+              <BrowserRouter>
+                <AppRoutes />
+              </BrowserRouter>
+            </AuthProvider>
+          </TooltipProvider>
+        </QueryClientProvider>
       </CustomColorsProvider>
     </ThemeProvider>
   );

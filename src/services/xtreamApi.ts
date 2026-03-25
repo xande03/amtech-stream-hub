@@ -121,7 +121,7 @@ async function callApi(credentials: string | StreamUrlInfo, params: Record<strin
     }
 
     try {
-      const response = await fetch(url.toString(), { signal: AbortSignal.timeout(10000) });
+      const response = await fetch(url.toString());
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       return await response.json();
     } catch (err) {
@@ -203,3 +203,14 @@ export async function checkChannelsStatus(creds: string | StreamUrlInfo, streamI
   const data = await callApi(creds, { action: 'check_channels', stream_ids: streamIds });
   return data?.results || {};
 }
+
+/**
+ * Retorna a URL do proxy para um stream, garantindo que passe pelas funções do Supabase.
+ * Isso resolve problemas de Mixed Content (HTTP em página HTTPS) e CORS.
+ */
+export function getProxyStreamUrl(accessCode: string, type: 'live' | 'movie' | 'series', id: string | number, extension?: string) {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const ext = extension || (type === 'live' ? 'm3u8' : 'mp4');
+  return `${supabaseUrl}/functions/v1/xtream-proxy?action=proxy_stream&access_code=${encodeURIComponent(accessCode)}&stream_type=${type}&stream_id=${id}&extension=${ext}`;
+}
+
