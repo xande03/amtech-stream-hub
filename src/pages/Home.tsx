@@ -307,7 +307,13 @@ export default function Home() {
         </div>
       )}
 
-      {/* 5. Filmes Recém Adicionados */}
+      {/* 5. Recomendações com IA */}
+      <AIRecommendations onSearch={(name, type) => {
+        if (type === 'movie') navigate(`/movies?search=${encodeURIComponent(name)}`);
+        else navigate(`/series?search=${encodeURIComponent(name)}`);
+      }} />
+
+      {/* 6. Filmes Recém Adicionados */}
       {topMovies.length > 0 && (
         <ContentRow title="🔥 Filmes Recém Adicionados" onViewAll={() => navigate('/movies')}>
           {topMovies.slice(0, 20).map((m) => (
