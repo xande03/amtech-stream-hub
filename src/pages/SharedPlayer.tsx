@@ -14,7 +14,7 @@ export default function SharedPlayer() {
 
   // O link compartilhado pode conter o accessCode como parâmetro para funcionar para qualquer pessoa
   // Se não houver, tenta pegar do localStorage ou context (através do useAuth se estivéssemos usando)
-  const accessCode = searchParams.get('ac') || localStorage.getItem('access_code');
+  const accessCode = searchParams.get('ac') || localStorage.getItem('xerife_access_code');
   const title = searchParams.get('title') || 'Reproduzindo...';
 
   useEffect(() => {
