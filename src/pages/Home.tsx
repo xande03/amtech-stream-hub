@@ -11,6 +11,7 @@ import { Play, Tv, Info, ChevronLeft, ChevronRight, X, Film, Clapperboard, Star,
 import { PageLoadingSkeleton } from '@/components/LoadingSkeleton';
 import { heroImage, featuredImage, backdropImage } from '@/lib/imageProxy';
 import HighlightCarousel from '@/components/HighlightCarousel';
+import AIRecommendations from '@/components/AIRecommendations';
 
 function parseRating(r?: string | number): number {
   if (!r) return 0;
