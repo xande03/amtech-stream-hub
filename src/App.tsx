@@ -79,8 +79,8 @@ const App = () => {
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          {showSplash && <SplashScreen onFinish={handleSplashFinish} />}
           <AuthProvider>
+            {showSplash && <SplashScreen onFinish={handleSplashFinish} />}
             <BrowserRouter>
               <AppRoutes />
             </BrowserRouter>
