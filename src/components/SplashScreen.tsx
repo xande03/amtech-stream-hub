@@ -1,12 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play } from 'lucide-react';
+import { Play, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import amtechIcon from '@/assets/amtech-icon.png';
+import { useAuth } from '@/contexts/AuthContext';
+import * as xtreamApi from '@/services/xtreamApi';
+import { useContentCache } from '@/hooks/useContentCache';
+import { toast } from 'sonner';
 
 interface SplashScreenProps {
   onFinish: () => void;
   minDuration?: number;
+}
+
+interface PreloadProgress {
+  stage: string;
+  progress: number;
+  total: number;
 }
 
 const posters = [
@@ -45,8 +56,103 @@ const Column = ({ images, reverse = false, duration = 30 }: { images: string[], 
 
 export default function SplashScreen({ onFinish }: SplashScreenProps) {
   const [visible, setVisible] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadProgress, setLoadProgress] = useState<PreloadProgress>({ stage: '', progress: 0, total: 0 });
+  const [preloadComplete, setPreloadComplete] = useState(false);
+  const { accessCode, isConfigured } = useAuth();
+  const cache = useContentCache();
 
-  const handleEnter = () => {
+  // Preload all content when user clicks "Enter"
+  const preloadContent = async () => {
+    if (!accessCode || !isConfigured) {
+      // If not configured, just proceed
+      return true;
+    }
+
+    try {
+      setIsLoading(true);
+      let completedSteps = 0;
+
+      // Step 1: Load categories
+      setLoadProgress({ stage: 'Carregando categorias...', progress: 0, total: 100 });
+      
+      const [liveCategories, vodCategories, seriesCategories] = await Promise.all([
+        xtreamApi.getLiveCategories(accessCode).catch(() => []),
+        xtreamApi.getVodCategories(accessCode).catch(() => []),
+        xtreamApi.getSeriesCategories(accessCode).catch(() => []),
+      ]);
+
+      // Save categories to cache
+      cache.setLiveCategories(liveCategories);
+      cache.setVodCategories(vodCategories);
+      cache.setSeriesCategories(seriesCategories);
+
+      completedSteps = 20;
+      setLoadProgress({ stage: 'Categorias carregadas', progress: completedSteps, total: 100 });
+
+      // Step 2: Load streams from top categories
+      // Load Live TV streams
+      setLoadProgress({ stage: 'Carregando canais ao vivo...', progress: 20, total: 100 });
+      const topLiveCategories = liveCategories.slice(0, 5);
+      for (const cat of topLiveCategories) {
+        const streams = await xtreamApi.getLiveStreams(accessCode, cat.category_id).catch(() => []);
+        cache.setLiveStreams(cat.category_id, streams);
+      }
+      completedSteps = 40;
+      setLoadProgress({ stage: 'Canais carregados', progress: completedSteps, total: 100 });
+
+      // Load VOD streams (movies)
+      setLoadProgress({ stage: 'Carregando filmes...', progress: 40, total: 100 });
+      const topVodCategories = vodCategories.slice(0, 5);
+      for (const cat of topVodCategories) {
+        const streams = await xtreamApi.getVodStreams(accessCode, cat.category_id).catch(() => []);
+        cache.setVodStreams(cat.category_id, streams);
+      }
+      completedSteps = 70;
+      setLoadProgress({ stage: 'Filmes carregados', progress: completedSteps, total: 100 });
+
+      // Load Series
+      setLoadProgress({ stage: 'Carregando séries...', progress: 70, total: 100 });
+      const topSeriesCategories = seriesCategories.slice(0, 5);
+      for (const cat of topSeriesCategories) {
+        const series = await xtreamApi.getSeriesList(accessCode, cat.category_id).catch(() => []);
+        cache.setSeriesList(cat.category_id, series);
+      }
+      completedSteps = 90;
+      setLoadProgress({ stage: 'Séries carregadas', progress: completedSteps, total: 100 });
+
+      // Step 3: Preload poster images (cache them)
+      setLoadProgress({ stage: 'Otimizando imagens...', progress: 90, total: 100 });
+      await new Promise(resolve => setTimeout(resolve, 500)); // Small delay for UX
+
+      setLoadProgress({ stage: 'Pronto!', progress: 100, total: 100 });
+      setPreloadComplete(true);
+      
+      return true;
+    } catch (error) {
+      console.error('Erro ao pré-carregar conteúdo:', error);
+      toast.error('Erro ao carregar conteúdo. Tentando continuar...');
+      return true; // Continue anyway
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEnter = async () => {
+    if (!isConfigured) {
+      // Not configured, go directly to settings
+      setVisible(false);
+      setTimeout(onFinish, 600);
+      return;
+    }
+
+    if (!preloadComplete) {
+      const success = await preloadContent();
+      if (success) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+    }
+    
     setVisible(false);
     setTimeout(onFinish, 600);
   };
@@ -125,16 +231,18 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
               </div>
             </motion.div>
 
-            {/* Enter button */}
+            {/* Enter button or Loading state */}
             <motion.div
               initial={{ y: 24, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.7, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              className="flex flex-col items-center gap-4"
             >
               <Button
                 onClick={handleEnter}
+                disabled={isLoading}
                 size="lg"
-                className="rounded-full h-14 md:h-16 px-12 md:px-16 text-lg md:text-xl font-extrabold tracking-wide transition-all duration-300 gap-3 group border border-white/15 hover:scale-105 active:scale-95"
+                className="rounded-full h-14 md:h-16 px-12 md:px-16 text-lg md:text-xl font-extrabold tracking-wide transition-all duration-300 gap-3 group border border-white/15 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
                   background: 'linear-gradient(135deg, hsl(239 84% 67%), hsl(260 84% 60%))',
                   color: 'hsl(210 40% 98%)',
@@ -142,10 +250,56 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
                 }}
               >
                 <div className="flex items-center justify-center bg-white/20 rounded-full p-1.5 group-hover:scale-110 transition-transform">
-                  <Play className="w-4 h-4 md:w-5 md:h-5 fill-current" />
+                  {isLoading ? (
+                    <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" />
+                  ) : (
+                    <Play className="w-4 h-4 md:w-5 md:h-5 fill-current" />
+                  )}
                 </div>
-                ENTRAR
+                {isLoading ? 'CARREGANDO...' : 'ENTRAR'}
               </Button>
+
+              {/* Loading progress */}
+              {isLoading && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="w-72 md:w-96 space-y-3"
+                >
+                  <div className="relative">
+                    <Progress 
+                      value={loadProgress.progress} 
+                      className="h-2.5 bg-white/10 border border-white/20"
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.1)',
+                      }}
+                    />
+                    <motion.div
+                      className="absolute inset-0 rounded-full"
+                      style={{
+                        background: 'linear-gradient(90deg, transparent, rgba(239, 84, 167, 0.3), transparent)',
+                        width: '30%',
+                      }}
+                      animate={{
+                        x: ['-100%', '400%'],
+                      }}
+                      transition={{
+                        duration: 1.5,
+                        repeat: Infinity,
+                        ease: 'linear',
+                      }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs md:text-sm text-white/80 font-medium">
+                      {loadProgress.stage}
+                    </p>
+                    <p className="text-xs md:text-sm text-white/60 font-bold">
+                      {Math.round(loadProgress.progress)}%
+                    </p>
+                  </div>
+                </motion.div>
+              )}
             </motion.div>
 
             {/* Version tag */}
