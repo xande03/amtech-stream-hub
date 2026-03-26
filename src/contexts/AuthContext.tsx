@@ -93,20 +93,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (cancelled) return;
 
         if (data?.config) {
-          if (!local.accessCode) {
-            // First-time user: no local config yet → save cloud active playlist to localStorage
-            const code = data.config.access_code;
-            const name = data.config.playlist_name;
+          const code = data.config.access_code;
+          const name = data.config.playlist_name;
+          // Always sync with the cloud active playlist
+          if (local.accessCode !== code || !local.accessCode) {
             setAccessCode(code);
             setPlaylistName(name);
             writeLocalConfig(code, name, null, null);
-          } else if (local.accessCode === data.config.access_code) {
+          } else {
             // Same playlist — just refresh the name in case admin renamed it
-            const name = data.config.playlist_name;
             setPlaylistName(name);
             writeLocalConfig(local.accessCode, name, local.serverInfo, local.userInfo);
           }
-          // If user's local access code differs from cloud's active — respect user's local choice
         }
         // If cloud returned no config → keep user's local config (may still work)
       } catch {

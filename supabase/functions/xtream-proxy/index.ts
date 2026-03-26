@@ -175,8 +175,8 @@ Deno.serve(async (req) => {
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       } catch (err) {
-        return new Response(
-          JSON.stringify({ error: `Falha ao conectar: ${err.message}` }),
+      return new Response(
+          JSON.stringify({ error: `Falha ao conectar: ${(err as Error).message}` }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -444,8 +444,8 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    console.error("Proxy error:", err.message);
-    const msg = err.message || "Erro interno";
+    console.error("Proxy error:", (err as Error).message);
+    const msg = (err as Error).message || "Erro interno";
     const isNetworkError = msg.includes("dns") || msg.includes("connect") || msg.includes("fetch");
     return new Response(
       JSON.stringify({ 
