@@ -10,8 +10,8 @@ serve(async (req) => {
 
   try {
     const { history, favorites } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
+    if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY is not configured");
 
     const historyNames = (history || []).slice(0, 15).map((h: { name: string; type: string }) => `${h.name} (${h.type})`).join(", ");
     const favNames = (favorites || []).slice(0, 10).map((f: { name: string; type: string }) => `${f.name} (${f.type})`).join(", ");
@@ -21,56 +21,54 @@ serve(async (req) => {
       favNames ? `Favoritos: ${favNames}` : "",
     ].filter(Boolean).join("\n");
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${GROQ_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "llama-3.3-70b-versatile",
         messages: [
           {
             role: "system",
-            content: `Você é o sistema de recomendação do Xerife Player. Com base no histórico e favoritos do usuário, sugira filmes e séries que ele provavelmente vai gostar.
+            content: `Você é o sistema de recomendação inteligente do Xerife Player, um app de streaming IPTV premium. Com base no histórico de visualização e favoritos do usuário, sugira filmes e séries que ele provavelmente vai adorar.
 
 Regras:
-- Retorne EXATAMENTE um JSON array com 6-10 recomendações
-- Cada item: { "name": "Nome do Filme/Série", "type": "movie" ou "series", "year": 2024, "reason": "motivo curto de 1 linha" }
-- NÃO repita itens já assistidos ou favoritados
-- Diversifique gêneros mas mantenha relevância
-- Responda APENAS o JSON array, sem texto adicional`
+- Retorne EXATAMENTE um JSON array com 6-8 recomendações
+- Cada item deve ter: { "name": "Nome do Filme/Série", "type": "movie" ou "series", "year": 2024, "reason": "motivo curto e envolvente de 1 linha em português" }
+- NÃO repita itens que o usuário já assistiu ou favoritou
+- Diversifique os gêneros mas mantenha relevância com o gosto do usuário
+- Priorize títulos populares e bem avaliados
+- Se o usuário não tem histórico, sugira títulos clássicos e populares variados
+- Responda APENAS o JSON array, sem texto adicional, sem markdown, sem backticks`
           },
           {
             role: "user",
-            content: userContext || "Usuário novo sem histórico. Sugira títulos populares e variados."
+            content: userContext || "Usuário novo sem histórico. Sugira títulos populares e variados de diferentes gêneros."
           }
         ],
+        temperature: 0.8,
+        max_tokens: 1024,
       }),
     });
 
     if (!response.ok) {
       const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
+      console.error("Groq API error:", response.status, t);
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
+        return new Response(JSON.stringify({ error: "Muitas requisições. Tente novamente em alguns segundos." }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Payment required" }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      return new Response(JSON.stringify({ error: "AI service error" }), {
+      return new Response(JSON.stringify({ error: "Erro no serviço de IA" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || "[]";
-    
-    // Extract JSON array from response
+
     let recommendations = [];
     try {
       const jsonMatch = content.match(/\[[\s\S]*\]/);
