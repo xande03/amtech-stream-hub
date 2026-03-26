@@ -1,143 +1,144 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Play } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import amtechIcon from '@/assets/amtech-icon.png';
 
 interface SplashScreenProps {
   onFinish: () => void;
-  minDuration?: number;
+  minDuration?: number; // kept for interface compatibility
 }
 
-export default function SplashScreen({ onFinish, minDuration = 2800 }: SplashScreenProps) {
+// Highly reliable static URLs from TVMaze public poster CDN that will consistently render.
+const posters = [
+"https://static.tvmaze.com/uploads/images/medium_portrait/610/1525272.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/163/407679.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/0/15.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/143/358967.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/490/1226764.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/477/1194981.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/498/1245275.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/0/73.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/82/206879.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/69/174906.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/189/474715.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/0/137.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/448/1121792.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/0/184.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/0/154.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/48/122260.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/587/1468637.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/445/1114097.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/444/1111710.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/164/412464.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/410/1026956.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/73/183661.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/213/532575.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/178/446544.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/178/446780.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/396/991619.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/38/95017.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/286/715906.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/473/1183640.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/486/1215694.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/487/1219631.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/0/305.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/126/316697.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/216/540157.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/126/316698.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/170/426759.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/0/350.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/499/1249019.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/419/1049994.jpg","https://static.tvmaze.com/uploads/images/medium_portrait/81/204166.jpg"
+];
+
+// Randomize arrays per column to make it organic
+function shuffleArray(array: string[]) {
+  return [...array].sort(() => Math.random() - 0.5);
+}
+
+// Generate enough items per column for an infinite loop
+const generateColumn = () => {
+  const shuffled = shuffleArray(posters).slice(0, 15);
+  return [...shuffled, ...shuffled, ...shuffled]; // loop 3x seamlessly
+};
+
+// Extremely dense grid of 15 columns
+const columnsData = Array.from({ length: 15 }, () => generateColumn());
+
+// Helper to render an infinite moving column
+const Column = ({ images, reverse = false, duration = 30 }: { images: string[], reverse?: boolean, duration?: number }) => (
+  <motion.div
+    className="flex flex-col gap-2 sm:gap-3 w-[25vw] sm:w-[15vw] md:w-[10vw] lg:w-[8vw] xl:w-[6vw] min-w-[70px] md:min-w-[90px] shrink-0"
+    animate={{ y: reverse ? ['-66.66%', '0%'] : ['0%', '-66.66%'] }}
+    transition={{
+      repeat: Infinity,
+      ease: 'linear',
+      duration: duration
+    }}
+  >
+    {images.map((src, i) => (
+      <img
+        key={i}
+        src={src}
+        alt=""
+        loading="lazy"
+        // Less brightness adjustment needed since the background is now white
+        className="w-full h-auto rounded-lg shadow-md object-cover brightness-105"
+        style={{ aspectRatio: '2/3' }}
+      />
+    ))}
+  </motion.div>
+);
+
+export default function SplashScreen({ onFinish }: SplashScreenProps) {
   const [visible, setVisible] = useState(true);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setVisible(false);
-      setTimeout(onFinish, 600);
-    }, minDuration);
-    return () => clearTimeout(timer);
-  }, [minDuration, onFinish]);
+  const handleEnter = () => {
+    setVisible(false);
+    setTimeout(onFinish, 600); // give time for the exit animation
+  };
 
   return (
     <AnimatePresence>
       {visible && (
         <motion.div
           initial={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.6 }}
-          className="fixed inset-0 z-[100] flex flex-col items-center justify-center"
-          style={{ background: 'linear-gradient(145deg, hsl(222 47% 8%), hsl(222 47% 14%), hsl(239 84% 12%))' }}
+          exit={{ opacity: 0, scale: 1.1, filter: 'blur(10px)' }}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+          className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-gray-50 overflow-hidden"
         >
-          {/* Animated radial pulses */}
-          <div className="absolute inset-0 overflow-hidden">
-            <motion.div
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 2.5, opacity: 0.08 }}
-              transition={{ duration: 2, ease: 'easeOut' }}
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full"
-              style={{ background: 'radial-gradient(circle, hsl(239 84% 67%), transparent 70%)' }}
-            />
-            <motion.div
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 3, opacity: 0.05 }}
-              transition={{ duration: 2.5, ease: 'easeOut', delay: 0.3 }}
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full"
-              style={{ background: 'radial-gradient(circle, hsl(260 80% 60%), transparent 70%)' }}
-            />
+          {/* Animated Background Overlay: Bright white setting with many columns */}
+          <div className="absolute inset-0 select-none pointer-events-none flex justify-center gap-2 sm:gap-3 -rotate-6 scale-[1.3] md:scale-[1.25] items-start">
+            {columnsData.map((colImages, index) => (
+              <Column 
+                key={index} 
+                images={colImages} 
+                duration={40 + (index % 6) * 7} 
+                reverse={index % 2 !== 0} 
+              />
+            ))}
           </div>
 
-          {/* Floating particles */}
-          {[...Array(6)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute w-1 h-1 rounded-full bg-primary/30"
-              initial={{
-                x: Math.random() * 300 - 150,
-                y: Math.random() * 300 - 150,
-                opacity: 0,
-              }}
-              animate={{
-                y: [0, -80 - Math.random() * 60],
-                opacity: [0, 0.6, 0],
-                scale: [0, 1.5, 0],
-              }}
-              transition={{
-                duration: 2 + Math.random(),
-                repeat: Infinity,
-                delay: 0.5 + i * 0.3,
-                ease: 'easeOut',
-              }}
-              style={{
-                left: `${20 + i * 12}%`,
-                top: `${50 + (i % 3) * 10}%`,
-              }}
-            />
-          ))}
-
-          {/* Icon + Branding */}
+          {/* Light vignette effect ONLY on the edges to fade out into white, making posters pop */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(249,250,251,0.6)_70%,rgba(249,250,251,1)_100%)] pointer-events-none" />
+          
+          {/* Central Glassmorphism Box to protect the text readability over the bright posters */}
           <motion.div
-            initial={{ scale: 0.3, opacity: 0 }}
+            initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
-            className="relative z-10 flex flex-col items-center gap-5"
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
+            className="relative z-10 flex flex-col items-center gap-8 md:gap-10 px-8 py-10 md:px-16 md:py-14 rounded-[2.5rem] backdrop-blur-xl bg-[#0a0f1a]/80 shadow-[0_20px_70px_rgba(0,0,0,0.6)] border border-white/20"
           >
-            {/* Icon with glow ring */}
+            {/* The Logo with floating animation */}
             <motion.div
-              initial={{ rotate: -90, scale: 0 }}
-              animate={{ rotate: 0, scale: 1 }}
-              transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.25 }}
-              className="relative"
+              animate={{ y: [-12, 12, -12] }}
+              transition={{ repeat: Infinity, duration: 4, ease: 'easeInOut' }}
+              className="relative flex flex-col items-center gap-5 md:gap-6"
             >
-              {/* Glow behind icon */}
-              <motion.div
-                animate={{ opacity: [0.4, 0.8, 0.4] }}
-                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                className="absolute inset-0 rounded-2xl blur-xl"
-                style={{ background: 'hsl(239 84% 67% / 0.4)', transform: 'scale(1.3)' }}
-              />
-              <img
-                src={amtechIcon}
-                alt="Xerife Player"
-                className="relative w-24 h-24 md:w-28 md:h-28 rounded-2xl shadow-2xl"
-                style={{ boxShadow: '0 0 40px hsl(239 84% 67% / 0.3), 0 8px 32px rgba(0,0,0,0.5)' }}
-              />
+              <div className="relative">
+                <motion.div
+                  animate={{ opacity: [0.3, 0.7, 0.3], scale: [1, 1.15, 1] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                  className="absolute inset-0 rounded-[2rem] blur-2xl"
+                  style={{ background: 'hsl(239 84% 67%)' }}
+                />
+                <img
+                  src={amtechIcon}
+                  alt="Xerife Player"
+                  className="relative w-32 h-32 md:w-44 md:h-44 rounded-[2rem] md:rounded-[2.5rem] shadow-2xl border-2 border-white/10"
+                />
+              </div>
+
+              <div className="text-center">
+                <h1 className="text-4xl sm:text-5xl md:text-7xl font-black text-white tracking-tight drop-shadow-2xl mb-1">
+                  XERIFE
+                </h1>
+                <p className="text-base sm:text-lg md:text-2xl font-bold tracking-[0.4em] text-primary/90 uppercase drop-shadow">
+                  Player
+                </p>
+              </div>
             </motion.div>
 
-            {/* Text */}
+            {/* The Enter Button */}
             <motion.div
-              initial={{ y: 24, opacity: 0 }}
+              initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.8, ease: 'easeOut' }}
-              className="text-center"
+              transition={{ delay: 0.8, duration: 0.5 }}
             >
-              <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight">
-                XERIFE
-              </h1>
-              <motion.p
-                initial={{ letterSpacing: '0em', opacity: 0 }}
-                animate={{ letterSpacing: '0.35em', opacity: 1 }}
-                transition={{ duration: 0.8, delay: 1.1 }}
-                className="text-sm md:text-base font-semibold text-primary mt-1"
+              <Button
+                onClick={handleEnter}
+                size="lg"
+                className="rounded-full h-14 md:h-16 px-10 md:px-14 text-lg md:text-xl font-bold shadow-[0_0_40px_hsla(239,84%,67%,0.6)] hover:shadow-[0_0_60px_hsla(239,84%,67%,0.9)] transition-all bg-primary hover:bg-primary/90 text-white gap-3 group"
               >
-                PLAYER
-              </motion.p>
+                <div className="flex items-center justify-center bg-white/20 rounded-full p-1.5 mr-1 group-hover:scale-110 transition-transform shadow-inner">
+                  <Play className="w-5 h-5 md:w-6 md:h-6 fill-current" />
+                </div>
+                ENTRAR
+              </Button>
             </motion.div>
-          </motion.div>
-
-          {/* Loading bar */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.4 }}
-            className="absolute bottom-16 w-32 h-1 rounded-full bg-muted/30 overflow-hidden"
-          >
-            <motion.div
-              initial={{ x: '-100%' }}
-              animate={{ x: '100%' }}
-              transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
-              className="h-full w-1/2 rounded-full"
-              style={{ background: 'linear-gradient(90deg, transparent, hsl(239 84% 67%), transparent)' }}
-            />
           </motion.div>
         </motion.div>
       )}
