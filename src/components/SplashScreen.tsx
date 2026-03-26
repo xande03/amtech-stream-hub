@@ -134,7 +134,7 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
               <Button
                 onClick={handleEnter}
                 size="lg"
-                className="rounded-full h-13 md:h-15 px-9 md:px-12 text-base md:text-lg font-bold transition-all gap-2.5 group border border-white/10"
+                className="rounded-full h-14 md:h-16 px-12 md:px-16 text-lg md:text-xl font-extrabold tracking-wide transition-all duration-300 gap-3 group border border-white/15 hover:scale-105 active:scale-95"
                 style={{
                   background: 'linear-gradient(135deg, hsl(239 84% 67%), hsl(260 84% 60%))',
                   color: 'hsl(210 40% 98%)',
