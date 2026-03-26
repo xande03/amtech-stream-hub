@@ -1,0 +1,1729 @@
+diff --git a/.env b/.env
+index 7184ed8..5351897 100644
+--- a/.env
++++ b/.env
+@@ -1,3 +1,3 @@
+-VITE_SUPABASE_PROJECT_ID="qcvdsoaaogobijdoeett"
+-VITE_SUPABASE_PUBLISHABLE_KEY="sb_publishable_aUNy1BGuJ3PPhYw6OFHFIw_Ep8ShYQH"
+-VITE_SUPABASE_URL="https://qcvdsoaaogobijdoeett.supabase.co"
++VITE_SUPABASE_PROJECT_ID="knrubxjvtgkypasndwkn"
++VITE_SUPABASE_PUBLISHABLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtucnVieGp2dGdreXBhc25kd2tuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxNzc4MDcsImV4cCI6MjA4ODc1MzgwN30.aSac1PzYvohakrzKo4m25HfH06IGTiI9radhJTkVIqE"
++VITE_SUPABASE_URL="https://knrubxjvtgkypasndwkn.supabase.co"
+diff --git a/index.html b/index.html
+index d71963c..5444221 100644
+--- a/index.html
++++ b/index.html
+@@ -80,6 +80,14 @@
+   
+   
+   
++  
++  
++  
++  
++  
++  
++  
++  
+   
+   
+   
+diff --git a/src/App.tsx b/src/App.tsx
+index b66aa62..33f5491 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -1,6 +1,6 @@
+ import { useState, useCallback } from 'react';
+ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+-import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
++import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+ import { Toaster as Sonner } from "@/components/ui/sonner";
+ import { Toaster } from "@/components/ui/toaster";
+ import { TooltipProvider } from "@/components/ui/tooltip";
+@@ -19,54 +19,52 @@ import MovieFinder from "@/pages/MovieFinder";
+ import History from "@/pages/History";
+ import Downloads from "@/pages/Downloads";
+ import SharedPlayer from "@/pages/SharedPlayer";
++
+ import SettingsPage from "@/pages/SettingsPage";
+ import AdminPage from "@/pages/AdminPage";
+ import NotFound from "@/pages/NotFound";
+ import { ThemeProvider } from "./components/ThemeProvider";
+ import { CustomColorsProvider } from "./contexts/CustomColorsContext";
+-import { AnimatePresence } from 'framer-motion';
+-import PageTransition from "@/components/PageTransition";
+ 
+ const queryClient = new QueryClient();
+ 
+ function AppRoutes() {
+   const { isConfigured } = useAuth();
+-  const location = useLocation();
+ 
++  // Route for shared player is accessible even when not configured (requires ac param)
+   const sharedRoutes = (
+     <Route path="/view/:type/:id/:name?" element={<SharedPlayer />} />
+   );
+ 
+-  return (
+-    <AnimatePresence mode="wait">
+-      <Routes location={location} key={location.pathname.split('/')[1]}>
+-        {!isConfigured ? (
+-          <>
+-            {sharedRoutes}
+-            <Route path="/settings" element={<AppLayout><PageTransition><SettingsPage /></PageTransition></AppLayout>} />
+-            <Route path="*" element={<Navigate to="/settings" replace />} />
+-          </>
+-        ) : (
+-          <>
+-            <Route path="/admin" element={<PageTransition><AdminPage /></PageTransition>} />
+-            <Route path="/player/:type/:id/:ext?" element={<PlayerPage />} />
+-            {sharedRoutes}
+-            <Route path="/" element={<AppLayout><PageTransition><Home /></PageTransition></AppLayout>} />
+-            <Route path="/live" element={<AppLayout><PageTransition><LiveTV /></PageTransition></AppLayout>} />
+-            <Route path="/movies" element={<AppLayout><PageTransition><Movies /></PageTransition></AppLayout>} />
+-            <Route path="/movies/:id" element={<AppLayout><PageTransition><MovieDetail /></PageTransition></AppLayout>} />
+-            <Route path="/series" element={<AppLayout><PageTransition><SeriesPage /></PageTransition></AppLayout>} />
+-            <Route path="/series/:id" element={<AppLayout><PageTransition><SeriesDetail /></PageTransition></AppLayout>} />
+-            <Route path="/favorites" element={<AppLayout><PageTransition><Favorites /></PageTransition></AppLayout>} />
+-            <Route path="/finder" element={<AppLayout><PageTransition><MovieFinder /></PageTransition></AppLayout>} />
+-            <Route path="/history" element={<AppLayout><PageTransition><History /></PageTransition></AppLayout>} />
+-            <Route path="/downloads" element={<AppLayout><PageTransition><Downloads /></PageTransition></AppLayout>} />
+-            <Route path="/settings" element={<AppLayout><PageTransition><SettingsPage /></PageTransition></AppLayout>} />
+-            <Route path="*" element={<Navigate to="/" replace />} />
+-          </>
+-        )}
++  if (!isConfigured) {
++    return (
++      <Routes>
++        {sharedRoutes}
++        <Route path="/settings" element={<AppLayout><SettingsPage /></AppLayout>} />
++        <Route path="*" element={<Navigate to="/settings" replace />} />
+       </Routes>
+-    </AnimatePresence>
++    );
++  }
++
++  return (
++    <Routes>
++      <Route path="/admin" element={<AdminPage />} />
++      <Route path="/player/:type/:id/:ext?" element={<PlayerPage />} />
++      {sharedRoutes}
++      <Route path="/" element={<AppLayout><Home /></AppLayout>} />
++      <Route path="/live" element={<AppLayout><LiveTV /></AppLayout>} />
++      <Route path="/movies" element={<AppLayout><Movies /></AppLayout>} />
++      <Route path="/movies/:id" element={<AppLayout><MovieDetail /></AppLayout>} />
++      <Route path="/series" element={<AppLayout><SeriesPage /></AppLayout>} />
++      <Route path="/series/:id" element={<AppLayout><SeriesDetail /></AppLayout>} />
++      <Route path="/favorites" element={<AppLayout><Favorites /></AppLayout>} />
++      <Route path="/finder" element={<AppLayout><MovieFinder /></AppLayout>} />
++      <Route path="/history" element={<AppLayout><History /></AppLayout>} />
++      <Route path="/downloads" element={<AppLayout><Downloads /></AppLayout>} />
++      
++      <Route path="/settings" element={<AppLayout><SettingsPage /></AppLayout>} />
++      <Route path="*" element={<Navigate to="/" replace />} />
++    </Routes>
+   );
+ }
+ 
+@@ -77,18 +75,18 @@ const App = () => {
+   return (
+     <ThemeProvider defaultTheme="dark" attribute="class">
+       <CustomColorsProvider>
+-        <QueryClientProvider client={queryClient}>
+-          <TooltipProvider>
+-            <Toaster />
+-            <Sonner />
+-            {showSplash && <SplashScreen onFinish={handleSplashFinish} />}
+-            <AuthProvider>
+-              <BrowserRouter>
+-                <AppRoutes />
+-              </BrowserRouter>
+-            </AuthProvider>
+-          </TooltipProvider>
+-        </QueryClientProvider>
++      <QueryClientProvider client={queryClient}>
++        <TooltipProvider>
++          <Toaster />
++          <Sonner />
++          {showSplash && <SplashScreen onFinish={handleSplashFinish} />}
++          <AuthProvider>
++            <BrowserRouter>
++              <AppRoutes />
++            </BrowserRouter>
++          </AuthProvider>
++        </TooltipProvider>
++      </QueryClientProvider>
+       </CustomColorsProvider>
+     </ThemeProvider>
+   );
+diff --git a/src/components/AppLayout.tsx b/src/components/AppLayout.tsx
+index 426fc2c..7aa41d2 100644
+--- a/src/components/AppLayout.tsx
++++ b/src/components/AppLayout.tsx
+@@ -3,7 +3,9 @@ import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+ import AppSidebar from '@/components/AppSidebar';
+ import MobileNav from '@/components/MobileNav';
+ import GlobalSearch from '@/components/GlobalSearch';
++import PageTransition from '@/components/PageTransition';
+ import { useLocation } from 'react-router-dom';
++import { AnimatePresence } from 'framer-motion';
+ import { Menu, Cast } from 'lucide-react';
+ 
+ export default function AppLayout({ children }: { children: ReactNode }) {
+@@ -67,7 +69,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
+             <GlobalSearch />
+           </header>
+           <main className="flex-1 overflow-auto p-3 md:p-6 pb-24 md:pb-6">
+-            {children}
++            <AnimatePresence mode="wait">
++              <PageTransition key={location.pathname}>
++                {children}
++              </PageTransition>
++            </AnimatePresence>
+           </main>
+         </div>
+         {/* Mobile bottom nav */}
+diff --git a/src/components/ChannelEpgPanel.tsx b/src/components/ChannelEpgPanel.tsx
+index d462bc3..c066612 100644
+--- a/src/components/ChannelEpgPanel.tsx
++++ b/src/components/ChannelEpgPanel.tsx
+@@ -47,16 +47,16 @@ interface Props {
+ }
+ 
+ export default function ChannelEpgPanel({ streamId, compact = false }: Props) {
+-  const { serverInfo } = useAuth();
++  const { accessCode } = useAuth();
+   const [entries, setEntries] = useState<EpgEntry[]>([]);
+   const [loading, setLoading] = useState(false);
+   const [expanded, setExpanded] = useState(false);
+   const [loaded, setLoaded] = useState(false);
+ 
+   const loadEpg = () => {
+-    if (loaded || !serverInfo) return;
++    if (loaded || !accessCode) return;
+     setLoading(true);
+-    getShortEpg(serverInfo, streamId, 8)
++    getShortEpg(accessCode, streamId, 8)
+       .then(setEntries)
+       .catch(() => setEntries([]))
+       .finally(() => { setLoading(false); setLoaded(true); });
+diff --git a/src/components/GlobalSearch.tsx b/src/components/GlobalSearch.tsx
+index e991af0..8953227 100644
+--- a/src/components/GlobalSearch.tsx
++++ b/src/components/GlobalSearch.tsx
+@@ -15,7 +15,7 @@ type ResultItem = {
+ };
+ 
+ export default function GlobalSearch() {
+-  const { serverInfo } = useAuth();
++  const { accessCode } = useAuth();
+   const navigate = useNavigate();
+   const { addToHistory } = useWatchHistory();
+   const [open, setOpen] = useState(false);
+@@ -28,19 +28,19 @@ export default function GlobalSearch() {
+ 
+   // Load data on first open
+   useEffect(() => {
+-    if (!open || loaded || !serverInfo) return;
++    if (!open || loaded || !accessCode) return;
+     setLoading(true);
+     Promise.all([
+-      getVodStreams(serverInfo).catch(() => []),
+-      getSeriesList(serverInfo).catch(() => []),
+-      getLiveStreams(serverInfo).catch(() => []),
++      getVodStreams(accessCode).catch(() => []),
++      getSeriesList(accessCode).catch(() => []),
++      getLiveStreams(accessCode).catch(() => []),
+     ]).then(([m, s, l]) => {
+       setMovies(m);
+       setSeries(s);
+       setLiveStreams(l);
+       setLoaded(true);
+     }).finally(() => setLoading(false));
+-  }, [open, loaded, serverInfo]);
++  }, [open, loaded, accessCode]);
+ 
+   const results = useMemo((): ResultItem[] => {
+     if (!query.trim()) return [];
+diff --git a/src/components/PageTransition.tsx b/src/components/PageTransition.tsx
+index 5c43fa7..c1c3f48 100644
+--- a/src/components/PageTransition.tsx
++++ b/src/components/PageTransition.tsx
+@@ -2,21 +2,9 @@ import { motion } from 'framer-motion';
+ import { ReactNode } from 'react';
+ 
+ const variants = {
+-  initial: {
+-    opacity: 0,
+-    y: 10,
+-    scale: 0.98,
+-  },
+-  animate: {
+-    opacity: 1,
+-    y: 0,
+-    scale: 1,
+-  },
+-  exit: {
+-    opacity: 0,
+-    y: -10,
+-    scale: 1.02,
+-  },
++  initial: { opacity: 0, y: 12 },
++  animate: { opacity: 1, y: 0 },
++  exit: { opacity: 0, y: -8 },
+ };
+ 
+ export default function PageTransition({ children }: { children: ReactNode }) {
+@@ -26,13 +14,8 @@ export default function PageTransition({ children }: { children: ReactNode }) {
+       initial="initial"
+       animate="animate"
+       exit="exit"
+-      transition={{
+-        type: 'spring',
+-        stiffness: 260,
+-        damping: 30,
+-        duration: 0.4
+-      }}
+-      className="w-full h-full"
++      transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
++      className="w-full"
+     >
+       {children}
+     </motion.div>
+diff --git a/src/components/ShareDialog.tsx b/src/components/ShareDialog.tsx
+index 4aead1f..de8dfa6 100644
+--- a/src/components/ShareDialog.tsx
++++ b/src/components/ShareDialog.tsx
+@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
+ import { QRCodeSVG } from 'qrcode.react';
+ import { Copy, Check, Share2 } from 'lucide-react';
+ import { toast } from 'sonner';
+-import logo from '@/assets/amtech-icon.png';
+ 
+ interface ShareDialogProps {
+   isOpen: boolean;
+@@ -71,8 +70,8 @@ export function ShareDialog({ isOpen, onClose, title, type, id }: ShareDialogPro
+             level="H" 
+             includeMargin={false}
+             imageSettings={{
+-              src: logo,
+-              x: undefined, y: undefined, height: 50, width: 50, excavate: true,
++              src: "/lovable-uploads/logo.png", // Fallback if logo exists
++              x: undefined, y: undefined, height: 40, width: 40, excavate: true,
+             }}
+             fgColor="#18181b" // Match zinc-900 logic
+           />
+diff --git a/src/contexts/AuthContext.tsx b/src/contexts/AuthContext.tsx
+index 4cfd23a..8adc5c0 100644
+--- a/src/contexts/AuthContext.tsx
++++ b/src/contexts/AuthContext.tsx
+@@ -1,6 +1,15 @@
+ import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+ import { supabase } from '@/integrations/supabase/client';
+ 
++// ─── LocalStorage Keys ────────────────────────────────────────────────────────
++// All user-specific session data is stored ONLY in the user's browser localStorage.
++// The cloud (Supabase) is used ONLY for managing playlists (admin-config).
++const LS_ACCESS_CODE = 'xerife_access_code';
++const LS_PLAYLIST_NAME = 'xerife_playlist_name';
++const LS_SERVER_INFO = 'xerife_server_info';
++const LS_USER_INFO = 'xerife_user_info';
++
++// ─── Types ────────────────────────────────────────────────────────────────────
+ interface AppContextType {
+   accessCode: string | null;
+   serverInfo: any | null;
+@@ -12,107 +21,165 @@ interface AppContextType {
+   refreshConfig: () => void;
+ }
+ 
++// ─── LocalStorage Helpers ─────────────────────────────────────────────────────
++function readLocalConfig() {
++  try {
++    return {
++      accessCode: localStorage.getItem(LS_ACCESS_CODE) || null,
++      playlistName: localStorage.getItem(LS_PLAYLIST_NAME) || null,
++      serverInfo: (() => { try { const v = localStorage.getItem(LS_SERVER_INFO); return v ? JSON.parse(v) : null; } catch { return null; } })(),
++      userInfo: (() => { try { const v = localStorage.getItem(LS_USER_INFO); return v ? JSON.parse(v) : null; } catch { return null; } })(),
++    };
++  } catch {
++    return { accessCode: null, playlistName: null, serverInfo: null, userInfo: null };
++  }
++}
++
++function writeLocalConfig(
++  code: string | null,
++  name: string | null,
++  serverInfo?: any,
++  userInfo?: any
++) {
++  try {
++    if (code) localStorage.setItem(LS_ACCESS_CODE, code);
++    else localStorage.removeItem(LS_ACCESS_CODE);
++
++    if (name) localStorage.setItem(LS_PLAYLIST_NAME, name);
++    else localStorage.removeItem(LS_PLAYLIST_NAME);
++
++    if (serverInfo) localStorage.setItem(LS_SERVER_INFO, JSON.stringify(serverInfo));
++    else localStorage.removeItem(LS_SERVER_INFO);
++
++    if (userInfo) localStorage.setItem(LS_USER_INFO, JSON.stringify(userInfo));
++    else localStorage.removeItem(LS_USER_INFO);
++  } catch { /* storage quota exceeded or private mode — fail silently */ }
++}
++
++function clearLocalConfig() {
++  localStorage.removeItem(LS_ACCESS_CODE);
++  localStorage.removeItem(LS_PLAYLIST_NAME);
++  localStorage.removeItem(LS_SERVER_INFO);
++  localStorage.removeItem(LS_USER_INFO);
++}
++
++// ─── Context ──────────────────────────────────────────────────────────────────
+ const AppContext = createContext<AppContextType | null>(null);
+ 
+ export function AuthProvider({ children }: { children: React.ReactNode }) {
+-  const [accessCode, setAccessCode] = useState<string | null>(() => localStorage.getItem('xerife_access_code'));
+-  const [serverInfo, setServerInfo] = useState<any>(() => {
+-    const saved = localStorage.getItem('xerife_server_info');
+-    return saved ? JSON.parse(saved) : null;
+-  });
+-  const [userInfo, setUserInfo] = useState<any>(null);
+-  const [playlistName, setPlaylistName] = useState<string | null>(() => localStorage.getItem('xerife_playlist_name'));
++  // 1️⃣ Read from localStorage IMMEDIATELY — no network wait, instant boot
++  const initial = readLocalConfig();
++  const [accessCode, setAccessCode] = useState<string | null>(initial.accessCode);
++  const [serverInfo, setServerInfo] = useState<any>(initial.serverInfo);
++  const [userInfo, setUserInfo] = useState<any>(initial.userInfo);
++  const [playlistName, setPlaylistName] = useState<string | null>(initial.playlistName);
+   const [loaded, setLoaded] = useState(false);
+ 
++  // 2️⃣ Background cloud fetch:
++  //   - If user has NO local config → fetch active playlist from cloud & save to localStorage
++  //   - If user HAS local config  → validate in background, update playlist name if changed
++  //   This runs ONCE on mount (non-blocking: app already runs with local state)
+   useEffect(() => {
+-    // Limpeza de cache se o projeto Supabase mudar (migração)
+-    const currentProject = import.meta.env.VITE_SUPABASE_URL;
+-    const lastProject = localStorage.getItem('xerife_last_project');
+-    
+-    if (lastProject && lastProject !== currentProject) {
+-      console.log('Detectada mudança de projeto Supabase. Limpando cache para garantir funcionamento de ponta a ponta...');
+-      localStorage.removeItem('xerife_access_code');
+-      localStorage.removeItem('xerife_playlist_name');
+-      localStorage.removeItem('xerife_server_info');
+-      localStorage.removeItem('xerife_admin_pass');
+-    }
+-    localStorage.setItem('xerife_last_project', currentProject);
+-  }, []);
++    let cancelled = false;
+ 
+-  const fetchActiveConfig = useCallback(async () => {
+-    // Carregar imediatamente do cache local (Lógica "de antes")
+-    const savedCode = localStorage.getItem('xerife_access_code');
+-    const savedInfo = localStorage.getItem('xerife_server_info');
+-    const savedName = localStorage.getItem('xerife_playlist_name');
+-    
+-    if (savedCode && savedInfo) {
+-      setAccessCode(savedCode);
+-      setPlaylistName(savedName || 'Minha Playlist');
+-      setServerInfo(JSON.parse(savedInfo));
+-      setLoaded(true); // Libera o app instantaneamente com o que temos offline
+-    }
++    async function syncWithCloud() {
++      const local = readLocalConfig();
+ 
+-    try {
+-      // Sincronização secundária com o banco (apenas se houver internet e projeto configurado)
+-      const { data: config, error } = await supabase
+-        .from('admin_config')
+-        .select('*')
+-        .eq('is_active', true)
+-        .maybeSingle();
+-
+-      if (config) {
+-        // Se houver uma nova playlist ativa no banco, atualiza o localstorage para todos os usuários
+-        const sInfo = {
+-          server_url: config.server_url,
+-          username: config.username,
+-          password: config.password,
+-          playlist_name: config.playlist_name
+-        };
+-        
+-        // Só atualiza se for diferente do que temos no cache para evitar recargas desnecessárias
+-        if (config.access_code !== savedCode) {
+-          setAccessCode(config.access_code);
+-          setPlaylistName(config.playlist_name);
+-          setServerInfo(sInfo);
+-          localStorage.setItem('xerife_access_code', config.access_code);
+-          localStorage.setItem('xerife_playlist_name', config.playlist_name);
+-          localStorage.setItem('xerife_server_info', JSON.stringify(sInfo));
++      try {
++        const { data } = await supabase.functions.invoke('admin-config', {
++          body: { action: 'get_active_config' },
++        });
++
++        if (cancelled) return;
++
++        if (data?.config) {
++          const code = data.config.access_code;
++          const name = data.config.playlist_name;
++          // Always sync with the cloud active playlist
++          if (local.accessCode !== code || !local.accessCode) {
++            setAccessCode(code);
++            setPlaylistName(name);
++            writeLocalConfig(code, name, null, null);
++          } else {
++            // Same playlist — just refresh the name in case admin renamed it
++            setPlaylistName(name);
++            writeLocalConfig(local.accessCode, name, local.serverInfo, local.userInfo);
++          }
+         }
++        // If cloud returned no config → keep user's local config (may still work)
++      } catch {
++        // Network error — continue with local config unchanged
+       }
+-    } catch (e) {
+-      console.warn('Falha na sincronização remota, mantendo cache local.');
+-    } finally {
+-      setLoaded(true); // Garante que o app carregue mesmo se tudo falhar
++
++      if (!cancelled) setLoaded(true);
+     }
++
++    syncWithCloud();
++    return () => { cancelled = true; };
+   }, []);
+ 
+-  useEffect(() => {
+-    fetchActiveConfig();
+-  }, [fetchActiveConfig]);
++  // ── Public API ────────────────────────────────────────────────────────────
+ 
++  /**
++   * Called when user/admin selects or authenticates with a playlist.
++   * Saves the session to localStorage — cloud is NOT involved for user data.
++   */
+   const setConfig = useCallback((code: string, info?: any) => {
++    const name = info?.playlist_name ?? null;
++    const srv = info?.server_info ?? null;
++    const usr = info?.user_info ?? null;
++
+     setAccessCode(code);
+-    localStorage.setItem('xerife_access_code', code);
+-    if (info) {
+-      setServerInfo(info.server_info || info);
+-      setUserInfo(info.user_info);
+-      setPlaylistName(info.playlist_name);
+-      localStorage.setItem('xerife_playlist_name', info.playlist_name);
+-      localStorage.setItem('xerife_server_info', JSON.stringify(info.server_info || info));
+-    }
++    setPlaylistName(name);
++    if (srv !== null) setServerInfo(srv);
++    if (usr !== null) setUserInfo(usr);
++
++    // Persist user's session choice exclusively to localStorage
++    writeLocalConfig(code, name, srv, usr);
+   }, []);
+ 
++  /**
++   * Clear user session — removes data from localStorage ONLY.
++   * Cloud playlists are completely unaffected.
++   */
+   const clearConfig = useCallback(() => {
+     setAccessCode(null);
+     setServerInfo(null);
+     setUserInfo(null);
+     setPlaylistName(null);
+-    localStorage.removeItem('xerife_access_code');
+-    localStorage.removeItem('xerife_playlist_name');
+-    localStorage.removeItem('xerife_server_info');
++    clearLocalConfig();
++  }, []);
++
++  /**
++   * Refresh: re-reads localStorage (instant) and triggers background cloud sync.
++   * Used after admin makes playlist changes so active users see updates.
++   */
++  const refreshConfig = useCallback(() => {
++    const local = readLocalConfig();
++    setAccessCode(local.accessCode);
++    setPlaylistName(local.playlistName);
++    setServerInfo(local.serverInfo);
++    setUserInfo(local.userInfo);
++
++    // Re-sync with cloud in background
++    supabase.functions.invoke('admin-config', {
++      body: { action: 'get_active_config' },
++    }).then(({ data }) => {
++      if (data?.config) {
++        const name = data.config.playlist_name;
++        setPlaylistName(name);
++        writeLocalConfig(local.accessCode, name, local.serverInfo, local.userInfo);
++      }
++    }).catch(() => { /* ignore */ });
+   }, []);
+ 
+-  if (!loaded) return null; // Wait until config is fetched
++  // Don't block render — show app immediately with local data
++  // (loaded flag is only for first-time users who need the initial cloud fetch)
++  if (!loaded && !initial.accessCode) {
++    // Only block if there's NO local config at all (truly first visit)
++    // We need to know if there's a cloud playlist before rendering routes
++    return null;
++  }
+ 
+   return (
+     <AppContext.Provider value={{
+@@ -123,7 +190,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
+       isConfigured: !!accessCode,
+       setConfig,
+       clearConfig,
+-      refreshConfig: fetchActiveConfig,
++      refreshConfig,
+     }}>
+       {children}
+     </AppContext.Provider>
+diff --git a/src/pages/Home.tsx b/src/pages/Home.tsx
+index c01f947..b123cf5 100644
+--- a/src/pages/Home.tsx
++++ b/src/pages/Home.tsx
+@@ -27,55 +27,34 @@ function isRecentlyAdded(added?: string | number): boolean {
+ }
+ 
+ export default function Home() {
+-  const { serverInfo } = useAuth();
++  const { accessCode } = useAuth();
+   const navigate = useNavigate();
+   const { isFavorite, toggleFavorite } = useFavorites();
+   const { history, removeFromHistory } = useWatchHistory();
+-  const [liveStreams, setLiveStreams] = useState<LiveStream[]>(() => JSON.parse(localStorage.getItem('cache_live') || '[]'));
+-  const [movies, setMovies] = useState<VodStream[]>(() => JSON.parse(localStorage.getItem('cache_vod') || '[]'));
+-  const [series, setSeries] = useState<Series[]>(() => JSON.parse(localStorage.getItem('cache_series') || '[]'));
+-  const [movieCategories, setMovieCategories] = useState<Category[]>(() => JSON.parse(localStorage.getItem('cache_vod_cats') || '[]'));
+-  const [seriesCategories, setSeriesCategories] = useState<Category[]>(() => JSON.parse(localStorage.getItem('cache_ser_cats') || '[]'));
+-  const [loading, setLoading] = useState(false);
++  const [liveStreams, setLiveStreams] = useState<LiveStream[]>([]);
++  const [movies, setMovies] = useState<VodStream[]>([]);
++  const [series, setSeries] = useState<Series[]>([]);
++  const [movieCategories, setMovieCategories] = useState<Category[]>([]);
++  const [seriesCategories, setSeriesCategories] = useState<Category[]>([]);
++  const [loading, setLoading] = useState(true);
+ 
+   useEffect(() => {
+-    if (!serverInfo) {
+-      setLoading(false);
+-      return;
+-    }
+-    
+-    // Se não houver nada no cache, mostre o skeleton
+-    if (movies.length === 0 && series.length === 0) {
+-      setLoading(true);
+-    }
+-
++    if (!accessCode) return;
++    setLoading(true);
+     Promise.all([
+-      getLiveStreams(serverInfo).catch(() => []),
+-      getVodStreams(serverInfo).catch(() => []),
+-      getSeriesList(serverInfo).catch(() => []),
+-      getVodCategories(serverInfo).catch(() => []),
+-      getSeriesCategories(serverInfo).catch(() => []),
++      getLiveStreams(accessCode).catch(() => []),
++      getVodStreams(accessCode).catch(() => []),
++      getSeriesList(accessCode).catch(() => []),
++      getVodCategories(accessCode).catch(() => []),
++      getSeriesCategories(accessCode).catch(() => []),
+     ]).then(([live, vod, ser, vodCats, serCats]) => {
+-      const liveData = Array.isArray(live) ? live.slice(0, 20) : [];
+-      const vodData = Array.isArray(vod) ? vod : [];
+-      const serData = Array.isArray(ser) ? ser : [];
+-      const vodCatsData = Array.isArray(vodCats) ? vodCats : [];
+-      const serCatsData = Array.isArray(serCats) ? serCats : [];
+-
+-      setLiveStreams(liveData);
+-      setMovies(vodData);
+-      setSeries(serData);
+-      setMovieCategories(vodCatsData);
+-      setSeriesCategories(serCatsData);
+-
+-      // Salvar no cache para carregamento imediato na próxima vez
+-      localStorage.setItem('cache_live', JSON.stringify(liveData));
+-      localStorage.setItem('cache_vod', JSON.stringify(vodData.slice(0, 100))); // Limitar cache para performance
+-      localStorage.setItem('cache_series', JSON.stringify(serData.slice(0, 100)));
+-      localStorage.setItem('cache_vod_cats', JSON.stringify(vodCatsData));
+-      localStorage.setItem('cache_ser_cats', JSON.stringify(serCatsData));
++      setLiveStreams(live.slice(0, 20));
++      setMovies(vod);
++      setSeries(ser);
++      setMovieCategories(vodCats);
++      setSeriesCategories(serCats);
+     }).finally(() => setLoading(false));
+-  }, [serverInfo]);
++  }, [accessCode]);
+ 
+   // Most recently added movies & series (by 'added' timestamp desc)
+   const topMovies = useMemo(() =>
+diff --git a/src/pages/LiveTV.tsx b/src/pages/LiveTV.tsx
+index 1361fd6..24846eb 100644
+--- a/src/pages/LiveTV.tsx
++++ b/src/pages/LiveTV.tsx
+@@ -22,7 +22,7 @@ const PAGE_SIZE = 60;
+ const CHECK_BATCH_SIZE = 50;
+ 
+ export default function LiveTV() {
+-  const { serverInfo } = useAuth();
++  const { accessCode } = useAuth();
+   const navigate = useNavigate();
+   const { isFavorite, toggleFavorite } = useFavorites();
+   const { addToHistory } = useWatchHistory();
+@@ -38,27 +38,27 @@ export default function LiveTV() {
+   const [statusFilter, setStatusFilter] = useState<'all' | 'online' | 'offline'>('all');
+ 
+   useEffect(() => {
+-    if (!serverInfo) return;
++    if (!accessCode) return;
+     setLoading(true);
+-     Promise.all([
+-      getLiveStreams(serverInfo).catch(() => []),
+-      getLiveCategories(serverInfo).catch(() => []),
++    Promise.all([
++      getLiveStreams(accessCode).catch(() => []),
++      getLiveCategories(accessCode).catch(() => []),
+     ]).then(([s, c]) => {
+       setStreams(s);
+       setCategories(c);
+     }).finally(() => setLoading(false));
+-  }, [serverInfo]);
++  }, [accessCode]);
+ 
+   // Check channel status for currently filtered channels
+   const checkStatus = useCallback(async (channelsToCheck: LiveStream[]) => {
+-    if (!serverInfo || channelsToCheck.length === 0) return;
++    if (!accessCode || channelsToCheck.length === 0) return;
+     setCheckingStatus(true);
+     try {
+       // Check in batches
+       const ids = channelsToCheck.map(c => c.stream_id);
+       for (let i = 0; i < ids.length; i += CHECK_BATCH_SIZE) {
+         const batch = ids.slice(i, i + CHECK_BATCH_SIZE);
+-        const results = await checkChannelsStatus(serverInfo, batch);
++        const results = await checkChannelsStatus(accessCode, batch);
+         setChannelStatus(prev => ({ ...prev, ...results }));
+       }
+     } catch (e) {
+@@ -66,7 +66,7 @@ export default function LiveTV() {
+     } finally {
+       setCheckingStatus(false);
+     }
+-  }, [serverInfo]);
++  }, [accessCode]);
+ 
+   // Auto-check when category changes or on initial load
+   useEffect(() => {
+diff --git a/src/pages/MovieDetail.tsx b/src/pages/MovieDetail.tsx
+index f44675d..479d734 100644
+--- a/src/pages/MovieDetail.tsx
++++ b/src/pages/MovieDetail.tsx
+@@ -25,7 +25,7 @@ function extractYouTubeId(input: string): string | null {
+ 
+ export default function MovieDetail() {
+   const { id } = useParams<{ id: string }>();
+-  const { serverInfo } = useAuth();
++  const { accessCode } = useAuth();
+   const navigate = useNavigate();
+   const { isFavorite, toggleFavorite } = useFavorites();
+   const { addToHistory, history, getResumeTime } = useWatchHistory();
+@@ -46,17 +46,17 @@ export default function MovieDetail() {
+   };
+ 
+   useEffect(() => {
+-    if (!serverInfo || !id) return;
++    if (!accessCode || !id) return;
+     setLoading(true);
+     setShowTrailer(false); // Reset trailer when movie changes
+     Promise.all([
+-      getVodStreams(serverInfo).then(movies => {
++      getVodStreams(accessCode).then(movies => {
+         setAllMovies(movies);
+         return movies.find(m => m.stream_id === Number(id)) || null;
+       }),
+-      getVodInfo(serverInfo, Number(id)).catch(() => null),
++      getVodInfo(accessCode, Number(id)).catch(() => null),
+     ]).then(([m, i]) => { setMovie(m); setInfo(i); }).finally(() => setLoading(false));
+-  }, [serverInfo, id]);
++  }, [accessCode, id]);
+ 
+   const resumeTime = useMemo(() => {
+     if (!movie) return 0;
+@@ -64,7 +64,7 @@ export default function MovieDetail() {
+   }, [movie, getResumeTime, history]);
+ 
+   const handlePlay = async () => {
+-    if (!movie || !serverInfo) return;
++    if (!movie || !accessCode) return;
+     const ext = movie.container_extension || 'mp4';
+     const params = new URLSearchParams({
+       name: movie.name,
+@@ -200,9 +200,9 @@ export default function MovieDetail() {
+               <button 
+                 onClick={async (e) => {
+                   e.stopPropagation();
+-                  if (!serverInfo || isDownloaded(movie.stream_id, 'movie')) return;
++                  if (!accessCode || isDownloaded(movie.stream_id, 'movie')) return;
+                   try {
+-                    const url = await getStreamUrl(serverInfo, 'movie', movie.stream_id, movie.container_extension || 'mp4');
++                    const url = await getStreamUrl(accessCode, 'movie', movie.stream_id, movie.container_extension || 'mp4');
+                     startDownload({ id: movie.stream_id, type: 'movie', name: movie.name, icon: movie.stream_icon || '', url });
+                   } catch { /* ignore */ }
+                 }}
+@@ -220,10 +220,10 @@ export default function MovieDetail() {
+               <Button 
+                 variant="outline"
+                 onClick={async () => {
+-                  if (!serverInfo || !movie) return;
++                  if (!accessCode || !movie) return;
+                   try {
+                     const ext = movie.container_extension || 'mp4';
+-                    const url = await getStreamUrl(serverInfo, 'movie', movie.stream_id, ext);
++                    const url = await getStreamUrl(accessCode, 'movie', movie.stream_id, ext);
+                     castMedia(url, movie.name, movie.stream_icon || '');
+                   } catch (e) { console.error('Error starting cast', e); }
+                 }}
+diff --git a/src/pages/Movies.tsx b/src/pages/Movies.tsx
+index c082efd..0995ed6 100644
+--- a/src/pages/Movies.tsx
++++ b/src/pages/Movies.tsx
+@@ -31,7 +31,7 @@ import { LayoutGrid, Filter } from 'lucide-react';
+ const PAGE_SIZE = 60;
+ 
+ export default function Movies() {
+-  const { serverInfo } = useAuth();
++  const { accessCode } = useAuth();
+   const navigate = useNavigate();
+   const [searchParams] = useSearchParams();
+   const { isFavorite, toggleFavorite } = useFavorites();
+@@ -44,11 +44,11 @@ export default function Movies() {
+   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+ 
+   useEffect(() => {
+-    if (!serverInfo) return;
++    if (!accessCode) return;
+     setLoading(true);
+     Promise.all([
+-      getVodStreams(serverInfo).catch(() => []),
+-      getVodCategories(serverInfo).catch(() => []),
++      getVodStreams(accessCode).catch(() => []),
++      getVodCategories(accessCode).catch(() => []),
+     ]).then(([m, c]) => { 
+       // Sort movies by 'added' timestamp descending (Newest first)
+       const sortedMovies = [...m].sort((a, b) => {
+@@ -59,7 +59,7 @@ export default function Movies() {
+       setMovies(sortedMovies); 
+       setCategories(c); 
+     }).finally(() => setLoading(false));
+-  }, [serverInfo]);
++  }, [accessCode]);
+ 
+   useEffect(() => { setVisibleCount(PAGE_SIZE); }, [selectedCategory, search]);
+ 
+diff --git a/src/pages/PlayerPage.tsx b/src/pages/PlayerPage.tsx
+index 3803fc3..9498595 100644
+--- a/src/pages/PlayerPage.tsx
++++ b/src/pages/PlayerPage.tsx
+@@ -22,13 +22,13 @@ const LIVE_ATTEMPTS: StreamAttempt[] = [
+ export default function PlayerPage() {
+   const { type, id, ext } = useParams<{ type: string; id: string; ext?: string }>();
+   const [searchParams] = useSearchParams();
+-  const { serverInfo: currentServerInfo } = useAuth();
+-  // Capture server info at mount time so admin playlist changes don't interrupt playback
+-  const stableServerInfoRef = useRef(currentServerInfo);
+-  if (!stableServerInfoRef.current && currentServerInfo) {
+-    stableServerInfoRef.current = currentServerInfo;
++  const { accessCode: liveAccessCode } = useAuth();
++  // Capture access code at mount time so admin playlist changes don't interrupt playback
++  const stableAccessCodeRef = useRef(liveAccessCode);
++  if (!stableAccessCodeRef.current && liveAccessCode) {
++    stableAccessCodeRef.current = liveAccessCode;
+   }
+-  const serverInfo = stableServerInfoRef.current;
++  const accessCode = stableAccessCodeRef.current;
+   const { updateProgress, addToHistory, getResumeTime } = useWatchHistory();
+   const [streamUrl, setStreamUrl] = useState<string | null>(null);
+   const [resumeTime, setResumeTime] = useState<number>(0);
+@@ -49,8 +49,8 @@ export default function PlayerPage() {
+ 
+   // Load series info to find next episode
+   useEffect(() => {
+-    if (type !== 'series' || !seriesId || !serverInfo) return;
+-    getSeriesInfo(serverInfo, Number(seriesId)).then(data => {
++    if (type !== 'series' || !seriesId || !accessCode) return;
++    getSeriesInfo(accessCode, Number(seriesId)).then(data => {
+       const epNum = Number(episodeNum);
+       const currentSeason = season || '';
+       const eps = data.episodes?.[currentSeason] || [];
+@@ -74,7 +74,7 @@ export default function PlayerPage() {
+         setCurrentTitle(`${seriesName} — S${currentEp.season}E${currentEp.episode_num}`);
+       }
+     }).catch(() => {});
+-  }, [type, seriesId, season, episodeNum, id, serverInfo, seriesName]);
++  }, [type, seriesId, season, episodeNum, id, accessCode, seriesName]);
+ 
+   // Ensure movie/series is added to history when player opens (covers all entry points)
+   useEffect(() => {
+@@ -98,7 +98,7 @@ export default function PlayerPage() {
+   }, [id, type, isLive, getResumeTime, searchParams, addToHistory, episodeNum, season]);
+ 
+   useEffect(() => {
+-    if (!serverInfo || !type || !id) return;
++    if (!accessCode || !type || !id) return;
+     setLoading(true);
+     setError(null);
+     attemptIndex.current = 0;
+@@ -106,7 +106,7 @@ export default function PlayerPage() {
+     const streamType = type as 'live' | 'movie' | 'series';
+ 
+     if (ext) {
+-      getStreamUrl(serverInfo, streamType, id, ext)
++      getStreamUrl(accessCode, streamType, id, ext)
+         .then(url => setStreamUrl(url))
+         .catch(err => setError(err.message))
+         .finally(() => setLoading(false));
+@@ -114,17 +114,17 @@ export default function PlayerPage() {
+     }
+ 
+     if (!isLive) {
+-      getStreamUrl(serverInfo, streamType, id, 'mp4')
++      getStreamUrl(accessCode, streamType, id, 'mp4')
+         .then(url => setStreamUrl(url))
+         .catch(err => setError(err.message))
+         .finally(() => setLoading(false));
+       return;
+     }
+ 
+-    tryNextAttempt(serverInfo, streamType, id, 0);
+-  }, [serverInfo, type, id, ext, isLive]);
++    tryNextAttempt(accessCode, streamType, id, 0);
++  }, [accessCode, type, id, ext, isLive]);
+ 
+-  const tryNextAttempt = (info: any, streamType: 'live' | 'movie' | 'series', streamId: string, index: number) => {
++  const tryNextAttempt = (code: string, streamType: 'live' | 'movie' | 'series', streamId: string, index: number) => {
+     if (index >= LIVE_ATTEMPTS.length) {
+       setError('Não foi possível carregar o canal. Tente outro canal.');
+       setLoading(false);
+@@ -135,25 +135,25 @@ export default function PlayerPage() {
+     attemptIndex.current = index;
+ 
+     if (attempt.proxy) {
+-      const url = getProxyStreamUrl(info, streamType, streamId, attempt.ext);
++      const url = getProxyStreamUrl(code, streamType, streamId, attempt.ext);
+       setStreamUrl(url);
+       setLoading(false);
+     } else {
+-      getStreamUrl(info, streamType, streamId, attempt.ext)
++      getStreamUrl(code, streamType, streamId, attempt.ext)
+         .then(url => { setStreamUrl(url); setLoading(false); })
+-        .catch(() => tryNextAttempt(info, streamType, streamId, index + 1));
++        .catch(() => tryNextAttempt(code, streamType, streamId, index + 1));
+     }
+   };
+ 
+   const handleStreamError = () => {
+-    if (!isLive || !serverInfo || !id) return;
++    if (!isLive || !accessCode || !id) return;
+     const nextIndex = attemptIndex.current + 1;
+     if (nextIndex < LIVE_ATTEMPTS.length) {
+       console.log(`[Live] Attempt ${nextIndex + 1}/${LIVE_ATTEMPTS.length}: ${LIVE_ATTEMPTS[nextIndex].ext} (proxy: ${LIVE_ATTEMPTS[nextIndex].proxy})`);
+       setError(null);
+       setLoading(true);
+       setStreamUrl(null);
+-      setTimeout(() => tryNextAttempt(serverInfo, type as 'live', id, nextIndex), 800);
++      setTimeout(() => tryNextAttempt(accessCode, type as 'live', id, nextIndex), 800);
+     }
+   };
+ 
+diff --git a/src/pages/SeriesDetail.tsx b/src/pages/SeriesDetail.tsx
+index f67e451..6cf906f 100644
+--- a/src/pages/SeriesDetail.tsx
++++ b/src/pages/SeriesDetail.tsx
+@@ -25,7 +25,7 @@ function extractYouTubeId(input: string): string | null {
+ 
+ export default function SeriesDetail() {
+   const { id } = useParams<{ id: string }>();
+-  const { serverInfo } = useAuth();
++  const { accessCode } = useAuth();
+   const navigate = useNavigate();
+   const { isFavorite, toggleFavorite } = useFavorites();
+   const { addToHistory, history, getResumeTime } = useWatchHistory();
+@@ -39,19 +39,19 @@ export default function SeriesDetail() {
+   const [showShareDialog, setShowShareDialog] = useState(false);
+ 
+   useEffect(() => {
+-    if (!serverInfo || !id) return;
++    if (!accessCode || !id) return;
+     setLoading(true);
+     setShowTrailer(false);
+     Promise.all([
+-      getSeriesInfo(serverInfo, Number(id)),
+-      getSeriesList(serverInfo),
++      getSeriesInfo(accessCode, Number(id)),
++      getSeriesList(accessCode),
+     ]).then(([data, list]) => {
+       setSeriesInfo(data);
+       setAllSeries(list);
+       const seasons = Object.keys(data.episodes || {}).sort((a, b) => Number(a) - Number(b));
+       if (seasons.length > 0) setSelectedSeason(seasons[0]);
+     }).catch(() => {}).finally(() => setLoading(false));
+-  }, [serverInfo, id]);
++  }, [accessCode, id]);
+ 
+   const formatTime = (seconds: number) => {
+     const h = Math.floor(seconds / 3600);
+@@ -70,7 +70,7 @@ export default function SeriesDetail() {
+   };
+ 
+   const handlePlayEpisode = async (episode: Episode) => {
+-    if (!seriesInfo || !serverInfo) return;
++    if (!seriesInfo || !accessCode) return;
+     const ext = episode.container_extension || 'mp4';
+     const params = new URLSearchParams({
+       seriesId: String(seriesInfo.info.series_id),
+@@ -200,14 +200,14 @@ export default function SeriesDetail() {
+               <button 
+                 onClick={async (e) => {
+                   e.stopPropagation();
+-                  if (!serverInfo || !seriesInfo || currentEpisodes.length === 0) return;
++                  if (!accessCode || !seriesInfo || currentEpisodes.length === 0) return;
+                   const firstUnwatched = currentEpisodes.find(ep => getEpisodeProgress(ep.id) < 90) || currentEpisodes[0];
+                   if (!firstUnwatched) return;
+                   const epInfo = `S${firstUnwatched.season}E${firstUnwatched.episode_num}`;
+                   if (isDownloaded(firstUnwatched.id, 'series', epInfo)) return;
+                   try {
+                     const ext = firstUnwatched.container_extension || 'mp4';
+-                    const url = await getStreamUrl(serverInfo, 'series', firstUnwatched.id, ext);
++                    const url = await getStreamUrl(accessCode, 'series', firstUnwatched.id, ext);
+                     startDownload({
+                       id: firstUnwatched.id,
+                       type: 'series',
+@@ -235,12 +235,12 @@ export default function SeriesDetail() {
+               <Button 
+                 variant="outline"
+                 onClick={async () => {
+-                  if (!serverInfo || !seriesInfo || currentEpisodes.length === 0) return;
++                  if (!accessCode || !seriesInfo || currentEpisodes.length === 0) return;
+                   const firstUnwatched = currentEpisodes.find(ep => getEpisodeProgress(ep.id) < 90) || currentEpisodes[0];
+                   if (!firstUnwatched) return;
+                   try {
+                     const ext = firstUnwatched.container_extension || 'mp4';
+-                    const url = await getStreamUrl(serverInfo, 'series', firstUnwatched.id, ext);
++                    const url = await getStreamUrl(accessCode, 'series', firstUnwatched.id, ext);
+                     castMedia(url, `${seriesInfo.info.name} - S${firstUnwatched.season}E${firstUnwatched.episode_num}`, seriesInfo.info.cover || '');
+                   } catch (e) { console.error('Error starting cast', e); }
+                 }}
+@@ -308,12 +308,12 @@ export default function SeriesDetail() {
+                     className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 self-center"
+                     onClick={async (e) => {
+                       e.stopPropagation();
+-                      if (!serverInfo || !seriesInfo) return;
++                      if (!accessCode || !seriesInfo) return;
+                       const epInfo = `S${ep.season}E${ep.episode_num}`;
+                       if (isDownloaded(ep.id, 'series', epInfo)) return;
+                       try {
+                         const ext = ep.container_extension || 'mp4';
+-                        const url = await getStreamUrl(serverInfo, 'series', ep.id, ext);
++                        const url = await getStreamUrl(accessCode, 'series', ep.id, ext);
+                         startDownload({ id: ep.id, type: 'series', name: seriesInfo.info.name, icon: seriesInfo.info.cover || '', url, episodeInfo: epInfo, episodeTitle: ep.title, seriesId: seriesInfo.info.series_id });
+                       } catch { /* ignore */ }
+                     }}
+@@ -330,10 +330,10 @@ export default function SeriesDetail() {
+                     className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 self-center hidden sm:block"
+                     onClick={async (e) => {
+                       e.stopPropagation();
+-                      if (!serverInfo || !seriesInfo) return;
++                      if (!accessCode || !seriesInfo) return;
+                       try {
+                         const ext = ep.container_extension || 'mp4';
+-                        const url = await getStreamUrl(serverInfo, 'series', ep.id, ext);
++                        const url = await getStreamUrl(accessCode, 'series', ep.id, ext);
+                         castMedia(url, `${seriesInfo.info.name} - S${ep.season}E${ep.episode_num}`, seriesInfo.info.cover || '');
+                       } catch (err) { console.error('Cast error:', err); }
+                     }}
+diff --git a/src/pages/SeriesPage.tsx b/src/pages/SeriesPage.tsx
+index dee99ec..897055c 100644
+--- a/src/pages/SeriesPage.tsx
++++ b/src/pages/SeriesPage.tsx
+@@ -32,7 +32,7 @@ import { LayoutGrid, Filter } from 'lucide-react';
+ const PAGE_SIZE = 60;
+ 
+ export default function SeriesPage() {
+-  const { serverInfo } = useAuth();
++  const { accessCode } = useAuth();
+   const navigate = useNavigate();
+   const [searchParams] = useSearchParams();
+   const { isFavorite, toggleFavorite } = useFavorites();
+@@ -45,11 +45,11 @@ export default function SeriesPage() {
+   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+ 
+   useEffect(() => {
+-    if (!serverInfo) return;
++    if (!accessCode) return;
+     setLoading(true);
+     Promise.all([
+-      getSeriesList(serverInfo).catch(() => []),
+-      getSeriesCategories(serverInfo).catch(() => []),
++      getSeriesList(accessCode).catch(() => []),
++      getSeriesCategories(accessCode).catch(() => []),
+     ]).then(([s, c]) => { 
+       // Sort series by 'last_modified' (or added date/relevance)
+       const sortedSeries = [...s].sort((a, b) => {
+@@ -60,7 +60,7 @@ export default function SeriesPage() {
+       setSeries(sortedSeries); 
+       setCategories(c); 
+     }).finally(() => setLoading(false));
+-  }, [serverInfo]);
++  }, [accessCode]);
+ 
+   useEffect(() => { setVisibleCount(PAGE_SIZE); }, [selectedCategory, search]);
+ 
+diff --git a/src/pages/SettingsPage.tsx b/src/pages/SettingsPage.tsx
+index 7707698..08b9006 100644
+--- a/src/pages/SettingsPage.tsx
++++ b/src/pages/SettingsPage.tsx
+@@ -55,12 +55,8 @@ export default function SettingsPage() {
+   const [confirmPassword, setConfirmPassword] = useState('');
+ 
+   useEffect(() => {
+-    // Definir a senha global se não estiver definida
+     const saved = localStorage.getItem('xerife_admin_pass');
+-    if (!saved || saved === 'abcd123') {
+-      localStorage.setItem('xerife_admin_pass', 'Tpas1000_03');
+-    }
+-    setHasPasswordSet(true);
++    setHasPasswordSet(!!saved);
+   }, []);
+ 
+   const handleSetPassword = () => {
+@@ -76,26 +72,11 @@ export default function SettingsPage() {
+   const loadPlaylists = useCallback(async () => {
+     setLoading(true);
+     try {
+-      // Usando o banco de dados original (estável) diretamente
+-      const { data, error } = await supabase
+-        .from('admin_config')
+-        .select('*')
+-        .order('created_at', { ascending: false });
+-      
+-      if (error) throw error;
+-      setPlaylists((data as any[]) || []);
+-    } catch (err: any) {
+-      console.error('Error loading playlists:', err);
+-      // Fallback para tentar via Edge Function caso o banco falhe RLS
+-      try {
+-        const { data } = await supabase.functions.invoke('admin-config', {
+-          body: { action: 'get_config' },
+-        });
+-        if (data?.configs) setPlaylists(data.configs);
+-      } catch {
+-        toast.error('Erro ao conectar com o banco de dados. Verifique a URL do projeto.');
+-      }
+-    }
++      const { data } = await supabase.functions.invoke('admin-config', {
++        body: { action: 'get_config' },
++      });
++      setPlaylists(data?.configs || []);
++    } catch { }
+     setLoading(false);
+   }, []);
+ 
+@@ -104,12 +85,9 @@ export default function SettingsPage() {
+   }, [isUnlocked, loadPlaylists]);
+ 
+   const handleUnlock = () => {
+-    const saved = localStorage.getItem('xerife_admin_pass') || 'Tpas1000_03';
++    const saved = localStorage.getItem('xerife_admin_pass');
+     if (!adminPassword.trim()) { setAuthError('Digite a senha'); return; }
+-    if (adminPassword !== saved && adminPassword !== 'Tpas1000_03') { 
+-      setAuthError('Senha incorreta'); 
+-      return; 
+-    }
++    if (adminPassword !== saved) { setAuthError('Senha incorreta'); return; }
+     setAuthError('');
+     setIsUnlocked(true);
+   };
+@@ -151,7 +129,6 @@ export default function SettingsPage() {
+     setTesting(true);
+     setTestResult(null);
+     try {
+-      // Tentativa 1: Via Proxy (mais confiável para CORS)
+       const { data, error } = await supabase.functions.invoke('xtream-proxy', {
+         body: {
+           action: 'test_connection',
+@@ -160,55 +137,24 @@ export default function SettingsPage() {
+           password: form.password.trim(),
+         },
+       });
+-      
+       if (error || data?.error) {
+-        throw new Error(data?.error || error?.message || 'Falha via proxy');
++        setTestResult({ ok: false, msg: data?.error || error?.message || 'Falha na conexão' });
+       } else {
++        // Auto-fill resolved URL if provider name was used
+         if (data?.resolved_url && data.resolved_url !== form.server_url.trim()) {
+           setForm(f => ({ ...f, server_url: data.resolved_url }));
+         }
+-        setTestResult({ ok: true, msg: `Conectado via Proxy! ${data?.user_info?.status === 'Active' ? 'Conta ativa' : 'Servidor respondeu'}` });
++        setTestResult({ ok: true, msg: `Conectado! ${data?.user_info?.status === 'Active' ? 'Conta ativa' : 'Servidor respondeu'}` });
+       }
+     } catch (err: any) {
+-      console.warn('Proxy test failed, trying direct connection...', err);
+-      // Tentativa 2: Direto pelo Navegador (Sent-to-Sent)
+-      try {
+-        let baseUrl = form.server_url.trim().replace(/\/$/, '');
+-        if (!baseUrl.startsWith('http')) baseUrl = `http://${baseUrl}`;
+-        const testUrl = `${baseUrl}/player_api.php?username=${encodeURIComponent(form.username)}&password=${encodeURIComponent(form.password)}`;
+-        
+-        const res = await fetch(testUrl);
+-        if (res.ok) {
+-          const data = await res.json();
+-          setTestResult({ ok: true, msg: `Conectado Direto! ${data?.user_info?.status === 'Active' ? 'Conta ativa' : 'Servidor respondeu'}` });
+-        } else {
+-          throw new Error('CORS');
+-        }
+-      } catch (innerErr: any) {
+-        console.warn('Direct connection effort failed (CORS), trying public CORS proxy as last resort...', innerErr);
+-        // Tentativa 3: Proxy CORS Público (Último recurso)
+-        try {
+-          let baseUrl = form.server_url.trim().replace(/\/$/, '');
+-          if (!baseUrl.startsWith('http')) baseUrl = `http://${baseUrl}`;
+-          const testUrl = `${baseUrl}/player_api.php?username=${encodeURIComponent(form.username)}&password=${encodeURIComponent(form.password)}`;
+-          const publicProxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(testUrl)}`;
+-          
+-          const res = await fetch(publicProxyUrl);
+-          const json = await res.json();
+-          const data = JSON.parse(json.contents);
+-          
+-          setTestResult({ ok: true, msg: `Conectado via Proxy Público! ${data?.user_info?.status === 'Active' ? 'Conta ativa' : 'Servidor respondeu'}` });
+-        } catch (totalErr) {
+-          setTestResult({ ok: false, msg: `Erro de Conexão: Servidor offline ou bloqueio total de segurança. Verifique a URL e credenciais.` });
+-        }
+-      }
++      setTestResult({ ok: false, msg: err.message || 'Erro ao testar' });
+     }
+     setTesting(false);
+   };
+ 
+   const handleSave = async () => {
+     if (!form.server_url || !form.username || !form.access_code) {
+-      toast.error('Preencha os campos obrigatórios');
++      toast.error('Preencha todos os campos obrigatórios');
+       return;
+     }
+     if (!editingId && !form.password) {
+@@ -218,108 +164,67 @@ export default function SettingsPage() {
+ 
+     setSaving(true);
+     try {
+-      const configData: any = {
+-        server_url: form.server_url.trim(),
+-        username: form.username.trim(),
+-        playlist_name: form.playlist_name.trim() || 'Nova Playlist',
+-        access_code: form.access_code.trim(),
++      const action = editingId ? 'update_config' : 'save_config';
++      const body: any = {
++        action,
++        admin_password: adminPassword,
++        config: {
++          server_url: form.server_url.trim(),
++          username: form.username.trim(),
++          playlist_name: form.playlist_name.trim() || 'Nova Playlist',
++          access_code: form.access_code.trim(),
++        },
+       };
+-      
+-      if (form.password) configData.password = form.password.trim();
+-
+-      // Tentativa 1: Escrita direta no banco (mais estável se as permissões estiverem certas)
+-      let error;
+-      if (editingId) {
+-        const { error: updateError } = await supabase
+-          .from('admin_config')
+-          .update(configData)
+-          .eq('id', editingId);
+-        error = updateError;
+-      } else {
+-        if (!configData.password) throw new Error('Senha obrigatória');
+-        configData.is_active = false;
+-        const { error: insertError } = await supabase
+-          .from('admin_config')
+-          .insert([configData]);
+-        error = insertError;
+-      }
++      if (form.password) body.config.password = form.password.trim();
++      if (editingId) body.id = editingId;
+ 
+-      // Se falhou por RLS ou outro erro, tenta via Edge Function como fallback
+-      if (error) {
+-        console.warn('Direct database save failed, trying Edge Function fallback...', error);
+-        const action = editingId ? 'update_config' : 'save_config';
+-        const body: any = {
+-          action,
+-          admin_password: adminPassword, // Tpas1000_03
+-          config: configData,
+-        };
+-        if (editingId) body.id = editingId;
+-
+-        const { data: edgeData, error: edgeError } = await supabase.functions.invoke('admin-config', { body });
+-        if (edgeError || edgeData?.error) {
+-          throw new Error(edgeData?.error || edgeError?.message || 'Erro de permissão no banco');
+-        }
++      const { data, error } = await supabase.functions.invoke('admin-config', { body });
++      if (data?.error) {
++        if (data.error.includes('Senha')) { setIsUnlocked(false); setAuthError('Senha inválida'); }
++        throw new Error(data.error);
+       }
+-
+       toast.success(editingId ? 'Playlist atualizada!' : 'Playlist adicionada!');
+       closeForm();
+       loadPlaylists();
+       refreshConfig();
+     } catch (err: any) {
+-      toast.error(err.message || 'Erro ao salvar playlist');
++      toast.error(err.message || 'Erro ao salvar');
+     }
+     setSaving(false);
+   };
+ 
+   const handleToggle = async (id: string) => {
+     try {
+-      const target = playlists.find(p => p.id === id);
+-      if (!target) return;
+-      
+-      const newStatus = !target.is_active;
+-
+-      // Desativar outras se estiver ativando uma
+-      if (newStatus) {
+-        await supabase.from('admin_config').update({ is_active: false } as any).neq('id', id);
+-      }
+-
+-      // Tentativa direta
+-      const { error } = await supabase
+-        .from('admin_config')
+-        .update({ is_active: newStatus } as any)
+-        .eq('id', id);
+-
+-      if (error) {
+-        // Fallback Edge Function
+-        await supabase.functions.invoke('admin-config', {
+-          body: { action: 'toggle_config', id, admin_password: adminPassword },
+-        });
++      const { data } = await supabase.functions.invoke('admin-config', {
++        body: { action: 'toggle_config', id, admin_password: adminPassword },
++      });
++      if (data?.error) {
++        if (data.error.includes('Senha')) { setIsUnlocked(false); setAuthError('Senha inválida'); }
++        throw new Error(data.error);
+       }
+-
+-      toast.success(newStatus ? 'Playlist ativada!' : 'Playlist desativada!');
++      toast.success('Playlist alterada! Recarregando dados...');
+       loadPlaylists();
+       refreshConfig();
+     } catch (err: any) {
+-      toast.error('Erro ao alternar playlist');
++      toast.error(err.message || 'Erro');
+     }
+   };
+ 
+   const handleDelete = async (id: string) => {
+     if (!confirm('Tem certeza que deseja excluir esta playlist?')) return;
+     try {
+-      const { error } = await supabase.from('admin_config').delete().eq('id', id);
+-      
+-      if (error) {
+-        await supabase.functions.invoke('admin-config', {
+-          body: { action: 'delete_config', id, admin_password: adminPassword },
+-        });
++      const { data } = await supabase.functions.invoke('admin-config', {
++        body: { action: 'delete_config', id, admin_password: adminPassword },
++      });
++      if (data?.error) {
++        if (data.error.includes('Senha')) { setIsUnlocked(false); setAuthError('Senha inválida'); }
++        throw new Error(data.error);
+       }
+-
+       toast.success('Playlist excluída');
+       loadPlaylists();
+       refreshConfig();
+     } catch (err: any) {
+-      toast.error('Erro ao excluir');
++      toast.error(err.message || 'Erro');
+     }
+   };
+ 
+@@ -327,6 +232,7 @@ export default function SettingsPage() {
+     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-2xl mx-auto">
+       <h1 className="text-2xl font-bold text-foreground mb-6">Configurações</h1>
+ 
++      {/* History section */}
+       <div className="bg-card rounded-xl p-5 border border-border mb-4">
+         <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-4">
+           <Clock className="w-5 h-5 text-primary" /> Histórico
+@@ -341,10 +247,12 @@ export default function SettingsPage() {
+         </div>
+       </div>
+ 
++      {/* Paleta de Cores */}
+       <div className="mb-4">
+         <Configuracoes />
+       </div>
+ 
++      {/* Acesso Restrito - compacto, próximo ao rodapé */}
+       <div className="bg-card rounded-xl border border-border overflow-hidden mt-8">
+         {!isUnlocked ? (
+           <button
+@@ -484,19 +392,29 @@ export default function SettingsPage() {
+                           onChange={e => { setForm(f => ({ ...f, server_url: e.target.value })); setTestResult(null); }} 
+                           className="bg-secondary border-border text-foreground" 
+                         />
++                        <p className="text-[11px] text-muted-foreground">
++                          Use a URL completa (ex: http://servidor.com:8080) ou apenas o nome do provedor (ex: warez). O sistema tentará resolver automaticamente.
++                        </p>
+                       </div>
+ 
+                       <div className="grid grid-cols-2 gap-3">
+                         <div className="space-y-2">
+                           <Label className="text-foreground text-sm">Usuário *</Label>
+-                          <Input placeholder="Username" value={form.username} onChange={e => { setForm(f => ({ ...f, username: e.target.value })); setTestResult(null); }} className="bg-secondary border-border text-foreground" />
++                          <Input 
++                            placeholder="Username" 
++                            value={form.username} 
++                            onChange={e => { setForm(f => ({ ...f, username: e.target.value })); setTestResult(null); }} 
++                            className="bg-secondary border-border text-foreground" 
++                          />
+                         </div>
+                         <div className="space-y-2">
+-                          <Label className="text-foreground text-sm">Senha *</Label>
++                          <Label className="text-foreground text-sm">
++                            Senha {editingId ? '(vazio = manter)' : '*'}
++                          </Label>
+                           <div className="relative">
+                             <Input 
+                               type={showPassword ? 'text' : 'password'} 
+-                              placeholder="Password" 
++                              placeholder={editingId ? '••••••' : 'Password'} 
+                               value={form.password} 
+                               onChange={e => { setForm(f => ({ ...f, password: e.target.value })); setTestResult(null); }} 
+                               className="bg-secondary border-border text-foreground pr-9" 
+@@ -528,6 +446,7 @@ export default function SettingsPage() {
+                       <div className="space-y-2">
+                         <Label className="text-foreground text-sm">Código de Acesso *</Label>
+                         <Input placeholder="Ex: 123" value={form.access_code} onChange={e => setForm(f => ({ ...f, access_code: e.target.value }))} className="bg-secondary border-border text-foreground" />
++                        <p className="text-[11px] text-muted-foreground">Código que os usuários usarão para acessar esta playlist</p>
+                       </div>
+ 
+                       <Button onClick={handleSave} disabled={saving} className="w-full gradient-primary text-primary-foreground font-medium">
+diff --git a/src/pages/SharedPlayer.tsx b/src/pages/SharedPlayer.tsx
+index 98883b1..a74504c 100644
+--- a/src/pages/SharedPlayer.tsx
++++ b/src/pages/SharedPlayer.tsx
+@@ -14,7 +14,7 @@ export default function SharedPlayer() {
+ 
+   // O link compartilhado pode conter o accessCode como parâmetro para funcionar para qualquer pessoa
+   // Se não houver, tenta pegar do localStorage ou context (através do useAuth se estivéssemos usando)
+-  const accessCode = searchParams.get('ac') || localStorage.getItem('access_code');
++  const accessCode = searchParams.get('ac') || localStorage.getItem('xerife_access_code');
+   const title = searchParams.get('title') || 'Reproduzindo...';
+ 
+   useEffect(() => {
+diff --git a/src/services/xtreamApi.ts b/src/services/xtreamApi.ts
+index 9c41e98..93f102e 100644
+--- a/src/services/xtreamApi.ts
++++ b/src/services/xtreamApi.ts
+@@ -90,151 +90,95 @@ export interface StreamUrlInfo {
+   password: string;
+ }
+ 
+-async function callApi(credentials: string | StreamUrlInfo, params: Record<string, any>) {
+-  if (typeof credentials === 'object' && credentials?.server_url) {
+-    const { server_url, username, password } = credentials;
+-    const baseUrl = server_url.replace(/\/$/, '');
+-    const url = new URL(`${baseUrl}/player_api.php`);
+-    
+-    url.searchParams.set('username', username);
+-    url.searchParams.set('password', password);
+-    
+-    const actionMap: Record<string, string> = {
+-      'get_live_categories': 'get_live_categories',
+-      'get_live_streams': 'get_live_streams',
+-      'get_vod_categories': 'get_vod_categories',
+-      'get_vod_streams': 'get_vod_streams',
+-      'get_series_categories': 'get_series_categories',
+-      'get_series': 'get_series',
+-      'get_series_info': 'get_series_info',
+-      'get_vod_info': 'get_vod_info',
+-      'get_short_epg': 'get_short_epg',
+-      'check_channels': 'get_live_streams'
+-    };
+-
+-    const action = actionMap[params.action] || params.action;
+-    if (action) url.searchParams.set('action', action);
+-    
+-    for (const [key, value] of Object.entries(params)) {
+-      if (key === 'action') continue;
+-      url.searchParams.set(key, String(value));
+-    }
+-
+-    try {
+-      const response = await fetch(url.toString());
+-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+-      return await response.json();
+-    } catch (err) {
+-      console.warn('Direct fetch failed, trying proxy fallback...', err);
+-      try {
+-        const { data, error } = await supabase.functions.invoke('xtream-proxy', {
+-          body: { 
+-            ...params, 
+-            server_url: credentials.server_url,
+-            username: credentials.username,
+-            password: credentials.password
+-          },
+-        });
+-        if (error) throw error;
+-        if (data?.error) throw new Error(data.error);
+-        const isListing = params.action?.includes('category') || params.action === 'get_series' || params.action === 'get_series_info' || params.action?.includes('_streams');
+-        return isListing ? (Array.isArray(data) ? data : []) : data;
+-      } catch (proxyErr: any) {
+-        console.warn('Supabase Proxy missing or failed, trying public CORS proxy...', proxyErr);
+-        try {
+-          // Último recurso: Usar um proxy CORS público para que o usuário veja os conteúdos
+-          const publicProxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url.toString())}`;
+-          const res = await fetch(publicProxyUrl);
+-          const json = await res.json();
+-          const parsedData = JSON.parse(json.contents);
+-          const isListing = params.action?.includes('category') || params.action === 'get_series' || params.action === 'get_series_info' || params.action?.includes('_streams');
+-          return isListing ? (Array.isArray(parsedData) ? parsedData : []) : parsedData;
+-        } catch (totalErr) {
+-          console.error('Falha total em todas as tentativas de conexão:', totalErr);
+-          const isListing = params.action?.includes('category') || params.action === 'get_series' || params.action === 'get_series_info' || params.action?.includes('_streams');
+-          return isListing ? [] : {};
+-        }
+-      }
+-    }
+-  }
+-
+-  // Fallback para código de acesso string
+-  try {
+-    const { data, error } = await supabase.functions.invoke('xtream-proxy', {
+-      body: { ...params, access_code: credentials },
+-    });
+-    if (error) throw error;
+-    if (data?.error) throw new Error(data.error);
+-    const isListing = params.action?.includes('category') || params.action === 'get_series' || params.action === 'get_series_info' || params.action?.includes('_streams');
+-    return isListing ? (Array.isArray(data) ? data : []) : data;
+-  } catch (err) {
+-    console.error('Erro no fallback via código:', err);
+-    const isListing = params.action?.includes('category') || params.action === 'get_series' || params.action === 'get_series_info' || params.action?.includes('_streams');
+-    return isListing ? [] : {};
+-  }
++async function callProxy(body: Record<string, any>) {
++  const { data, error } = await supabase.functions.invoke('xtream-proxy', {
++    body,
++  });
++  if (error) throw new Error(error.message || 'Erro na requisição');
++  if (data?.error) throw new Error(data.error);
++  return data;
+ }
+ 
+ export async function authenticateWithCode(accessCode: string) {
+-  return callApi(accessCode, { action: 'authenticate' });
++  return callProxy({ action: 'authenticate', access_code: accessCode });
+ }
+ 
+-export async function getLiveCategories(creds: string | StreamUrlInfo) {
+-  return callApi(creds, { action: 'get_live_categories' });
++export async function getLiveCategories(accessCode: string): Promise<Category[]> {
++  return callProxy({ action: 'get_live_categories', access_code: accessCode });
+ }
+ 
+-export async function getLiveStreams(creds: string | StreamUrlInfo, categoryId?: string) {
+-  return callApi(creds, { action: 'get_live_streams', category_id: categoryId });
++export async function getLiveStreams(accessCode: string, categoryId?: string): Promise<LiveStream[]> {
++  return callProxy({ action: 'get_live_streams', access_code: accessCode, category_id: categoryId });
+ }
+ 
+-export async function getVodCategories(creds: string | StreamUrlInfo) {
+-  return callApi(creds, { action: 'get_vod_categories' });
++export async function getVodCategories(accessCode: string): Promise<Category[]> {
++  return callProxy({ action: 'get_vod_categories', access_code: accessCode });
+ }
+ 
+-export async function getVodStreams(creds: string | StreamUrlInfo, categoryId?: string) {
+-  return callApi(creds, { action: 'get_vod_streams', category_id: categoryId });
++export async function getVodStreams(accessCode: string, categoryId?: string): Promise<VodStream[]> {
++  return callProxy({ action: 'get_vod_streams', access_code: accessCode, category_id: categoryId });
+ }
+ 
+-export async function getSeriesCategories(creds: string | StreamUrlInfo) {
+-  return callApi(creds, { action: 'get_series_categories' });
++export async function getSeriesCategories(accessCode: string): Promise<Category[]> {
++  return callProxy({ action: 'get_series_categories', access_code: accessCode });
+ }
+ 
+-export async function getSeriesList(creds: string | StreamUrlInfo, categoryId?: string) {
+-  return callApi(creds, { action: 'get_series', category_id: categoryId });
++export async function getSeriesList(accessCode: string, categoryId?: string): Promise<Series[]> {
++  return callProxy({ action: 'get_series', access_code: accessCode, category_id: categoryId });
+ }
+ 
+-export async function getSeriesInfo(creds: string | StreamUrlInfo, seriesId: number) {
+-  return callApi(creds, { action: 'get_series_info', series_id: seriesId });
++export async function getSeriesInfo(accessCode: string, seriesId: number): Promise<SeriesInfo> {
++  return callProxy({ action: 'get_series_info', access_code: accessCode, series_id: seriesId });
+ }
+ 
+-export async function getVodInfo(creds: string | StreamUrlInfo, vodId: number) {
+-  return callApi(creds, { action: 'get_vod_info', vod_id: vodId });
++export async function getVodInfo(accessCode: string, vodId: number): Promise<any> {
++  return callProxy({ action: 'get_vod_info', access_code: accessCode, vod_id: vodId });
+ }
+ 
+-export async function getShortEpg(creds: string | StreamUrlInfo, streamId: number) {
+-  const data = await callApi(creds, { action: 'get_short_epg', stream_id: streamId });
++export interface EpgEntry {
++  id: string;
++  epg_id: string;
++  title: string;
++  lang: string;
++  start: string;
++  end: string;
++  description: string;
++  channel_id: string;
++  start_timestamp: number;
++  stop_timestamp: number;
++  now_playing?: boolean;
++  has_archive?: number;
++}
++
++export async function getShortEpg(accessCode: string, streamId: number, limit?: number): Promise<EpgEntry[]> {
++  const data = await callProxy({ action: 'get_short_epg', access_code: accessCode, stream_id: streamId, limit: limit || 4 });
+   return data?.epg_listings || [];
+ }
+ 
+-export async function getAllEpg(creds: string | StreamUrlInfo, streamId: number) {
+-  return callApi(creds, { action: 'get_all_epg', stream_id: streamId });
+-}
+-
+-export async function getStreamUrl(creds: string | StreamUrlInfo, type: 'live' | 'movie' | 'series', id: string | number, extension?: string) {
+-  const data = await callApi(creds, { action: 'get_stream_url', stream_type: type, stream_id: id, extension });
+-  return data?.url;
++export async function getStreamUrl(accessCode: string, streamType: 'live' | 'movie' | 'series', streamId: number | string, extension?: string): Promise<string> {
++  const data = await callProxy({
++    action: 'get_stream_url',
++    access_code: accessCode,
++    stream_type: streamType,
++    stream_id: streamId,
++    extension,
++  });
++  return data.url;
+ }
+ 
+-export async function checkChannelsStatus(creds: string | StreamUrlInfo, streamIds: number[]) {
+-  const data = await callApi(creds, { action: 'check_channels', stream_ids: streamIds });
++export async function checkChannelsStatus(accessCode: string, streamIds: number[]): Promise<Record<number, boolean>> {
++  const data = await callProxy({ action: 'check_channels', access_code: accessCode, stream_ids: streamIds });
+   return data?.results || {};
+ }
+ 
+-/**
+- * Retorna a URL do proxy para um stream, garantindo que passe pelas funções do Supabase.
+- * Isso resolve problemas de Mixed Content (HTTP em página HTTPS) e CORS.
+- */
+-export function getProxyStreamUrl(accessCode: string, type: 'live' | 'movie' | 'series', id: string | number, extension?: string) {
+-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+-  const ext = extension || (type === 'live' ? 'm3u8' : 'mp4');
+-  return `${supabaseUrl}/functions/v1/xtream-proxy?action=proxy_stream&access_code=${encodeURIComponent(accessCode)}&stream_type=${type}&stream_id=${id}&extension=${ext}`;
++export function getProxyStreamUrl(accessCode: string, streamType: 'live' | 'movie' | 'series', streamId: number | string, extension?: string): string {
++  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID || 'knrubxjvtgkypasndwkn';
++  const params = new URLSearchParams({
++    action: 'proxy_stream',
++    access_code: accessCode,
++    stream_type: streamType,
++    stream_id: String(streamId),
++  });
++  if (extension) params.set('extension', extension);
++  return `https://${projectId}.supabase.co/functions/v1/xtream-proxy?${params.toString()}`;
+ }
+diff --git a/supabase/functions/admin-config/index.ts b/supabase/functions/admin-config/index.ts
+index 92f9918..df52157 100644
+--- a/supabase/functions/admin-config/index.ts
++++ b/supabase/functions/admin-config/index.ts
+@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
+ 
+     const protectedActions = ["save_config", "toggle_config", "delete_config", "update_config"];
+     if (protectedActions.includes(action)) {
+-      const adminPw = Deno.env.get("ADMIN_SECRET") || "Tpas1000_03";
++      const adminPw = Deno.env.get("ADMIN_SECRET") || "abcd123";
+       if (admin_password !== adminPw) {
+         return new Response(JSON.stringify({ error: "Senha de administrador inválida" }), {
+           status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }
+@@ -193,7 +193,7 @@ Deno.serve(async (req) => {
+     }
+   } catch (err) {
+     return new Response(
+-      JSON.stringify({ error: err.message || "Erro interno" }),
++      JSON.stringify({ error: (err as Error).message || "Erro interno" }),
+       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+     );
+   }
+diff --git a/supabase/functions/xtream-proxy/index.ts b/supabase/functions/xtream-proxy/index.ts
+index 55c5a92..203c327 100644
+--- a/supabase/functions/xtream-proxy/index.ts
++++ b/supabase/functions/xtream-proxy/index.ts
+@@ -127,7 +127,7 @@ Deno.serve(async (req) => {
+       params = await req.json();
+     }
+     
+-    const { action, access_code, category_id, vod_id, series_id, stream_type, stream_id, extension, server_url: direct_url, username: direct_user, password: direct_pass } = params;
++    const { action, access_code, category_id, vod_id, series_id, stream_type, stream_id, extension } = params;
+ 
+     // Direct connection test (no access code needed - used before saving)
+     if (action === "test_connection") {
+@@ -175,23 +175,17 @@ Deno.serve(async (req) => {
+           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+         );
+       } catch (err) {
+-        return new Response(
+-          JSON.stringify({ error: `Falha ao conectar: ${err.message}` }),
++      return new Response(
++          JSON.stringify({ error: `Falha ao conectar: ${(err as Error).message}` }),
+           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+         );
+       }
+     }
+ 
+-    let validation: any = null;
+-    if (direct_url && direct_user && direct_pass) {
+-      validation = { server_url: direct_url, username: direct_user, password: direct_pass, playlist_name: "Direct" };
+-    } else if (access_code) {
+-      validation = await getCredentials(access_code);
+-    }
+-
++    const validation = await getCredentials(access_code);
+     if (!validation) {
+       return new Response(
+-        JSON.stringify({ error: "Credenciais ou código de acesso não fornecidos" }),
++        JSON.stringify({ error: "Código de acesso inválido" }),
+         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+       );
+     }
+@@ -450,8 +444,8 @@ Deno.serve(async (req) => {
+       headers: { ...corsHeaders, "Content-Type": "application/json" },
+     });
+   } catch (err) {
+-    console.error("Proxy error:", err.message);
+-    const msg = err.message || "Erro interno";
++    console.error("Proxy error:", (err as Error).message);
++    const msg = (err as Error).message || "Erro interno";
+     const isNetworkError = msg.includes("dns") || msg.includes("connect") || msg.includes("fetch");
+     return new Response(
+       JSON.stringify({ 
