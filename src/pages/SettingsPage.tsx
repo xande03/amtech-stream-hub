@@ -178,7 +178,8 @@ export default function SettingsPage() {
   };
 
   const handleSave = async () => {
-    if (!form.server_url || !form.username || !form.access_code) {
+    const resolvedUrl = buildServerUrl(form);
+    if (!resolvedUrl || !form.username || !form.access_code) {
       toast.error('Preencha todos os campos obrigatórios');
       return;
     }
