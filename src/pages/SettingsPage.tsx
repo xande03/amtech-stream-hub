@@ -411,17 +411,60 @@ export default function SettingsPage() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label className="text-foreground text-sm">Servidor (URL ou nome do provedor) *</Label>
-                        <Input 
-                          placeholder="http://servidor.com:8080 ou nome (ex: warez)" 
-                          value={form.server_url} 
-                          onChange={e => { setForm(f => ({ ...f, server_url: e.target.value })); setTestResult(null); }} 
-                          className="bg-secondary border-border text-foreground" 
-                        />
-                        <p className="text-[11px] text-muted-foreground">
-                          Use a URL completa (ex: http://servidor.com:8080) ou apenas o nome do provedor (ex: warez). O sistema tentará resolver automaticamente.
-                        </p>
+                        <Label className="text-foreground text-sm">Modo de Conexão</Label>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setForm(f => ({ ...f, input_mode: 'url' }))}
+                            className={`flex-1 text-xs font-medium py-2 px-3 rounded-lg border transition-colors ${form.input_mode === 'url' ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-secondary/30 text-muted-foreground hover:border-muted-foreground'}`}
+                          >
+                            URL Completa
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setForm(f => ({ ...f, input_mode: 'server_port' }))}
+                            className={`flex-1 text-xs font-medium py-2 px-3 rounded-lg border transition-colors ${form.input_mode === 'server_port' ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-secondary/30 text-muted-foreground hover:border-muted-foreground'}`}
+                          >
+                            Servidor + Porta
+                          </button>
+                        </div>
                       </div>
+
+                      {form.input_mode === 'url' ? (
+                        <div className="space-y-2">
+                          <Label className="text-foreground text-sm">Servidor (URL ou nome do provedor) *</Label>
+                          <Input 
+                            placeholder="http://servidor.com:8080 ou nome (ex: warez)" 
+                            value={form.server_url} 
+                            onChange={e => { setForm(f => ({ ...f, server_url: e.target.value })); setTestResult(null); }} 
+                            className="bg-secondary border-border text-foreground" 
+                          />
+                          <p className="text-[11px] text-muted-foreground">
+                            URL completa (ex: http://servidor.com:8080) ou nome do provedor
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-3 gap-3">
+                          <div className="col-span-2 space-y-2">
+                            <Label className="text-foreground text-sm">Servidor / Host *</Label>
+                            <Input 
+                              placeholder="servidor.com ou IP" 
+                              value={form.server_host} 
+                              onChange={e => { setForm(f => ({ ...f, server_host: e.target.value })); setTestResult(null); }} 
+                              className="bg-secondary border-border text-foreground" 
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-foreground text-sm">Porta *</Label>
+                            <Input 
+                              placeholder="8080" 
+                              value={form.server_port} 
+                              onChange={e => { setForm(f => ({ ...f, server_port: e.target.value.replace(/\D/g, '') })); setTestResult(null); }} 
+                              className="bg-secondary border-border text-foreground" 
+                            />
+                          </div>
+                        </div>
+                      )}
 
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-2">
