@@ -113,22 +113,16 @@ export default function SettingsPage() {
 
   const openEditForm = (pl: PlaylistConfig) => {
     setEditingId(pl.id);
-    // Try to parse existing URL into host+port
-    let host = '', port = '80';
-    try {
-      const u = new URL(pl.server_url);
-      host = u.hostname;
-      port = u.port || '80';
-    } catch { host = pl.server_url; }
+    // Check if it looks like a bare provider name (no dots, no protocol)
+    const isProvider = !pl.server_url.includes('.') && !pl.server_url.includes(':');
     setForm({
       server_url: pl.server_url,
-      server_host: host,
-      server_port: port,
+      provider_name: isProvider ? pl.server_url : '',
       username: pl.username,
       password: '',
       playlist_name: pl.playlist_name,
       access_code: pl.access_code,
-      input_mode: 'url',
+      input_mode: isProvider ? 'provider' : 'url',
     });
     setShowForm(true);
     setShowPassword(false);
@@ -143,7 +137,7 @@ export default function SettingsPage() {
   };
 
   const handleTestConnection = async () => {
-    if ((!form.server_url && form.input_mode === 'url') || (!form.server_host && form.input_mode === 'server_port') || !form.username || !form.password) {
+    if ((!form.server_url && form.input_mode === 'url') || (!form.provider_name && form.input_mode === 'provider') || !form.username || !form.password) {
       toast.error('Preencha servidor, usuário e senha para testar');
       return;
     }
@@ -419,47 +413,39 @@ export default function SettingsPage() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => setForm(f => ({ ...f, input_mode: 'server_port' }))}
-                            className={`flex-1 text-xs font-medium py-2 px-3 rounded-lg border transition-colors ${form.input_mode === 'server_port' ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-secondary/30 text-muted-foreground hover:border-muted-foreground'}`}
+                            onClick={() => setForm(f => ({ ...f, input_mode: 'provider' }))}
+                            className={`flex-1 text-xs font-medium py-2 px-3 rounded-lg border transition-colors ${form.input_mode === 'provider' ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-secondary/30 text-muted-foreground hover:border-muted-foreground'}`}
                           >
-                            Servidor + Porta
+                            Provedor
                           </button>
                         </div>
                       </div>
 
                       {form.input_mode === 'url' ? (
                         <div className="space-y-2">
-                          <Label className="text-foreground text-sm">Servidor (URL ou nome do provedor) *</Label>
+                          <Label className="text-foreground text-sm">Servidor (URL completa) *</Label>
                           <Input 
-                            placeholder="http://servidor.com:8080 ou nome (ex: warez)" 
+                            placeholder="http://servidor.com:8080" 
                             value={form.server_url} 
                             onChange={e => { setForm(f => ({ ...f, server_url: e.target.value })); setTestResult(null); }} 
                             className="bg-secondary border-border text-foreground" 
                           />
                           <p className="text-[11px] text-muted-foreground">
-                            URL completa (ex: http://servidor.com:8080) ou nome do provedor
+                            Ex: http://servidor.com:8080
                           </p>
                         </div>
                       ) : (
-                        <div className="grid grid-cols-3 gap-3">
-                          <div className="col-span-2 space-y-2">
-                            <Label className="text-foreground text-sm">Servidor / Host *</Label>
-                            <Input 
-                              placeholder="servidor.com ou IP" 
-                              value={form.server_host} 
-                              onChange={e => { setForm(f => ({ ...f, server_host: e.target.value })); setTestResult(null); }} 
-                              className="bg-secondary border-border text-foreground" 
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="text-foreground text-sm">Porta *</Label>
-                            <Input 
-                              placeholder="8080" 
-                              value={form.server_port} 
-                              onChange={e => { setForm(f => ({ ...f, server_port: e.target.value.replace(/\D/g, '') })); setTestResult(null); }} 
-                              className="bg-secondary border-border text-foreground" 
-                            />
-                          </div>
+                        <div className="space-y-2">
+                          <Label className="text-foreground text-sm">Nome do Provedor *</Label>
+                          <Input 
+                            placeholder="Ex: warez" 
+                            value={form.provider_name} 
+                            onChange={e => { setForm(f => ({ ...f, provider_name: e.target.value })); setTestResult(null); }} 
+                            className="bg-secondary border-border text-foreground" 
+                          />
+                          <p className="text-[11px] text-muted-foreground">
+                            Digite apenas o nome do provedor (ex: warez). O sistema resolverá automaticamente.
+                          </p>
                         </div>
                       )}
 
@@ -495,7 +481,7 @@ export default function SettingsPage() {
                       <Button 
                         variant="outline" 
                         onClick={handleTestConnection} 
-                        disabled={testing || !(form.input_mode === 'url' ? form.server_url : form.server_host) || !form.username || !form.password}
+                        disabled={testing || !(form.input_mode === 'url' ? form.server_url : form.provider_name) || !form.username || !form.password}
                         className="w-full border-border text-foreground"
                       >
                         {testing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
