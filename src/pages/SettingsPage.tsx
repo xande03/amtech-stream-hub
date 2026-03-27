@@ -23,15 +23,29 @@ interface PlaylistConfig {
   created_at: string;
 }
 
+type InputMode = 'url' | 'server_port';
+
 interface PlaylistForm {
   server_url: string;
+  server_host: string;
+  server_port: string;
   username: string;
   password: string;
   playlist_name: string;
   access_code: string;
+  input_mode: InputMode;
 }
 
-const emptyForm: PlaylistForm = { server_url: '', username: '', password: '', playlist_name: '', access_code: '' };
+const emptyForm: PlaylistForm = { server_url: '', server_host: '', server_port: '80', username: '', password: '', playlist_name: '', access_code: '', input_mode: 'url' };
+
+function buildServerUrl(form: PlaylistForm): string {
+  if (form.input_mode === 'server_port') {
+    const host = form.server_host.trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
+    const port = form.server_port.trim() || '80';
+    return `http://${host}:${port}`;
+  }
+  return form.server_url.trim();
+}
 
 export default function SettingsPage() {
   const { refreshConfig } = useAuth();
@@ -102,12 +116,22 @@ export default function SettingsPage() {
 
   const openEditForm = (pl: PlaylistConfig) => {
     setEditingId(pl.id);
+    // Try to parse existing URL into host+port
+    let host = '', port = '80';
+    try {
+      const u = new URL(pl.server_url);
+      host = u.hostname;
+      port = u.port || '80';
+    } catch { host = pl.server_url; }
     setForm({
       server_url: pl.server_url,
+      server_host: host,
+      server_port: port,
       username: pl.username,
       password: '',
       playlist_name: pl.playlist_name,
       access_code: pl.access_code,
+      input_mode: 'url',
     });
     setShowForm(true);
     setShowPassword(false);
@@ -122,17 +146,18 @@ export default function SettingsPage() {
   };
 
   const handleTestConnection = async () => {
-    if (!form.server_url || !form.username || !form.password) {
+    if ((!form.server_url && form.input_mode === 'url') || (!form.server_host && form.input_mode === 'server_port') || !form.username || !form.password) {
       toast.error('Preencha servidor, usuário e senha para testar');
       return;
     }
+    const resolvedUrl = buildServerUrl(form);
     setTesting(true);
     setTestResult(null);
     try {
       const { data, error } = await supabase.functions.invoke('xtream-proxy', {
         body: {
           action: 'test_connection',
-          server_url: form.server_url.trim(),
+          server_url: resolvedUrl,
           username: form.username.trim(),
           password: form.password.trim(),
         },
@@ -153,7 +178,8 @@ export default function SettingsPage() {
   };
 
   const handleSave = async () => {
-    if (!form.server_url || !form.username || !form.access_code) {
+    const resolvedUrl = buildServerUrl(form);
+    if (!resolvedUrl || !form.username || !form.access_code) {
       toast.error('Preencha todos os campos obrigatórios');
       return;
     }
@@ -169,7 +195,7 @@ export default function SettingsPage() {
         action,
         admin_password: adminPassword,
         config: {
-          server_url: form.server_url.trim(),
+          server_url: resolvedUrl,
           username: form.username.trim(),
           playlist_name: form.playlist_name.trim() || 'Nova Playlist',
           access_code: form.access_code.trim(),
@@ -385,17 +411,60 @@ export default function SettingsPage() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label className="text-foreground text-sm">Servidor (URL ou nome do provedor) *</Label>
-                        <Input 
-                          placeholder="http://servidor.com:8080 ou nome (ex: warez)" 
-                          value={form.server_url} 
-                          onChange={e => { setForm(f => ({ ...f, server_url: e.target.value })); setTestResult(null); }} 
-                          className="bg-secondary border-border text-foreground" 
-                        />
-                        <p className="text-[11px] text-muted-foreground">
-                          Use a URL completa (ex: http://servidor.com:8080) ou apenas o nome do provedor (ex: warez). O sistema tentará resolver automaticamente.
-                        </p>
+                        <Label className="text-foreground text-sm">Modo de Conexão</Label>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setForm(f => ({ ...f, input_mode: 'url' }))}
+                            className={`flex-1 text-xs font-medium py-2 px-3 rounded-lg border transition-colors ${form.input_mode === 'url' ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-secondary/30 text-muted-foreground hover:border-muted-foreground'}`}
+                          >
+                            URL Completa
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setForm(f => ({ ...f, input_mode: 'server_port' }))}
+                            className={`flex-1 text-xs font-medium py-2 px-3 rounded-lg border transition-colors ${form.input_mode === 'server_port' ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-secondary/30 text-muted-foreground hover:border-muted-foreground'}`}
+                          >
+                            Servidor + Porta
+                          </button>
+                        </div>
                       </div>
+
+                      {form.input_mode === 'url' ? (
+                        <div className="space-y-2">
+                          <Label className="text-foreground text-sm">Servidor (URL ou nome do provedor) *</Label>
+                          <Input 
+                            placeholder="http://servidor.com:8080 ou nome (ex: warez)" 
+                            value={form.server_url} 
+                            onChange={e => { setForm(f => ({ ...f, server_url: e.target.value })); setTestResult(null); }} 
+                            className="bg-secondary border-border text-foreground" 
+                          />
+                          <p className="text-[11px] text-muted-foreground">
+                            URL completa (ex: http://servidor.com:8080) ou nome do provedor
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-3 gap-3">
+                          <div className="col-span-2 space-y-2">
+                            <Label className="text-foreground text-sm">Servidor / Host *</Label>
+                            <Input 
+                              placeholder="servidor.com ou IP" 
+                              value={form.server_host} 
+                              onChange={e => { setForm(f => ({ ...f, server_host: e.target.value })); setTestResult(null); }} 
+                              className="bg-secondary border-border text-foreground" 
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-foreground text-sm">Porta *</Label>
+                            <Input 
+                              placeholder="8080" 
+                              value={form.server_port} 
+                              onChange={e => { setForm(f => ({ ...f, server_port: e.target.value.replace(/\D/g, '') })); setTestResult(null); }} 
+                              className="bg-secondary border-border text-foreground" 
+                            />
+                          </div>
+                        </div>
+                      )}
 
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-2">
@@ -429,7 +498,7 @@ export default function SettingsPage() {
                       <Button 
                         variant="outline" 
                         onClick={handleTestConnection} 
-                        disabled={testing || !form.server_url || !form.username || !form.password}
+                        disabled={testing || !(form.input_mode === 'url' ? form.server_url : form.server_host) || !form.username || !form.password}
                         className="w-full border-border text-foreground"
                       >
                         {testing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
