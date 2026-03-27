@@ -116,12 +116,22 @@ export default function SettingsPage() {
 
   const openEditForm = (pl: PlaylistConfig) => {
     setEditingId(pl.id);
+    // Try to parse existing URL into host+port
+    let host = '', port = '80';
+    try {
+      const u = new URL(pl.server_url);
+      host = u.hostname;
+      port = u.port || '80';
+    } catch { host = pl.server_url; }
     setForm({
       server_url: pl.server_url,
+      server_host: host,
+      server_port: port,
       username: pl.username,
       password: '',
       playlist_name: pl.playlist_name,
       access_code: pl.access_code,
+      input_mode: 'url',
     });
     setShowForm(true);
     setShowPassword(false);
