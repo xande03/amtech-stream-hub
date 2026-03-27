@@ -450,6 +450,6 @@ export default function Home() {
           <p className="text-muted-foreground">O servidor não retornou nenhum conteúdo disponível.</p>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
