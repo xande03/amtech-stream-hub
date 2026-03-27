@@ -39,22 +39,34 @@ export default function Home() {
   const [seriesCategories, setSeriesCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Progressive loading: fetch in stages for faster perceived load
+  const [heroReady, setHeroReady] = useState(false);
+
   useEffect(() => {
     if (!accessCode) return;
     setLoading(true);
+    
+    // Stage 1: Load VOD + Series first (for hero + main content)
     Promise.all([
-      getLiveStreams(accessCode).catch(() => []),
       getVodStreams(accessCode).catch(() => []),
       getSeriesList(accessCode).catch(() => []),
-      getVodCategories(accessCode).catch(() => []),
-      getSeriesCategories(accessCode).catch(() => []),
-    ]).then(([live, vod, ser, vodCats, serCats]) => {
-      setLiveStreams(live.slice(0, 20));
+    ]).then(([vod, ser]) => {
       setMovies(vod);
       setSeries(ser);
+      setHeroReady(true);
+      setLoading(false);
+    });
+
+    // Stage 2: Load secondary data in background (live, categories)
+    Promise.all([
+      getLiveStreams(accessCode).catch(() => []),
+      getVodCategories(accessCode).catch(() => []),
+      getSeriesCategories(accessCode).catch(() => []),
+    ]).then(([live, vodCats, serCats]) => {
+      setLiveStreams(live.slice(0, 20));
       setMovieCategories(vodCats);
       setSeriesCategories(serCats);
-    }).finally(() => setLoading(false));
+    });
   }, [accessCode]);
 
   // Most recently added movies & series (by 'added' timestamp desc)
@@ -167,7 +179,12 @@ export default function Home() {
 
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+      className="space-y-6"
+    >
       {/* 1. Premium Highlight Carousel */}
       <HighlightCarousel items={heroItems} />
 
@@ -433,6 +450,6 @@ export default function Home() {
           <p className="text-muted-foreground">O servidor não retornou nenhum conteúdo disponível.</p>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
