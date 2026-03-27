@@ -23,12 +23,11 @@ interface PlaylistConfig {
   created_at: string;
 }
 
-type InputMode = 'url' | 'server_port';
+type InputMode = 'url' | 'provider';
 
 interface PlaylistForm {
   server_url: string;
-  server_host: string;
-  server_port: string;
+  provider_name: string;
   username: string;
   password: string;
   playlist_name: string;
@@ -36,13 +35,11 @@ interface PlaylistForm {
   input_mode: InputMode;
 }
 
-const emptyForm: PlaylistForm = { server_url: '', server_host: '', server_port: '80', username: '', password: '', playlist_name: '', access_code: '', input_mode: 'url' };
+const emptyForm: PlaylistForm = { server_url: '', provider_name: '', username: '', password: '', playlist_name: '', access_code: '', input_mode: 'url' };
 
 function buildServerUrl(form: PlaylistForm): string {
-  if (form.input_mode === 'server_port') {
-    const host = form.server_host.trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
-    const port = form.server_port.trim() || '80';
-    return `http://${host}:${port}`;
+  if (form.input_mode === 'provider') {
+    return form.provider_name.trim();
   }
   return form.server_url.trim();
 }
