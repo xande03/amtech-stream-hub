@@ -498,7 +498,7 @@ export default function SettingsPage() {
                       <Button 
                         variant="outline" 
                         onClick={handleTestConnection} 
-                        disabled={testing || !form.server_url || !form.username || !form.password}
+                        disabled={testing || !(form.input_mode === 'url' ? form.server_url : form.server_host) || !form.username || !form.password}
                         className="w-full border-border text-foreground"
                       >
                         {testing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
