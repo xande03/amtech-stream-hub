@@ -23,15 +23,29 @@ interface PlaylistConfig {
   created_at: string;
 }
 
+type InputMode = 'url' | 'server_port';
+
 interface PlaylistForm {
   server_url: string;
+  server_host: string;
+  server_port: string;
   username: string;
   password: string;
   playlist_name: string;
   access_code: string;
+  input_mode: InputMode;
 }
 
-const emptyForm: PlaylistForm = { server_url: '', username: '', password: '', playlist_name: '', access_code: '' };
+const emptyForm: PlaylistForm = { server_url: '', server_host: '', server_port: '80', username: '', password: '', playlist_name: '', access_code: '', input_mode: 'url' };
+
+function buildServerUrl(form: PlaylistForm): string {
+  if (form.input_mode === 'server_port') {
+    const host = form.server_host.trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
+    const port = form.server_port.trim() || '80';
+    return `http://${host}:${port}`;
+  }
+  return form.server_url.trim();
+}
 
 export default function SettingsPage() {
   const { refreshConfig } = useAuth();
