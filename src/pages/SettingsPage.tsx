@@ -157,7 +157,7 @@ export default function SettingsPage() {
       const { data, error } = await supabase.functions.invoke('xtream-proxy', {
         body: {
           action: 'test_connection',
-          server_url: form.server_url.trim(),
+          server_url: resolvedUrl,
           username: form.username.trim(),
           password: form.password.trim(),
         },
