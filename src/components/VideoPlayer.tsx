@@ -350,7 +350,7 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
     };
   }, []);
 
-  // PiP events
+  // PiP events (standard + Safari/iOS webkit)
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -358,9 +358,16 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
     const onLeave = () => setIsPip(false);
     video.addEventListener('enterpictureinpicture', onEnter);
     video.addEventListener('leavepictureinpicture', onLeave);
+    // Safari / iOS webkit presentation mode change
+    const onWebkitChange = () => {
+      const mode = (video as any).webkitPresentationMode;
+      setIsPip(mode === 'picture-in-picture');
+    };
+    video.addEventListener('webkitpresentationmodechanged', onWebkitChange);
     return () => {
       video.removeEventListener('enterpictureinpicture', onEnter);
       video.removeEventListener('leavepictureinpicture', onLeave);
+      video.removeEventListener('webkitpresentationmodechanged', onWebkitChange);
     };
   }, []);
 
@@ -369,9 +376,19 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
     const handleVisibility = async () => {
       const video = videoRef.current;
       if (!video || video.paused) return;
-      if (document.hidden && document.pictureInPictureEnabled && !document.pictureInPictureElement) {
+      if (document.hidden) {
         try {
-          await video.requestPictureInPicture();
+          // Standard PiP
+          if (document.pictureInPictureEnabled && !document.pictureInPictureElement) {
+            await video.requestPictureInPicture();
+            return;
+          }
+          // Safari / iOS WebKit PiP
+          if (typeof (video as any).webkitSupportsPresentationMode === 'function' &&
+              (video as any).webkitSupportsPresentationMode('picture-in-picture') &&
+              (video as any).webkitPresentationMode !== 'picture-in-picture') {
+            (video as any).webkitSetPresentationMode('picture-in-picture');
+          }
         } catch {}
       }
     };
@@ -485,19 +502,35 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
     const video = videoRef.current;
     if (!video) return;
     try {
+      // Standard PiP API (Chrome, Edge, Firefox)
       if (document.pictureInPictureElement) {
         await document.exitPictureInPicture();
-      } else if (document.pictureInPictureEnabled) {
+        return;
+      }
+      if (document.pictureInPictureEnabled && typeof video.requestPictureInPicture === 'function') {
         await video.requestPictureInPicture();
-      } else if ((video as any).webkitSupportsPresentationMode?.('picture-in-picture')) {
-        // Safari fallback
-        (video as any).webkitSetPresentationMode('picture-in-picture');
+        return;
+      }
+      // Safari / iOS WebKit PiP
+      if (typeof (video as any).webkitSupportsPresentationMode === 'function' &&
+          (video as any).webkitSupportsPresentationMode('picture-in-picture')) {
+        const currentMode = (video as any).webkitPresentationMode;
+        (video as any).webkitSetPresentationMode(
+          currentMode === 'picture-in-picture' ? 'inline' : 'picture-in-picture'
+        );
+        return;
       }
     } catch (e) { console.warn('PiP not supported', e); }
   };
 
-  const isPipSupported = document.pictureInPictureEnabled || 
-    (videoRef.current && (videoRef.current as any).webkitSupportsPresentationMode?.('picture-in-picture'));
+  const isPipSupported = typeof document !== 'undefined' && (
+    document.pictureInPictureEnabled || 
+    (typeof HTMLVideoElement !== 'undefined' && 
+     typeof HTMLVideoElement.prototype.requestPictureInPicture === 'function') ||
+    // Safari / iOS check
+    (videoRef.current && typeof (videoRef.current as any).webkitSupportsPresentationMode === 'function' &&
+     (videoRef.current as any).webkitSupportsPresentationMode('picture-in-picture'))
+  );
 
   const retry = () => { retryCountRef.current = 0; loadSource(); };
 
@@ -888,8 +921,10 @@ export default function VideoPlayer({ url, title, startTime = 0, onProgress, onS
         className="w-full h-full object-contain"
         controls
         playsInline
-        x-webkit-airplay="allow"
+        {...({ 'x-webkit-airplay': 'allow' } as any)}
+        {...({ 'webkit-playsinline': '' } as any)}
         disablePictureInPicture={false}
+        allowFullScreen
         muted={muted}
         onTimeUpdate={handleTimeUpdate}
         onPlay={() => setIsPlaying(true)}

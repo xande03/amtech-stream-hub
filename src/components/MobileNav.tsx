@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, forwardRef } from 'react';
 import { Home, Tv, Film, Clapperboard, Heart, Clock, MoreHorizontal, Settings, X, Sparkles, Download, Moon, Sun } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -21,7 +21,7 @@ const secondaryItems = [
   { path: '/settings', icon: Settings, label: 'Configurações', color: 'from-slate-400 to-slate-600', glow: 'shadow-slate-500/25' },
 ];
 
-export default function MobileNav() {
+const MobileNav = forwardRef<HTMLDivElement, Record<string, never>>((_, ref) => {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -33,9 +33,7 @@ export default function MobileNav() {
   };
 
   return (
-    <>
-
-
+    <div ref={ref}>
       {/* Footer Navigation Bar - Pill style */}
       <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-40 md:hidden w-[95%] max-w-md">
         <div className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-[2.5rem] px-2 py-2 flex items-center justify-around shadow-2xl overflow-hidden">
@@ -161,6 +159,10 @@ export default function MobileNav() {
           </>
         )}
       </AnimatePresence>
-    </>
+    </div>
   );
-}
+});
+
+MobileNav.displayName = 'MobileNav';
+
+export default MobileNav;
