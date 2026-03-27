@@ -195,7 +195,7 @@ export default function SettingsPage() {
         action,
         admin_password: adminPassword,
         config: {
-          server_url: form.server_url.trim(),
+          server_url: resolvedUrl,
           username: form.username.trim(),
           playlist_name: form.playlist_name.trim() || 'Nova Playlist',
           access_code: form.access_code.trim(),
