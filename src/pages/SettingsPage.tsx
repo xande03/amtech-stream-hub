@@ -146,10 +146,11 @@ export default function SettingsPage() {
   };
 
   const handleTestConnection = async () => {
-    if (!form.server_url || !form.username || !form.password) {
+    if ((!form.server_url && form.input_mode === 'url') || (!form.server_host && form.input_mode === 'server_port') || !form.username || !form.password) {
       toast.error('Preencha servidor, usuário e senha para testar');
       return;
     }
+    const resolvedUrl = buildServerUrl(form);
     setTesting(true);
     setTestResult(null);
     try {
