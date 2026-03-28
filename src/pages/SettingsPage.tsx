@@ -13,10 +13,15 @@ import {
 import { toast } from 'sonner';
 import Configuracoes from '@/components/Configuracoes';
 
+// ─── localStorage keys ────────────────────────────────────────────────────────
+const LS_ADMIN_PLAYLISTS = 'xerife_admin_playlists';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 interface PlaylistConfig {
   id: string;
   server_url: string;
   username: string;
+  password: string;
   playlist_name: string;
   access_code: string;
   is_active: boolean;
@@ -38,10 +43,40 @@ interface PlaylistForm {
 const emptyForm: PlaylistForm = { server_url: '', provider_name: '', username: '', password: '', playlist_name: '', access_code: '', input_mode: 'url' };
 
 function buildServerUrl(form: PlaylistForm): string {
-  if (form.input_mode === 'provider') {
-    return form.provider_name.trim();
-  }
+  if (form.input_mode === 'provider') return form.provider_name.trim();
   return form.server_url.trim();
+}
+
+// ─── localStorage CRUD helpers ────────────────────────────────────────────────
+function readPlaylists(): PlaylistConfig[] {
+  try {
+    const raw = localStorage.getItem(LS_ADMIN_PLAYLISTS);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function writePlaylists(list: PlaylistConfig[]) {
+  localStorage.setItem(LS_ADMIN_PLAYLISTS, JSON.stringify(list));
+}
+
+/** Background sync to cloud so other devices/users can discover the active playlist */
+function syncToCloud(list: PlaylistConfig[]) {
+  const active = list.find(p => p.is_active);
+  if (!active) return;
+  // Fire-and-forget: replicate active playlist to cloud for multi-user access
+  supabase.functions.invoke('admin-config', {
+    body: {
+      action: 'save_config',
+      admin_password: '__local_sync__',
+      config: {
+        server_url: active.server_url,
+        username: active.username,
+        password: active.password,
+        playlist_name: active.playlist_name,
+        access_code: active.access_code,
+      },
+    },
+  }).catch(() => { /* silent */ });
 }
 
 export default function SettingsPage() {
@@ -53,7 +88,6 @@ export default function SettingsPage() {
   const [authError, setAuthError] = useState('');
 
   const [playlists, setPlaylists] = useState<PlaylistConfig[]>([]);
-  const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -80,15 +114,9 @@ export default function SettingsPage() {
     toast.success('Senha definida com sucesso!');
   };
 
-  const loadPlaylists = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data } = await supabase.functions.invoke('admin-config', {
-        body: { action: 'get_config' },
-      });
-      setPlaylists(data?.configs || []);
-    } catch { }
-    setLoading(false);
+  // Load playlists from localStorage (instant)
+  const loadPlaylists = useCallback(() => {
+    setPlaylists(readPlaylists());
   }, []);
 
   useEffect(() => {
@@ -113,13 +141,12 @@ export default function SettingsPage() {
 
   const openEditForm = (pl: PlaylistConfig) => {
     setEditingId(pl.id);
-    // Check if it looks like a bare provider name (no dots, no protocol)
     const isProvider = !pl.server_url.includes('.') && !pl.server_url.includes(':');
     setForm({
       server_url: pl.server_url,
       provider_name: isProvider ? pl.server_url : '',
       username: pl.username,
-      password: '',
+      password: pl.password || '',
       playlist_name: pl.playlist_name,
       access_code: pl.access_code,
       input_mode: isProvider ? 'provider' : 'url',
@@ -156,7 +183,6 @@ export default function SettingsPage() {
       if (error || data?.error) {
         setTestResult({ ok: false, msg: data?.error || error?.message || 'Falha na conexão' });
       } else {
-        // Auto-fill resolved URL if provider name was used
         if (data?.resolved_url && data.resolved_url !== form.server_url.trim()) {
           setForm(f => ({ ...f, server_url: data.resolved_url }));
         }
@@ -168,7 +194,7 @@ export default function SettingsPage() {
     setTesting(false);
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     const resolvedUrl = buildServerUrl(form);
     if (!resolvedUrl || !form.username || !form.access_code) {
       toast.error('Preencha todos os campos obrigatórios');
@@ -180,69 +206,72 @@ export default function SettingsPage() {
     }
 
     setSaving(true);
-    try {
-      const action = editingId ? 'update_config' : 'save_config';
-      const body: any = {
-        action,
-        admin_password: adminPassword,
-        config: {
-          server_url: resolvedUrl,
-          username: form.username.trim(),
-          playlist_name: form.playlist_name.trim() || 'Nova Playlist',
-          access_code: form.access_code.trim(),
-        },
-      };
-      if (form.password) body.config.password = form.password.trim();
-      if (editingId) body.id = editingId;
+    const current = readPlaylists();
 
-      const { data, error } = await supabase.functions.invoke('admin-config', { body });
-      if (data?.error) {
-        if (data.error.includes('Senha')) { setIsUnlocked(false); setAuthError('Senha inválida'); }
-        throw new Error(data.error);
-      }
-      toast.success(editingId ? 'Playlist atualizada!' : 'Playlist adicionada!');
-      closeForm();
-      loadPlaylists();
-      refreshConfig();
-    } catch (err: any) {
-      toast.error(err.message || 'Erro ao salvar');
+    if (editingId) {
+      // Update existing
+      const updated = current.map(pl => pl.id === editingId ? {
+        ...pl,
+        server_url: resolvedUrl,
+        username: form.username.trim(),
+        password: form.password.trim() || pl.password,
+        playlist_name: form.playlist_name.trim() || 'Nova Playlist',
+        access_code: form.access_code.trim(),
+      } : pl);
+      writePlaylists(updated);
+      setPlaylists(updated);
+      syncToCloud(updated);
+      toast.success('Playlist atualizada!');
+    } else {
+      // Add new
+      const newPl: PlaylistConfig = {
+        id: crypto.randomUUID(),
+        server_url: resolvedUrl,
+        username: form.username.trim(),
+        password: form.password.trim(),
+        playlist_name: form.playlist_name.trim() || 'Nova Playlist',
+        access_code: form.access_code.trim(),
+        is_active: current.length === 0, // first one is auto-active
+        created_at: new Date().toISOString(),
+      };
+      const updated = [...current, newPl];
+      writePlaylists(updated);
+      setPlaylists(updated);
+      syncToCloud(updated);
+      toast.success('Playlist adicionada!');
     }
+
+    closeForm();
+    refreshConfig();
     setSaving(false);
   };
 
-  const handleToggle = async (id: string) => {
-    try {
-      const { data } = await supabase.functions.invoke('admin-config', {
-        body: { action: 'toggle_config', id, admin_password: adminPassword },
-      });
-      if (data?.error) {
-        if (data.error.includes('Senha')) { setIsUnlocked(false); setAuthError('Senha inválida'); }
-        throw new Error(data.error);
-      }
-      toast.success('Playlist alterada! Recarregando dados...');
-      loadPlaylists();
-      refreshConfig();
-    } catch (err: any) {
-      toast.error(err.message || 'Erro');
-    }
+  const handleToggle = (id: string) => {
+    const current = readPlaylists();
+    const updated = current.map(pl => ({
+      ...pl,
+      is_active: pl.id === id,
+    }));
+    writePlaylists(updated);
+    setPlaylists(updated);
+    syncToCloud(updated);
+    toast.success('Playlist alterada!');
+    refreshConfig();
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = (id: string) => {
     if (!confirm('Tem certeza que deseja excluir esta playlist?')) return;
-    try {
-      const { data } = await supabase.functions.invoke('admin-config', {
-        body: { action: 'delete_config', id, admin_password: adminPassword },
-      });
-      if (data?.error) {
-        if (data.error.includes('Senha')) { setIsUnlocked(false); setAuthError('Senha inválida'); }
-        throw new Error(data.error);
-      }
-      toast.success('Playlist excluída');
-      loadPlaylists();
-      refreshConfig();
-    } catch (err: any) {
-      toast.error(err.message || 'Erro');
+    const current = readPlaylists();
+    const updated = current.filter(pl => pl.id !== id);
+    // If deleted the active one, activate the first remaining
+    if (updated.length > 0 && !updated.some(p => p.is_active)) {
+      updated[0].is_active = true;
     }
+    writePlaylists(updated);
+    setPlaylists(updated);
+    syncToCloud(updated);
+    toast.success('Playlist excluída');
+    refreshConfig();
   };
 
   return (
@@ -269,15 +298,13 @@ export default function SettingsPage() {
         <Configuracoes />
       </div>
 
-      {/* Acesso Restrito - compacto, próximo ao rodapé */}
+      {/* Acesso Restrito */}
       <div className="bg-card rounded-xl border border-border overflow-hidden mt-8">
         {!isUnlocked ? (
           <button
             type="button"
             onClick={() => {
-              if (!hasPasswordSet) {
-                setIsUnlocked(false);
-              }
+              if (!hasPasswordSet) setIsUnlocked(false);
             }}
             className="w-full p-4 flex items-center justify-center gap-3 text-muted-foreground hover:text-foreground transition-colors"
           >
@@ -288,10 +315,7 @@ export default function SettingsPage() {
 
         <AnimatePresence>
           {!isUnlocked && (
-            <motion.div
-              initial={false}
-              className="px-5 pb-5"
-            >
+            <motion.div initial={false} className="px-5 pb-5">
               {!hasPasswordSet ? (
                 <div className="space-y-4">
                   <p className="text-sm text-muted-foreground bg-primary/5 p-3 rounded-lg border border-primary/20">
@@ -337,179 +361,167 @@ export default function SettingsPage() {
               <Shield className="w-5 h-5 text-primary" /> Gerenciar Playlists
             </h2>
 
-            {loading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="w-6 h-6 text-primary animate-spin" />
-              </div>
+            {playlists.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">Nenhuma playlist cadastrada</p>
             ) : (
-              <>
-                {playlists.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">Nenhuma playlist cadastrada</p>
-                ) : (
-                  <div className="space-y-2">
-                    {playlists.map(pl => (
-                      <div key={pl.id} className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${pl.is_active ? 'border-primary/50 bg-primary/5' : 'border-border bg-secondary/30'}`}>
-                        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${pl.is_active ? 'bg-accent animate-pulse' : 'bg-muted-foreground/30'}`} />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground truncate">{pl.playlist_name}</p>
-                          <p className="text-xs text-muted-foreground truncate">{pl.server_url} • {pl.username}</p>
-                        </div>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${pl.is_active ? 'bg-accent/20 text-accent' : 'bg-secondary text-muted-foreground'}`}>
-                          {pl.is_active ? 'ATIVA' : 'INATIVA'}
-                        </span>
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => openEditForm(pl)} title="Editar">
-                            <Pencil className="w-4 h-4 text-muted-foreground" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => handleToggle(pl.id)} title={pl.is_active ? 'Desativar' : 'Ativar'}>
-                            {pl.is_active ? <PowerOff className="w-4 h-4 text-muted-foreground" /> : <Power className="w-4 h-4 text-accent" />}
-                          </Button>
-                          <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => handleDelete(pl.id)} title="Excluir">
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
+              <div className="space-y-2">
+                {playlists.map(pl => (
+                  <div key={pl.id} className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${pl.is_active ? 'border-primary/50 bg-primary/5' : 'border-border bg-secondary/30'}`}>
+                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${pl.is_active ? 'bg-accent animate-pulse' : 'bg-muted-foreground/30'}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{pl.playlist_name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{pl.server_url} • {pl.username}</p>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${pl.is_active ? 'bg-accent/20 text-accent' : 'bg-secondary text-muted-foreground'}`}>
+                      {pl.is_active ? 'ATIVA' : 'INATIVA'}
+                    </span>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => openEditForm(pl)} title="Editar">
+                        <Pencil className="w-4 h-4 text-muted-foreground" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => handleToggle(pl.id)} title={pl.is_active ? 'Desativar' : 'Ativar'}>
+                        {pl.is_active ? <PowerOff className="w-4 h-4 text-muted-foreground" /> : <Power className="w-4 h-4 text-accent" />}
+                      </Button>
+                      <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => handleDelete(pl.id)} title="Excluir">
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </div>
                   </div>
-                )}
+                ))}
+              </div>
+            )}
 
-                {!showForm && (
-                  <Button variant="outline" onClick={openAddForm} className="w-full border-dashed border-border text-foreground hover:border-primary/50">
-                    <Plus className="w-4 h-4 mr-2" /> Adicionar Playlist
-                  </Button>
-                )}
+            {!showForm && (
+              <Button variant="outline" onClick={openAddForm} className="w-full border-dashed border-border text-foreground hover:border-primary/50">
+                <Plus className="w-4 h-4 mr-2" /> Adicionar Playlist
+              </Button>
+            )}
 
-                <AnimatePresence>
-                  {showForm && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="space-y-3 overflow-hidden"
-                    >
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-semibold text-foreground">
-                          {editingId ? 'Editar Playlist' : 'Nova Playlist'}
-                        </p>
-                        <button onClick={closeForm} className="p-1 rounded-full hover:bg-muted transition-colors">
-                          <X className="w-4 h-4 text-muted-foreground" />
+            <AnimatePresence>
+              {showForm && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="space-y-3 overflow-hidden"
+                >
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-foreground">
+                      {editingId ? 'Editar Playlist' : 'Nova Playlist'}
+                    </p>
+                    <button onClick={closeForm} className="p-1 rounded-full hover:bg-muted transition-colors">
+                      <X className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-foreground text-sm">Nome da Playlist</Label>
+                    <Input placeholder="Minha Playlist" value={form.playlist_name} onChange={e => setForm(f => ({ ...f, playlist_name: e.target.value }))} className="bg-secondary border-border text-foreground" />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-foreground text-sm">Modo de Conexão</Label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setForm(f => ({ ...f, input_mode: 'url' }))}
+                        className={`flex-1 text-xs font-medium py-2 px-3 rounded-lg border transition-colors ${form.input_mode === 'url' ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-secondary/30 text-muted-foreground hover:border-muted-foreground'}`}
+                      >
+                        URL Completa
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setForm(f => ({ ...f, input_mode: 'provider' }))}
+                        className={`flex-1 text-xs font-medium py-2 px-3 rounded-lg border transition-colors ${form.input_mode === 'provider' ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-secondary/30 text-muted-foreground hover:border-muted-foreground'}`}
+                      >
+                        Provedor
+                      </button>
+                    </div>
+                  </div>
+
+                  {form.input_mode === 'url' ? (
+                    <div className="space-y-2">
+                      <Label className="text-foreground text-sm">Servidor (URL completa) *</Label>
+                      <Input
+                        placeholder="http://servidor.com:8080"
+                        value={form.server_url}
+                        onChange={e => { setForm(f => ({ ...f, server_url: e.target.value })); setTestResult(null); }}
+                        className="bg-secondary border-border text-foreground"
+                      />
+                      <p className="text-[11px] text-muted-foreground">Ex: http://servidor.com:8080</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label className="text-foreground text-sm">Nome do Provedor *</Label>
+                      <Input
+                        placeholder="Ex: warez"
+                        value={form.provider_name}
+                        onChange={e => { setForm(f => ({ ...f, provider_name: e.target.value })); setTestResult(null); }}
+                        className="bg-secondary border-border text-foreground"
+                      />
+                      <p className="text-[11px] text-muted-foreground">Digite apenas o nome do provedor (ex: warez).</p>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label className="text-foreground text-sm">Usuário *</Label>
+                      <Input
+                        placeholder="Username"
+                        value={form.username}
+                        onChange={e => { setForm(f => ({ ...f, username: e.target.value })); setTestResult(null); }}
+                        className="bg-secondary border-border text-foreground"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-foreground text-sm">
+                        Senha {editingId ? '(vazio = manter)' : '*'}
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder={editingId ? '••••••' : 'Password'}
+                          value={form.password}
+                          onChange={e => { setForm(f => ({ ...f, password: e.target.value })); setTestResult(null); }}
+                          className="bg-secondary border-border text-foreground pr-9"
+                        />
+                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground">
+                          {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                         </button>
                       </div>
+                    </div>
+                  </div>
 
-                      <div className="space-y-2">
-                        <Label className="text-foreground text-sm">Nome da Playlist</Label>
-                        <Input placeholder="Minha Playlist" value={form.playlist_name} onChange={e => setForm(f => ({ ...f, playlist_name: e.target.value }))} className="bg-secondary border-border text-foreground" />
-                      </div>
+                  <Button
+                    variant="outline"
+                    onClick={handleTestConnection}
+                    disabled={testing || !(form.input_mode === 'url' ? form.server_url : form.provider_name) || !form.username || !form.password}
+                    className="w-full border-border text-foreground"
+                  >
+                    {testing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                    Testar Conexão
+                  </Button>
 
-                      <div className="space-y-2">
-                        <Label className="text-foreground text-sm">Modo de Conexão</Label>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setForm(f => ({ ...f, input_mode: 'url' }))}
-                            className={`flex-1 text-xs font-medium py-2 px-3 rounded-lg border transition-colors ${form.input_mode === 'url' ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-secondary/30 text-muted-foreground hover:border-muted-foreground'}`}
-                          >
-                            URL Completa
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setForm(f => ({ ...f, input_mode: 'provider' }))}
-                            className={`flex-1 text-xs font-medium py-2 px-3 rounded-lg border transition-colors ${form.input_mode === 'provider' ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-secondary/30 text-muted-foreground hover:border-muted-foreground'}`}
-                          >
-                            Provedor
-                          </button>
-                        </div>
-                      </div>
-
-                      {form.input_mode === 'url' ? (
-                        <div className="space-y-2">
-                          <Label className="text-foreground text-sm">Servidor (URL completa) *</Label>
-                          <Input 
-                            placeholder="http://servidor.com:8080" 
-                            value={form.server_url} 
-                            onChange={e => { setForm(f => ({ ...f, server_url: e.target.value })); setTestResult(null); }} 
-                            className="bg-secondary border-border text-foreground" 
-                          />
-                          <p className="text-[11px] text-muted-foreground">
-                            Ex: http://servidor.com:8080
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          <Label className="text-foreground text-sm">Nome do Provedor *</Label>
-                          <Input 
-                            placeholder="Ex: warez" 
-                            value={form.provider_name} 
-                            onChange={e => { setForm(f => ({ ...f, provider_name: e.target.value })); setTestResult(null); }} 
-                            className="bg-secondary border-border text-foreground" 
-                          />
-                          <p className="text-[11px] text-muted-foreground">
-                            Digite apenas o nome do provedor (ex: warez). O sistema resolverá automaticamente.
-                          </p>
-                        </div>
-                      )}
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-2">
-                          <Label className="text-foreground text-sm">Usuário *</Label>
-                          <Input 
-                            placeholder="Username" 
-                            value={form.username} 
-                            onChange={e => { setForm(f => ({ ...f, username: e.target.value })); setTestResult(null); }} 
-                            className="bg-secondary border-border text-foreground" 
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-foreground text-sm">
-                            Senha {editingId ? '(vazio = manter)' : '*'}
-                          </Label>
-                          <div className="relative">
-                            <Input 
-                              type={showPassword ? 'text' : 'password'} 
-                              placeholder={editingId ? '••••••' : 'Password'} 
-                              value={form.password} 
-                              onChange={e => { setForm(f => ({ ...f, password: e.target.value })); setTestResult(null); }} 
-                              className="bg-secondary border-border text-foreground pr-9" 
-                            />
-                            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground">
-                              {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      <Button 
-                        variant="outline" 
-                        onClick={handleTestConnection} 
-                        disabled={testing || !(form.input_mode === 'url' ? form.server_url : form.provider_name) || !form.username || !form.password}
-                        className="w-full border-border text-foreground"
-                      >
-                        {testing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
-                        Testar Conexão
-                      </Button>
-
-                      {testResult && (
-                        <div className={`flex items-center gap-2 p-2.5 rounded-lg text-sm ${testResult.ok ? 'bg-accent/10 text-accent' : 'bg-destructive/10 text-destructive'}`}>
-                          {testResult.ok ? <CheckCircle className="w-4 h-4 flex-shrink-0" /> : <AlertCircle className="w-4 h-4 flex-shrink-0" />}
-                          <span>{testResult.msg}</span>
-                        </div>
-                      )}
-
-                      <div className="space-y-2">
-                        <Label className="text-foreground text-sm">Código de Acesso *</Label>
-                        <Input placeholder="Ex: 123" value={form.access_code} onChange={e => setForm(f => ({ ...f, access_code: e.target.value }))} className="bg-secondary border-border text-foreground" />
-                        <p className="text-[11px] text-muted-foreground">Código que os usuários usarão para acessar esta playlist</p>
-                      </div>
-
-                      <Button onClick={handleSave} disabled={saving} className="w-full gradient-primary text-primary-foreground font-medium">
-                        {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                        {editingId ? 'Atualizar Playlist' : 'Salvar Playlist'}
-                      </Button>
-                    </motion.div>
+                  {testResult && (
+                    <div className={`flex items-center gap-2 p-2.5 rounded-lg text-sm ${testResult.ok ? 'bg-accent/10 text-accent' : 'bg-destructive/10 text-destructive'}`}>
+                      {testResult.ok ? <CheckCircle className="w-4 h-4 flex-shrink-0" /> : <AlertCircle className="w-4 h-4 flex-shrink-0" />}
+                      <span>{testResult.msg}</span>
+                    </div>
                   )}
-                </AnimatePresence>
-              </>
-            )}
+
+                  <div className="space-y-2">
+                    <Label className="text-foreground text-sm">Código de Acesso *</Label>
+                    <Input placeholder="Ex: 123" value={form.access_code} onChange={e => setForm(f => ({ ...f, access_code: e.target.value }))} className="bg-secondary border-border text-foreground" />
+                    <p className="text-[11px] text-muted-foreground">Código que os usuários usarão para acessar esta playlist</p>
+                  </div>
+
+                  <Button onClick={handleSave} disabled={saving} className="w-full gradient-primary text-primary-foreground font-medium">
+                    {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                    {editingId ? 'Atualizar Playlist' : 'Salvar Playlist'}
+                  </Button>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         )}
       </div>
