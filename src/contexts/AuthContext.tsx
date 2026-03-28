@@ -8,6 +8,8 @@ const LS_ACCESS_CODE = 'xerife_access_code';
 const LS_PLAYLIST_NAME = 'xerife_playlist_name';
 const LS_SERVER_INFO = 'xerife_server_info';
 const LS_USER_INFO = 'xerife_user_info';
+const LS_CLOUD_SYNC_TS = 'xerife_cloud_sync_ts';
+const CLOUD_SYNC_INTERVAL = 1000 * 60 * 30; // 30 minutes
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface AppContextType {
@@ -61,6 +63,7 @@ function clearLocalConfig() {
   localStorage.removeItem(LS_PLAYLIST_NAME);
   localStorage.removeItem(LS_SERVER_INFO);
   localStorage.removeItem(LS_USER_INFO);
+  localStorage.removeItem(LS_CLOUD_SYNC_TS);
 }
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -85,10 +88,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async function syncWithCloud() {
       const local = readLocalConfig();
 
+      // Skip cloud call if synced recently and we have local config
+      const lastSync = parseInt(localStorage.getItem(LS_CLOUD_SYNC_TS) || '0', 10);
+      if (local.accessCode && Date.now() - lastSync < CLOUD_SYNC_INTERVAL) {
+        if (!cancelled) setLoaded(true);
+        return;
+      }
+
       try {
         const { data } = await supabase.functions.invoke('admin-config', {
           body: { action: 'get_active_config' },
         });
+        if (!cancelled) localStorage.setItem(LS_CLOUD_SYNC_TS, String(Date.now()));
 
         if (cancelled) return;
 
