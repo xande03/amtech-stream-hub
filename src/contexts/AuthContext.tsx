@@ -1,15 +1,12 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 
 // ─── LocalStorage Keys ────────────────────────────────────────────────────────
-// All user-specific session data is stored ONLY in the user's browser localStorage.
-// The cloud (Supabase) is used ONLY for managing playlists (admin-config).
+// ALL data is stored exclusively in localStorage. No cloud dependency.
 const LS_ACCESS_CODE = 'xerife_access_code';
 const LS_PLAYLIST_NAME = 'xerife_playlist_name';
 const LS_SERVER_INFO = 'xerife_server_info';
 const LS_USER_INFO = 'xerife_user_info';
-const LS_CLOUD_SYNC_TS = 'xerife_cloud_sync_ts';
-const CLOUD_SYNC_INTERVAL = 1000 * 60 * 60; // 60 minutes (reduced cloud usage)
+const LS_ADMIN_PLAYLISTS = 'xerife_admin_playlists';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface AppContextType {
@@ -55,7 +52,7 @@ function writeLocalConfig(
 
     if (userInfo) localStorage.setItem(LS_USER_INFO, JSON.stringify(userInfo));
     else localStorage.removeItem(LS_USER_INFO);
-  } catch { /* storage quota exceeded or private mode — fail silently */ }
+  } catch { /* storage quota exceeded or private mode */ }
 }
 
 function clearLocalConfig() {
@@ -63,78 +60,48 @@ function clearLocalConfig() {
   localStorage.removeItem(LS_PLAYLIST_NAME);
   localStorage.removeItem(LS_SERVER_INFO);
   localStorage.removeItem(LS_USER_INFO);
-  localStorage.removeItem(LS_CLOUD_SYNC_TS);
+}
+
+/** Read the active playlist from admin's localStorage (no cloud needed) */
+function getActivePlaylistFromLocal(): { accessCode: string; playlistName: string; serverUrl: string; username: string; password: string } | null {
+  try {
+    const raw = localStorage.getItem(LS_ADMIN_PLAYLISTS);
+    if (!raw) return null;
+    const list = JSON.parse(raw);
+    const active = list.find((p: any) => p.is_active);
+    if (!active) return null;
+    return {
+      accessCode: active.access_code,
+      playlistName: active.playlist_name,
+      serverUrl: active.server_url,
+      username: active.username,
+      password: active.password,
+    };
+  } catch { return null; }
 }
 
 // ─── Context ──────────────────────────────────────────────────────────────────
 const AppContext = createContext<AppContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  // 1️⃣ Read from localStorage IMMEDIATELY — no network wait, instant boot
   const initial = readLocalConfig();
   const [accessCode, setAccessCode] = useState<string | null>(initial.accessCode);
   const [serverInfo, setServerInfo] = useState<any>(initial.serverInfo);
   const [userInfo, setUserInfo] = useState<any>(initial.userInfo);
   const [playlistName, setPlaylistName] = useState<string | null>(initial.playlistName);
-  const [loaded, setLoaded] = useState(false);
 
-  // 2️⃣ Background cloud fetch:
-  //   - If user has NO local config → fetch active playlist from cloud & save to localStorage
-  //   - If user HAS local config  → validate in background, update playlist name if changed
-  //   This runs ONCE on mount (non-blocking: app already runs with local state)
+  // On mount: if no user config but admin has playlists, auto-configure from active playlist
   useEffect(() => {
-    let cancelled = false;
-
-    async function syncWithCloud() {
-      const local = readLocalConfig();
-
-      // Skip cloud call if synced recently and we have local config
-      const lastSync = parseInt(localStorage.getItem(LS_CLOUD_SYNC_TS) || '0', 10);
-      if (local.accessCode && Date.now() - lastSync < CLOUD_SYNC_INTERVAL) {
-        if (!cancelled) setLoaded(true);
-        return;
+    if (!initial.accessCode) {
+      const active = getActivePlaylistFromLocal();
+      if (active) {
+        setAccessCode(active.accessCode);
+        setPlaylistName(active.playlistName);
+        writeLocalConfig(active.accessCode, active.playlistName, null, null);
       }
-
-      try {
-        const { data } = await supabase.functions.invoke('admin-config', {
-          body: { action: 'get_active_config' },
-        });
-        if (!cancelled) localStorage.setItem(LS_CLOUD_SYNC_TS, String(Date.now()));
-
-        if (cancelled) return;
-
-        if (data?.config) {
-          const code = data.config.access_code;
-          const name = data.config.playlist_name;
-          // Always sync with the cloud active playlist
-          if (local.accessCode !== code || !local.accessCode) {
-            setAccessCode(code);
-            setPlaylistName(name);
-            writeLocalConfig(code, name, null, null);
-          } else {
-            // Same playlist — just refresh the name in case admin renamed it
-            setPlaylistName(name);
-            writeLocalConfig(local.accessCode, name, local.serverInfo, local.userInfo);
-          }
-        }
-        // If cloud returned no config → keep user's local config (may still work)
-      } catch {
-        // Network error — continue with local config unchanged
-      }
-
-      if (!cancelled) setLoaded(true);
     }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-    syncWithCloud();
-    return () => { cancelled = true; };
-  }, []);
-
-  // ── Public API ────────────────────────────────────────────────────────────
-
-  /**
-   * Called when user/admin selects or authenticates with a playlist.
-   * Saves the session to localStorage — cloud is NOT involved for user data.
-   */
   const setConfig = useCallback((code: string, info?: any) => {
     const name = info?.playlist_name ?? null;
     const srv = info?.server_info ?? null;
@@ -145,14 +112,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (srv !== null) setServerInfo(srv);
     if (usr !== null) setUserInfo(usr);
 
-    // Persist user's session choice exclusively to localStorage
     writeLocalConfig(code, name, srv, usr);
   }, []);
 
-  /**
-   * Clear user session — removes data from localStorage ONLY.
-   * Cloud playlists are completely unaffected.
-   */
   const clearConfig = useCallback(() => {
     setAccessCode(null);
     setServerInfo(null);
@@ -161,36 +123,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     clearLocalConfig();
   }, []);
 
-  /**
-   * Refresh: re-reads localStorage (instant) and triggers background cloud sync.
-   * Used after admin makes playlist changes so active users see updates.
-   */
   const refreshConfig = useCallback(() => {
-    const local = readLocalConfig();
-    setAccessCode(local.accessCode);
-    setPlaylistName(local.playlistName);
-    setServerInfo(local.serverInfo);
-    setUserInfo(local.userInfo);
-
-    // Re-sync with cloud in background
-    supabase.functions.invoke('admin-config', {
-      body: { action: 'get_active_config' },
-    }).then(({ data }) => {
-      if (data?.config) {
-        const name = data.config.playlist_name;
-        setPlaylistName(name);
-        writeLocalConfig(local.accessCode, name, local.serverInfo, local.userInfo);
-      }
-    }).catch(() => { /* ignore */ });
+    // Re-read from localStorage (admin may have changed playlists)
+    const active = getActivePlaylistFromLocal();
+    if (active) {
+      setAccessCode(active.accessCode);
+      setPlaylistName(active.playlistName);
+      writeLocalConfig(active.accessCode, active.playlistName, null, null);
+    } else {
+      const local = readLocalConfig();
+      setAccessCode(local.accessCode);
+      setPlaylistName(local.playlistName);
+      setServerInfo(local.serverInfo);
+      setUserInfo(local.userInfo);
+    }
   }, []);
-
-  // Don't block render — show app immediately with local data
-  // (loaded flag is only for first-time users who need the initial cloud fetch)
-  if (!loaded && !initial.accessCode) {
-    // Only block if there's NO local config at all (truly first visit)
-    // We need to know if there's a cloud playlist before rendering routes
-    return null;
-  }
 
   return (
     <AppContext.Provider value={{
