@@ -9,7 +9,7 @@ const LS_PLAYLIST_NAME = 'xerife_playlist_name';
 const LS_SERVER_INFO = 'xerife_server_info';
 const LS_USER_INFO = 'xerife_user_info';
 const LS_CLOUD_SYNC_TS = 'xerife_cloud_sync_ts';
-const CLOUD_SYNC_INTERVAL = 1000 * 60 * 30; // 30 minutes
+const CLOUD_SYNC_INTERVAL = 1000 * 60 * 60; // 60 minutes (reduced cloud usage)
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface AppContextType {
