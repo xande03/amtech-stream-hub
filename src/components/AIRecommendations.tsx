@@ -78,7 +78,7 @@ export default function AIRecommendations({ onSearch }: { onSearch?: (name: stri
         <Button
           variant="ghost"
           size="sm"
-          onClick={fetchRecommendations}
+          onClick={() => fetchRecommendations(true)}
           disabled={loading}
           className="text-muted-foreground hover:text-foreground"
         >
