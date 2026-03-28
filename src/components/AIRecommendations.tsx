@@ -13,14 +13,29 @@ interface Recommendation {
   reason: string;
 }
 
+const LS_AI_RECS = 'xerife_ai_recommendations';
+const LS_AI_RECS_TS = 'xerife_ai_recommendations_ts';
+const AI_CACHE_TTL = 1000 * 60 * 60 * 2; // 2 hours
+
+function getCachedRecs(): Recommendation[] | null {
+  try {
+    const ts = parseInt(localStorage.getItem(LS_AI_RECS_TS) || '0', 10);
+    if (Date.now() - ts > AI_CACHE_TTL) return null;
+    const cached = localStorage.getItem(LS_AI_RECS);
+    return cached ? JSON.parse(cached) : null;
+  } catch { return null; }
+}
+
 export default function AIRecommendations({ onSearch }: { onSearch?: (name: string, type: string) => void }) {
-  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const cached = getCachedRecs();
+  const [recommendations, setRecommendations] = useState<Recommendation[]>(cached || []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { history } = useWatchHistory();
   const { favorites } = useFavorites();
 
-  const fetchRecommendations = async () => {
+  const fetchRecommendations = async (force = false) => {
+    if (!force && recommendations.length > 0) return;
     setLoading(true);
     setError(null);
     try {
@@ -33,6 +48,10 @@ export default function AIRecommendations({ onSearch }: { onSearch?: (name: stri
       if (fnError) throw fnError;
       if (data?.recommendations) {
         setRecommendations(data.recommendations);
+        try {
+          localStorage.setItem(LS_AI_RECS, JSON.stringify(data.recommendations));
+          localStorage.setItem(LS_AI_RECS_TS, String(Date.now()));
+        } catch { /* quota */ }
       }
     } catch (e: unknown) {
       const err = e as Error;
@@ -44,7 +63,7 @@ export default function AIRecommendations({ onSearch }: { onSearch?: (name: stri
   };
 
   useEffect(() => {
-    fetchRecommendations();
+    if (!cached) fetchRecommendations();
   }, []);
 
   if (error && recommendations.length === 0) return null;
